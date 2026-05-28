@@ -5,6 +5,12 @@
 ![Tests](https://img.shields.io/badge/tests-passing-green)
 ![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
 
+## What's New
+
+- **Core/Community skill split** - 12 core skills for focused workflows, 17 community skills for specialized domains
+- **PyPI publication ready** - Install with `pip install ai-coding-guidance-skills`
+- **Demo showcase** - Example scenarios in `examples/` for learning the kernel
+
 ## What Is This?
 
 This is a kernel that runs AI-driven development workflows through a directed graph of nodes. It selects skills from an extensible inventory, assembles rich context for each phase, executes via AI commands, reflects on results, and evolves its own prompts and structure over time. The kernel bridges Eastern philosophy (Dao De Jing, Art of War) with software engineering to guide strategic decision-making, knowing when to push forward, when to retreat, and when to let things emerge naturally.
@@ -43,13 +49,13 @@ git clone <repo-url> && cd AI-Coding-Guidance-Skills
 pip install -e ".[dev]"
 
 # 3. Initialize runtime files
-python3.12 runner.py --init
+python runner.py --init
 
 # 4. Dry run to verify graph structure
-python3.12 runner.py --goal "Build a REST API" --dry-run
+python runner.py --goal "Build a REST API" --dry-run
 
 # 5. Real execution with AI
-python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
+python runner.py --goal "Build a REST API" --ai-command "claude --print"
 ```
 
 ## Three Execution Modes
@@ -65,7 +71,7 @@ python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
 - Self-evolving prompts and graph structure via reflection and evolution nodes
 - Skill auto-selection based on goal analysis and phase matching
 - Philosophy-guided decisions (strategic retreat, terrain awareness, natural flow)
-- Composable skill system with 26+ skills across 5 phases
+- Composable skill system with 29 skills (12 core + 17 community)
 - Token-budget-aware context assembly with workspace and decision history
 - Concurrency-safe file operations with advisory locking
 - Append-only JSONL evolution history with auto-pruning
@@ -75,18 +81,30 @@ python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
 
 ## Skill Inventory
 
+### Core Skills (12)
+
 | Skill | Phase | Description |
 |-------|-------|-------------|
 | grill-me | idea | Challenge and clarify ideas through rigorous questioning |
 | grill-with-docs | idea | Challenge ideas using documentation and ADR format |
 | prd | requirements | Generate Product Requirements Documents with structured output |
-| to-prd | requirements | Convert ideas into Product Requirements Documents |
 | to-issues | requirements | Convert PRDs/plans into actionable issues |
 | ralph | execution | Autonomous coding agent that implements user stories |
 | tdd | execution | Test-driven development with deep modules and interface design |
 | prototype | execution | Rapid prototyping with logic and UI templates |
 | diagnose | quality | Debug and diagnose issues with HITL loop |
+| relentless-iteration | quality | Multi-round critical iteration for production-quality output |
+| handoff | lifecycle | Session end handover documentation |
+| zoom-out | lifecycle | Take a high-level view of the project state |
+| write-a-skill | meta | Meta-skill for creating new skills |
+
+### Community Skills (17)
+
+| Skill | Phase | Description |
+|-------|-------|-------------|
+| to-prd | requirements | Convert ideas into Product Requirements Documents |
 | improve-codebase-architecture | quality | Refactoring and architecture improvement |
+| ux-audit | quality | UX audit from real user perspectives |
 | ui-ux-pro-max | design | UI/UX design with 50+ styles, 161 palettes, 57 font pairings |
 | ui-styling | design | Tailwind CSS and shadcn/ui component styling |
 | design-system | design | Design tokens, component specs, and slide generation |
@@ -94,15 +112,13 @@ python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
 | brand | design | Brand identity management - guidelines, voice, visual identity |
 | banner-design | design | Banner creation with size and style references |
 | slides | design | HTML presentation creation with layout patterns |
-| handoff | lifecycle | Session end handover documentation |
 | triage | lifecycle | Triage and prioritize issues and tasks |
-| zoom-out | lifecycle | Take a high-level view of the project state |
 | web-scraper | data | Web scraping with extraction patterns and transforms |
 | xhs_collector | data | XiaoHongShu content collection with scheduling |
-| write-a-skill | meta | Meta-skill for creating new skills |
 | caveman | style | Simplified communication style |
 | ai-product | strategy | AI product development guidance |
 | ai-code-guidance | guidance | AI coding guidance and best practices |
+| setup-matt-pocock-skills | setup | Setup Matt Pocock's skill configuration |
 
 ## How It Works
 
@@ -128,17 +144,21 @@ The kernel draws on two philosophical traditions to guide its behavior:
 | `--init` | Initialize runtime files and exit |
 | `--dry-run` | Print what would be done without modifying state |
 | `--ai-command` | AI CLI command for autonomous execution (e.g., `"claude --print"`) |
+| `--provider` | AI provider: `cli` (default), `openai`, or `anthropic` |
+| `--model` | Model name for openai/anthropic providers (e.g., `gpt-4o`, `claude-sonnet-4-20250514`) |
 | `--check` | Run setup checks and exit |
 | `--status` | Print current status and exit |
 | `--resume` | Continue from saved state instead of starting fresh |
 | `--max-iterations` | Maximum iterations (default: 30) |
 | `--skills` | Comma-separated skill names to load (overrides auto-selection) |
 | `--execution-mode` | `kernel` (default) or `ralph` (exports prd.json after planning) |
+| `--complexity` | Task complexity: `auto` (default), `low`, `medium`, or `high` |
 | `--retry-strategy` | `continue`, `skip`, or `backoff` on failure |
 | `--timeout` | Timeout per iteration in seconds (default: 300) |
 | `--verbose` | Show iteration-by-iteration progress |
 | `--generate-prompt` | Output assembled prompt to stdout and exit |
 | `--workspace` | Manual workspace project name override |
+| `--migrate` | Run pending data migrations and exit |
 
 ## Contributing
 

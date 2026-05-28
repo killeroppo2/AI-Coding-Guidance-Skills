@@ -13,7 +13,7 @@ and the Art of War.
 
 ## Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - pyyaml (`pip install pyyaml`)
 
 ## Installation
@@ -27,7 +27,7 @@ cd AI-Coding-Guidance-Skills
 pip install -e ".[dev]"
 
 # Verify your setup
-python3.12 runner.py --check
+python runner.py --check
 ```
 
 ## Three Execution Modes
@@ -38,7 +38,7 @@ Walks through the graph mechanically without calling an AI. Useful for
 verifying graph structure and prompt loading.
 
 ```bash
-python3.12 runner.py --goal "Build a REST API" --dry-run
+python runner.py --goal "Build a REST API" --dry-run
 ```
 
 ### Mode 2: AI reads BOOT.md directly
@@ -51,32 +51,32 @@ let it self-direct through the boot sequence. The AI manages state itself.
 The runner assembles context and pipes it to an AI CLI tool.
 
 ```bash
-python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
+python runner.py --goal "Build a REST API" --ai-command "claude --print"
 ```
 
 ## Quick Start
 
-0. Verify setup: `python3.12 runner.py --check`
+0. Verify setup: `python runner.py --check`
 1. Clone this repository
 2. Install dependencies: `pip install pyyaml`
-3. Try a dry run: `python3.12 runner.py --goal "Hello world app" --dry-run`
-4. Generate a consolidated prompt: `python3.12 runner.py --goal "Build X" --generate-prompt`
-5. Pipe to your AI: `python3.12 runner.py --goal "Build X" --generate-prompt | claude --print`
+3. Try a dry run: `python runner.py --goal "Hello world app" --dry-run`
+4. Generate a consolidated prompt: `python runner.py --goal "Build X" --generate-prompt`
+5. Pipe to your AI: `python runner.py --goal "Build X" --generate-prompt | claude --print`
 
 ## Key Commands
 
 ```bash
 # Dry run with custom iteration limit
-python3.12 runner.py --goal "..." --dry-run --max-iterations 10
+python runner.py --goal "..." --dry-run --max-iterations 10
 
 # Generate consolidated prompt (all kernel context in one output)
-python3.12 runner.py --goal "..." --generate-prompt
+python runner.py --goal "..." --generate-prompt
 
 # Real execution with timeout per iteration
-python3.12 runner.py --goal "..." --ai-command "claude --print" --timeout 600
+python runner.py --goal "..." --ai-command "claude --print" --timeout 600
 
 # Resume a previous session
-python3.12 runner.py --goal "..." --resume --ai-command "claude --print"
+python runner.py --goal "..." --resume --ai-command "claude --print"
 ```
 
 ## Project Structure
