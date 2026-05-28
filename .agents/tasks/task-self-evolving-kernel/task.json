@@ -1,0 +1,14 @@
+{
+  "task_id": "task-self-evolving-kernel",
+  "task_description": "Build a self-evolving AI development kernel - a filesystem-based orchestration system that any AI agent can read and be guided by. Includes: BOOT.md entry point, workflow graph, state management, knowledge store with composable skills, self-evolution engine, philosophy-guided prompts (Dao De Jing + Art of War), and comprehensive tests at 90%+ coverage. External skills (Ralph, UI/UX) are integrated. Runner.py provides the execution loop.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "183 tests pass, 99.35% coverage (well above 90% threshold). Runner dry-run works. All 27 skills registered. No symlinks. All kernel modules importable. Semantic review issues addressed: path normalization bypass fixed, rollback gap fixed, runner/BOOT.md documentation clarified, 12 adversarial path tests added."
+  }
+}

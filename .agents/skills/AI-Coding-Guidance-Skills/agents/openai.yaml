@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI Coding Guidance Skills"
+  short_description: "Repo-specific patterns and workflows for AI-Coding-Guidance-Skills"
+  default_prompt: "Use the AI-Coding-Guidance-Skills repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true

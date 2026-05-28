@@ -1,0 +1,31 @@
+{
+  "project_type": "Python self-evolving AI development kernel - a framework that orchestrates AI coding agents via filesystem-based state and prompts",
+  "language": "Python",
+  "build_system": "pip/setuptools - lightweight, no heavy framework dependencies (no LangGraph, no CrewAI). Only PyYAML, pytest, pytest-cov as dependencies.",
+  "test_framework": "pytest with pytest-cov for coverage (target 90%+). Tests in tests/ directory with conftest.py.",
+  "build_command": "cd /projects/sandbox/AI-Coding-Guidance-Skills && python3.12 -m pytest tests/ --cov=kernel --cov=knowledge --cov=memory --cov-report=term-missing --cov-fail-under=90",
+  "test_command": "cd /projects/sandbox/AI-Coding-Guidance-Skills && python3.12 -m pytest tests/ -v --cov=kernel --cov=knowledge --cov=memory --cov=runner --cov-report=term-missing",
+  "verification_instructions": "1. Run pytest with coverage: python3.12 -m pytest tests/ --cov=kernel --cov=knowledge --cov=memory --cov=runner --cov-report=term-missing --cov-fail-under=90. 2. Verify runner.py can be imported without errors: python3.12 -c 'import runner'. 3. Verify kernel modules can be imported: python3.12 -c 'from kernel import evolution; from knowledge import store; from memory import state_manager'",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "1. cd /projects/sandbox/AI-Coding-Guidance-Skills. 2. python3.12 -m pip install pyyaml pytest pytest-cov. 3. python3.12 -m pytest tests/ -v",
+  "environment_constraints": "Python 3.12 available at python3.12. OPEN_INTERNET network mode - can install any packages. No Docker needed. Keep kernel lightweight with minimal deps (only PyYAML for yaml parsing).",
+  "contribution_requirements": "Keep existing skills (grill-me, grill-with-docs, handoff, diagnose, etc.) untouched. New kernel code goes in kernel/, knowledge/, memory/, tests/ directories plus runner.py at root. Copy external skills (ralph, ui-ux) into the skills/ subdirectory within knowledge/skills/.",
+  "key_patterns": "Skills use SKILL.md as their entry point with YAML frontmatter (name, description). Ralph uses a bash loop that spawns fresh AI instances per iteration with prd.json tracking progress. The kernel should follow this same loop-with-fresh-context pattern but in Python. UI/UX skills have symlinks that need to be resolved (copy actual files from src/ui-ux-pro-max/).",
+  "relevant_files": [
+    "/projects/sandbox/ralph-source/ralph.sh",
+    "/projects/sandbox/ralph-source/prompt.md",
+    "/projects/sandbox/ralph-source/CLAUDE.md",
+    "/projects/sandbox/ralph-source/skills/ralph/SKILL.md",
+    "/projects/sandbox/ralph-source/skills/prd/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/ui-ux-pro-max/SKILL.md",
+    "/projects/sandbox/ui-ux-source/src/ui-ux-pro-max/data/",
+    "/projects/sandbox/ui-ux-source/src/ui-ux-pro-max/scripts/",
+    "/projects/sandbox/ui-ux-source/.claude/skills/ui-styling/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/design-system/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/design/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/brand/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/banner-design/SKILL.md",
+    "/projects/sandbox/ui-ux-source/.claude/skills/slides/SKILL.md"
+  ],
+  "directory_structure": "Root: /projects/sandbox/AI-Coding-Guidance-Skills/. Existing skills at root level (grill-me/, diagnose/, etc.). New structure adds: kernel/ (BOOT.md, constitution.md, graph.yaml, state.yaml, philosophy/, prompts/, evolution/), knowledge/ (store.py, rules/, skills/, patterns/), memory/ (current_goal.md, plan.md, progress.yaml, decisions.jsonl, reflections.jsonl), tests/ (all test files), runner.py at root."
+}

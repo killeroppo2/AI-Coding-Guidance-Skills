@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "ROUND 3 - The Plan Problem: Create a structured task format so the plan is machine-readable. Currently plan.md is freeform markdown with no defined structure. progress.yaml has tasks_total/tasks_done but no actual task list. Add tasks.yaml with structured tasks and a TaskManager class.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/contracts/plan_format.md specifying the exact YAML structure for tasks.yaml: each task has id (T-001), title, description, status (pending/in_progress/done/blocked), acceptance_criteria (list), dependencies (list of task ids), complexity (low/medium/high)",
+    "Create kernel/task_manager.py with TaskManager class: __init__(memory_dir), load_tasks() -> list[dict], save_tasks(tasks), add_task(task_dict), get_next_task() -> dict|None (first pending task with all dependencies done), mark_done(task_id), mark_in_progress(task_id), mark_blocked(task_id, reason), get_task(task_id) -> dict, get_progress() -> tuple[total, done], validate_dependencies() -> list[str] (check for cycles/missing deps)",
+    "Update memory/state_manager.py to have a reference: add get_tasks_path() method returning memory_dir / 'tasks.yaml'",
+    "Update kernel/prompts/planner.md to require output in the exact tasks.yaml format (show the YAML schema), referencing kernel/contracts/plan_format.md",
+    "Update kernel/prompts/coder.md to say: 'Read memory/tasks.yaml. Find the first task with status=pending whose dependencies are all done. Set it to in_progress before coding. Set to done when complete.'",
+    "Update kernel/prompts/tester.md to say: 'Read the current task from memory/tasks.yaml. Validate acceptance_criteria from the task definition.'",
+    "Update context_assembler.py to include current task info from tasks.yaml in the assembled prompt (new section === CURRENT TASK ===) by reading tasks.yaml and finding the in_progress or next pending task",
+    "Write tests in tests/test_task_manager.py: add_task, get_next_task returns correct task, mark_done updates status, dependency resolution (task with unmet deps is skipped), validate_dependencies catches cycles, get_progress returns correct counts, integration with state_manager"
+  ],
+  "acceptance_criteria": [
+    "kernel/contracts/plan_format.md exists with clear YAML schema definition",
+    "kernel/task_manager.py has TaskManager class with all specified methods",
+    "TaskManager correctly implements dependency-aware task selection",
+    "planner.md references the structured format with examples",
+    "coder.md and tester.md reference tasks.yaml",
+    "context_assembler includes current task in assembled output",
+    "tests/test_task_manager.py passes",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 385 tests pass at 98.29% coverage. TaskManager implements all specified methods. context_assembler.py file coverage is 66% (new _load_current_task method not fully covered by existing integration tests) but overall project coverage is 98.29% which exceeds the 90% threshold."
+}

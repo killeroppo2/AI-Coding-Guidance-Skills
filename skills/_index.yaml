@@ -1,0 +1,177 @@
+version: "1.0"
+description: "Skill index for the AI development kernel"
+workflow:
+  idea_phase:
+    - grill-me
+    - grill-with-docs
+  requirements_phase:
+    - prd
+    - to-prd
+    - to-issues
+  execution_phase:
+    - ralph
+    - tdd
+    - prototype
+  quality_phase:
+    - diagnose
+    - improve-codebase-architecture
+    - relentless-iteration
+    - ux-audit
+  design_phase:
+    - ui-ux-pro-max
+    - ui-styling
+    - design-system
+    - design
+    - brand
+    - banner-design
+    - slides
+  lifecycle_phase:
+    - handoff
+    - triage
+    - zoom-out
+items:
+  - name: ralph
+    path: ralph
+    description: "Autonomous coding agent that reads prd.json, picks user stories, implements them one by one"
+    tags: [execution, autonomous, coding]
+    composable_with: [prd, tdd, diagnose]
+  - name: prd
+    path: prd
+    description: "Generate Product Requirements Documents with clarifying questions and structured output"
+    tags: [planning, requirements, documentation]
+    composable_with: [ralph, to-issues, grill-me]
+  - name: ui-ux-pro-max
+    path: ui-ux-pro-max
+    description: "UI/UX design intelligence with 50+ styles, 161 color palettes, 57 font pairings across 10 stacks"
+    tags: [design, ui, ux, frontend]
+    composable_with: [ui-styling, design-system, brand]
+  - name: ui-styling
+    path: ui-styling
+    description: "Tailwind CSS and shadcn/ui component styling with canvas fonts"
+    tags: [design, styling, tailwind, shadcn]
+    composable_with: [ui-ux-pro-max, design-system]
+  - name: design-system
+    path: design-system
+    description: "Design tokens, component specs, and slide generation"
+    tags: [design, tokens, system]
+    composable_with: [ui-ux-pro-max, ui-styling, brand]
+  - name: design
+    path: design
+    description: "Comprehensive design skill - logos, CIP, icons, slides"
+    tags: [design, logo, icons, branding]
+    composable_with: [brand, ui-ux-pro-max, banner-design]
+  - name: brand
+    path: brand
+    description: "Brand identity management - guidelines, voice, visual identity"
+    tags: [brand, identity, guidelines]
+    composable_with: [design, design-system, ui-ux-pro-max]
+  - name: banner-design
+    path: banner-design
+    description: "Banner creation with size and style references"
+    tags: [design, banner, marketing]
+    composable_with: [brand, design]
+  - name: slides
+    path: slides
+    description: "HTML presentation creation with layout patterns and strategies"
+    tags: [presentations, slides, html]
+    composable_with: [design-system, brand]
+  - name: grill-me
+    path: grill-me
+    description: "Challenge and clarify ideas through rigorous questioning"
+    tags: [ideation, clarification, challenge]
+    composable_with: [grill-with-docs, to-prd]
+  - name: grill-with-docs
+    path: grill-with-docs
+    description: "Challenge ideas using documentation and ADR format"
+    tags: [ideation, clarification, documentation]
+    composable_with: [grill-me, to-prd]
+  - name: handoff
+    path: handoff
+    description: "Session end handover documentation"
+    tags: [lifecycle, handoff, documentation]
+    composable_with: [zoom-out]
+  - name: diagnose
+    path: diagnose
+    description: "Debug and diagnose issues with HITL loop"
+    tags: [debugging, diagnosis, quality]
+    composable_with: [ralph, tdd]
+  - name: improve-codebase-architecture
+    path: improve-codebase-architecture
+    description: "Refactoring and architecture improvement"
+    tags: [architecture, refactoring, quality]
+    composable_with: [diagnose, zoom-out]
+  - name: prototype
+    path: prototype
+    description: "Rapid prototyping with logic and UI templates"
+    tags: [prototyping, rapid, mvp]
+    composable_with: [tdd, ui-ux-pro-max]
+  - name: tdd
+    path: tdd
+    description: "Test-driven development with deep modules and interface design"
+    tags: [testing, tdd, quality]
+    composable_with: [ralph, diagnose, prototype]
+  - name: to-issues
+    path: to-issues
+    description: "Convert PRDs/plans into actionable issues"
+    tags: [planning, issues, tasks]
+    composable_with: [prd, to-prd, ralph]
+  - name: to-prd
+    path: to-prd
+    description: "Convert ideas into Product Requirements Documents"
+    tags: [planning, requirements, documentation]
+    composable_with: [prd, grill-me, to-issues]
+  - name: triage
+    path: triage
+    description: "Triage and prioritize issues and tasks"
+    tags: [prioritization, triage, management]
+    composable_with: [to-issues, diagnose]
+  - name: web-scraper
+    path: web-scraper
+    description: "Web scraping with extraction patterns and data transforms"
+    tags: [scraping, data, extraction]
+    composable_with: [xhs_collector]
+  - name: write-a-skill
+    path: write-a-skill
+    description: "Meta-skill for creating new skills"
+    tags: [meta, skills, creation]
+    composable_with: []
+  - name: zoom-out
+    path: zoom-out
+    description: "Take a high-level view of the project state"
+    tags: [overview, architecture, planning]
+    composable_with: [improve-codebase-architecture, handoff]
+  - name: caveman
+    path: caveman
+    description: "Simplified communication style"
+    tags: [communication, style]
+    composable_with: []
+  - name: ai-product
+    path: ai-product
+    description: "AI product development guidance"
+    tags: [ai, product, strategy]
+    composable_with: [prd, prototype]
+  - name: ai-code-guidance
+    path: ai-code-guidance
+    description: "AI coding guidance and best practices"
+    tags: [ai, coding, guidance]
+    composable_with: [tdd, ralph]
+  - name: setup-matt-pocock-skills
+    path: setup-matt-pocock-skills
+    description: "Setup Matt Pocock's skill configuration"
+    tags: [setup, configuration]
+    composable_with: []
+  - name: xhs_collector
+    path: xhs_collector
+    description: "XiaoHongShu content collection with scheduling"
+    tags: [scraping, social, collection]
+    composable_with: [web-scraper]
+  - name: ux-audit
+    path: ux-audit
+    description: "UX audit from real user perspectives - simulates 6 user types across 5 dimensions to find usability problems"
+    tags: [quality, ux, audit, usability, accessibility]
+    composable_with: [relentless-iteration, ui-ux-pro-max, diagnose]
+  - name: relentless-iteration
+    path: relentless-iteration
+    description: "Multi-round critical iteration combining code hardening AND real-user UX stress-testing until production-quality and delightful"
+    tags: [quality, iteration, hardening, testing, ux, usability]
+    composable_with: [tdd, diagnose, improve-codebase-architecture, ux-audit, ui-ux-pro-max]

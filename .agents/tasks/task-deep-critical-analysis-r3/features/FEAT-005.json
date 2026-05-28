@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Capability Assessment - kernel/capability_assessment.py that assesses skill coverage for a goal, identifies gaps, suggests skill creation, and integrates into the init node flow.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/capability_assessment.py with class CapabilityAssessor containing: assess_capabilities(goal, skills) -> dict returning {covered: list[str], gaps: list[str], confidence: float 0.0-1.0} by tokenizing goal words and matching against skill tags/descriptions (similar to skill_selector but with gap analysis); identify_skill_gaps(goal_keywords, available_skill_tags) -> list[str] returning keywords that have no matching skill; suggest_skill_creation(gaps) -> list[dict] returning suggested skill definitions {name, description, tags} for each gap",
+    "Integrate into runner.py: after skill auto-selection (before the main loop), call CapabilityAssessor.assess_capabilities(). If confidence < 0.3, print a warning to stderr: 'WARNING: Low skill coverage ({confidence:.0%}). The kernel lacks skills for: {gaps}. Consider creating skills with write-a-skill.' If confidence 0.3-0.7, print info: 'NOTE: Partial skill coverage ({confidence:.0%}). Some areas may need new skills: {gaps}'",
+    "Write assessment results to memory/assessment.yaml using yaml.safe_dump with keys: goal, confidence, covered_skills, skill_gaps, suggestions, timestamp",
+    "Create tests/test_capability_assessment.py with tests: full coverage goal matches all skills (confidence near 1.0), goal with no matching skills (confidence near 0.0, gaps populated), partial matches, suggest_skill_creation returns valid suggestions, identify_skill_gaps correctly finds unmatched keywords",
+    "Ensure tests pass and coverage stays >= 90%"
+  ],
+  "acceptance_criteria": [
+    "kernel/capability_assessment.py exists with CapabilityAssessor class and all 3 methods",
+    "assess_capabilities returns correct confidence scores based on skill tag/description overlap",
+    "identify_skill_gaps correctly identifies keywords with no matching skills",
+    "suggest_skill_creation returns well-formed skill suggestion dicts",
+    "runner.py prints warnings for low confidence and notes for partial confidence",
+    "Assessment is written to memory/assessment.yaml",
+    "All tests pass with python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/test_capability_assessment.py -v",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 632 tests pass with 98.65% coverage. Created kernel/capability_assessment.py with CapabilityAssessor class (4 methods: assess_capabilities, identify_skill_gaps, suggest_skill_creation, write_assessment). Integrated into runner.py after skill auto-selection with low/partial confidence warnings. 23 new tests in test_capability_assessment.py covering all methods plus runner integration."
+}

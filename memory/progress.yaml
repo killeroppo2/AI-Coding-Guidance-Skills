@@ -1,0 +1,8 @@
+iteration: 16
+tasks_total: 6
+tasks_done: 6
+status: completed
+test_results:
+  passed: 36
+  failed: 0
+  coverage: 100

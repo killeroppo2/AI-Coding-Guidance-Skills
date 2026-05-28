@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "ROUND 7 - Integration Test That Proves The System Works End-to-End: 279+ unit tests but ZERO tests proving the system can actually do its job. Create a MockAIRunner-based integration test that exercises the full flow from goal to completion, plus contract validation tests.",
+  "status": "completed",
+  "steps": [
+    "Create tests/test_integration.py with a MockAIRunner class that simulates AI responses for each node type. For each node: return appropriate TRANSITION line, FILES_WRITTEN for coder, STATUS: success. The mock maps node_id to a predefined response string.",
+    "Write test_full_cycle_hello_world: given goal 'Create hello.py that prints Hello World', mock responses for init (TRANSITION: goal_loaded), plan (TRANSITION: plan_ready, write tasks.yaml), code (TRANSITION: code_written, FILES_WRITTEN: workspace/hello-world/hello.py), test (TRANSITION: tests_pass), review (TRANSITION: review_pass), reflect (TRANSITION: no_evolution_needed). Verify: state reaches plan on second pass or completes, workspace path is set, iteration count advances correctly.",
+    "Write test_failure_and_retry: mock a code node that fails once (returncode 1), then succeeds on retry. Verify error is recorded, retry happens, system eventually advances.",
+    "Write test_stuck_detection_integration: mock a code node that always fails. Verify stuck detection triggers and system halts with appropriate error.",
+    "Create tests/test_contract_validation.py: test that OutputContractValidator catches missing TRANSITION, invalid TRANSITION for a given node, valid outputs for each node type pass, FILES_WRITTEN parsing works, multiple violations are reported",
+    "Use subprocess mock (monkeypatch subprocess.run) in the integration tests to simulate the AI CLI tool responses without needing a real AI",
+    "The integration test should exercise the FULL flow: runner.main() with --ai-command pointing to a mock, state_mgr, graph, context_assembler, contract validation, state updates across multiple iterations"
+  ],
+  "acceptance_criteria": [
+    "tests/test_integration.py exists with MockAIRunner-based tests",
+    "test_full_cycle_hello_world exercises full init->plan->code->test->review->reflect flow",
+    "test_failure_and_retry proves the system recovers from failures",
+    "test_stuck_detection_integration proves stuck detection works end-to-end",
+    "tests/test_contract_validation.py validates the output contract enforcement",
+    "All integration tests pass and exercise real code paths (not just mocks)",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 37 new tests pass. Full suite: 473 tests pass at 98.71% coverage. Integration tests exercise Mode 3 flow end-to-end via monkeypatched subprocess.run and KERNEL_ROOT. Contract validation tests cover all node transitions, error parsing, FILES_WRITTEN, STATUS, and multiple violations."
+}

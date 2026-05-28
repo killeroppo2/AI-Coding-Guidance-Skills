@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-004",
+  "type": "refactor",
+  "description": "Rounds 16-20: Polish and excellence. Every sentence earns its place. Flow is perfect. Nothing extraneous. Final quality pass to ensure these skills are production-ready for the AI creator community. Personas: Steve Jobs (final cut), Production team lead (final approval), Power user (final extensibility check), Competitor comparison (final positioning), AI agent (final execution test).",
+  "status": "completed",
+  "steps": [
+    "Round 16 (Steve Jobs - final cut): Read both files one final time with maximum ruthlessness. Every sentence must pass: 'Does this help the user accomplish their goal?' Remove any remaining filler, decorative language, or sections that exist 'because they should' rather than because they serve the user.",
+    "Round 17 (Production team lead - final approval): Read as someone who needs to approve these for team-wide adoption. Fix: ensure consistency between the two files (shared terminology, cross-references work), verify the relationship section accurately describes how they interact, ensure both could be handed to a new team member with zero additional context.",
+    "Round 18 (Power user - final extensibility): Verify that advanced users can adapt these skills without breaking them. Fix: ensure the structure supports partial application (using just some rounds, just some dimensions), verify customization points are clearly marked, ensure the skills degrade gracefully when parameters are modified.",
+    "Round 19 (Competitor comparison - final positioning): Ensure these skills are clearly superior to ad-hoc prompting or competing frameworks. Fix: add any final differentiators, ensure the unique value proposition is clear in the first paragraph, verify the philosophy integration adds genuine value not just aesthetic.",
+    "Round 20 (AI agent - final execution test): Do one complete mental dry-run of both skills as an AI agent would execute them. Fix: any remaining sequence ambiguity, ensure the complete happy-path is unbroken, verify error paths lead to recovery not dead-ends, ensure the final output format is copy-paste ready."
+  ],
+  "acceptance_criteria": [
+    "Both files are production-quality: clear, actionable, complete, and concise",
+    "Cross-references between the two skills are accurate and bidirectional",
+    "Both skills can be understood and executed by an AI agent with zero external context",
+    "The philosophy elements add measurable value (connected to concrete actions)",
+    "Final word count is optimal: not too terse (missing info) and not too verbose (wasting attention)",
+    "Run pytest to confirm no test regressions"
+  ],
+  "verification": [
+    "PYENV_VERSION=3.12.13 python -m pytest tests/ -q passes with no new failures (same 1025 passed, 1 pre-existing failure)",
+    "Both files have valid YAML frontmatter",
+    "Both files render correctly as markdown",
+    "Final git commit with all changes"
+  ],
+  "blocked_reason": null,
+  "findings": "Rounds 16-20 applied as micro-surgery. Key changes: (1) Round 16: Tightened 'Why this approach' in both files to be more specific about mechanism. (2) Round 17: Fixed UX dimension names in relentless-iteration to exactly match ux-audit (Happy Path Flow, Blind User Intuition, Edge Cases & Fault Tolerance, State Feedback, Information Hierarchy). Added severity definitions to relentless-iteration matching ux-audit verbatim. (3) Round 18: Verified extensibility - customization sections are complete and clear. Single-persona usage is documented. (4) Round 19: Fixed confusing 'When NOT to Use' wording in ux-audit (said 'Use for backend-only' when it meant 'Not useful for'). Strengthened value proposition wording. (5) Round 20: Made coverage references conditional in output format templates (N/A option for no-test-runner projects). All output format fields now have corresponding process generation steps. Net change: +5 lines. Pre-existing test failure unchanged: test_skill_paths_resolve expects 28 skills but index has 29."
+}

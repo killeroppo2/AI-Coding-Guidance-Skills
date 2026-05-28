@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Set up Python project structure, install dependencies, and create all kernel framework files (BOOT.md, constitution.md, graph.yaml, state.yaml, philosophy docs, prompt templates, and the runner.py entry point). This establishes the entire skeleton that other features build upon.",
+  "status": "completed",
+  "steps": [
+    "Create pyproject.toml or setup.cfg at /projects/sandbox/AI-Coding-Guidance-Skills/ with dependencies: pyyaml, pytest, pytest-cov. Set python_requires>=3.9.",
+    "Install dependencies: python3.12 -m pip install pyyaml pytest pytest-cov",
+    "Create kernel/ directory structure: kernel/__init__.py, kernel/evolution/__init__.py, kernel/evolution/engine.py, kernel/evolution/history.jsonl (empty)",
+    "Create kernel/BOOT.md - The AI bootstrap document. This is what any AI reads first. It should instruct the AI to: (1) read constitution.md for safety rules, (2) read graph.yaml to understand the workflow, (3) read state.yaml to know current state, (4) read philosophy/dao.md and philosophy/strategy.md for guidance, (5) read the relevant prompt from prompts/ based on current node. Make it compelling and clear that the AI is now operating under this kernel's control.",
+    "Create kernel/constitution.md - Immutable safety rules: never delete user data without confirmation, never push to main without tests passing, never modify constitution.md or BOOT.md or runner.py, always maintain test coverage above 90%, never expose secrets/credentials, always preserve existing working functionality.",
+    "Create kernel/graph.yaml - The workflow DAG definition. Nodes: [init, plan, code, test, review, reflect, evolve]. Each node has: id, prompt_file (path to prompts/*.md), next (list of possible next nodes with conditions), max_retries. Default flow: init->plan->code->test->review->reflect->evolve->plan (loop).",
+    "Create kernel/state.yaml - Current execution state template: current_node, iteration_count, goal, status (idle/running/paused/complete), last_updated, errors list, context map.",
+    "Create kernel/philosophy/dao.md - Dao De Jing principles for development: wu wei (act without forcing), simplicity over complexity, the Tao that can be told is not the eternal Tao (adapt don't rigidify), water flows to the lowest point (find path of least resistance), know when to stop, less is more, the sage acts by doing nothing yet nothing is left undone. Include actual Chinese quotes with translations.",
+    "Create kernel/philosophy/strategy.md - Art of War tactical guidance: know yourself and your enemy (understand codebase and requirements), all warfare is based on deception (testing reveals truth), supreme art is to subdue without fighting (prevent bugs rather than fix them), divide and conquer (decompose problems), terrain matters (understand the tech stack), use spies (monitoring, logging, testing), speed is the essence of war (fast iteration). Include actual Chinese quotes with translations.",
+    "Create kernel/prompts/orchestrator.md - Main orchestration prompt that reads state and decides which node to execute next.",
+    "Create kernel/prompts/planner.md - Planning prompt: reads goal, breaks into tasks, creates plan.md in memory/.",
+    "Create kernel/prompts/coder.md - Coding prompt: reads plan, picks next task, implements it, runs tests.",
+    "Create kernel/prompts/tester.md - Testing prompt: reviews code changes, writes/runs tests, ensures coverage.",
+    "Create kernel/prompts/reviewer.md - Review prompt: code review for quality, patterns, potential issues.",
+    "Create kernel/prompts/reflector.md - Reflection prompt: analyzes what worked/didn't, proposes evolution changes to graph.yaml or prompts.",
+    "Create runner.py at /projects/sandbox/AI-Coding-Guidance-Skills/runner.py - The minimal Python loop. It: (1) loads kernel/state.yaml, (2) reads kernel/graph.yaml for workflow, (3) determines current node, (4) loads the appropriate prompt, (5) executes the node (simulation mode - prepares the prompt and context for an AI to consume), (6) updates state, (7) checks stop conditions (all tasks done, max iterations reached), (8) loops. Must support: --goal 'description' flag, --max-iterations N (default 30), --dry-run mode. No external AI API calls - it just orchestrates the file-based state machine.",
+    "Create memory/ directory with template files: memory/__init__.py, memory/current_goal.md (empty template), memory/plan.md (empty template), memory/progress.yaml (iteration: 0, tasks_total: 0, tasks_done: 0), memory/decisions.jsonl (empty), memory/reflections.jsonl (empty).",
+    "Create knowledge/ directory structure: knowledge/__init__.py, knowledge/store.py (read/write logic for rules, skills, patterns), knowledge/rules/_index.yaml, knowledge/rules/manual/ (empty dir with .gitkeep), knowledge/rules/learned/ (empty dir with .gitkeep), knowledge/skills/_index.yaml, knowledge/patterns/_index.yaml, knowledge/patterns/ (empty dir with .gitkeep)."
+  ],
+  "acceptance_criteria": [
+    "python3.12 -c 'import yaml' succeeds (PyYAML installed)",
+    "python3.12 -c 'import runner' succeeds (runner.py is importable)",
+    "python3.12 -c 'from kernel.evolution import engine' succeeds",
+    "python3.12 -c 'from knowledge import store' succeeds",
+    "All kernel/ files exist: BOOT.md, constitution.md, graph.yaml, state.yaml, philosophy/dao.md, philosophy/strategy.md, prompts/orchestrator.md, prompts/planner.md, prompts/coder.md, prompts/tester.md, prompts/reviewer.md, prompts/reflector.md",
+    "runner.py has a main() function and supports --goal, --max-iterations, --dry-run arguments",
+    "kernel/graph.yaml is valid YAML with nodes list defining the workflow",
+    "kernel/state.yaml is valid YAML with current_node, iteration_count, status fields"
+  ],
+  "verification": [
+    "python3.12 -c 'import yaml; import runner; from kernel.evolution import engine; from knowledge import store; from memory import state_manager; print(\"All imports OK\")'",
+    "python3.12 -c 'import yaml; data = yaml.safe_load(open(\"kernel/graph.yaml\")); assert \"nodes\" in data; print(\"graph.yaml valid\")'",
+    "python3.12 -c 'import yaml; data = yaml.safe_load(open(\"kernel/state.yaml\")); assert \"current_node\" in data; print(\"state.yaml valid\")'"
+  ],
+  "blocked_reason": null,
+  "findings": "All 80 tests pass with 94% coverage. Dependencies installed via pip (pyyaml 6.0.3, pytest 9.0.3, pytest-cov 7.1.0). Python 3.12.13 available. Added .gitignore for __pycache__ and .coverage. runner.py uses KERNEL_ROOT = Path(__file__).parent for path resolution."
+}

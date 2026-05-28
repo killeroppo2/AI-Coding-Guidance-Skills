@@ -1,0 +1,16 @@
+confidence: 0.0
+covered_skills: []
+goal: 写一个用户登录 API
+skill_gaps:
+- 写一个用户登录
+- api
+suggestions:
+- description: Skill for 写一个用户登录 development
+  name: 写一个用户登录-skill
+  tags:
+  - 写一个用户登录
+- description: Skill for api development
+  name: api-skill
+  tags:
+  - api
+timestamp: '2026-05-28T07:18:09.887119+00:00'

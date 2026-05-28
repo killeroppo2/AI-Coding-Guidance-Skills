@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Progress Reporting / Observability - kernel/reporter.py with iteration, completion, and stuck reports; --verbose and --status flags in runner.py for human-readable output.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/reporter.py with class Reporter containing: report_iteration(state, node, result) -> str (one-line progress like '[3/30] code: wrote 2 files, tests passing'), report_completion(state, tasks) -> str (final summary: goal, iterations used, tasks completed, files written, errors encountered), report_stuck(state, node, errors) -> str (what went wrong, which node is stuck, suggestion to try), format_status(state, tasks) -> str (human-readable current status without running anything: goal, progress, current node, last errors)",
+    "Add --verbose flag to runner.py: when set, after each Mode 3 iteration prints the result of reporter.report_iteration(). After completion, always prints reporter.report_completion().",
+    "Add --status flag to runner.py: reads current state.yaml and memory/tasks.yaml, prints reporter.format_status(), exits without running. Make --goal not required when --status is used.",
+    "In the Mode 3 stuck detection branch, call reporter.report_stuck() and print its output to stderr.",
+    "After Mode 3 loop completes (end of main()), print reporter.report_completion() summary regardless of --verbose flag.",
+    "Create tests/test_reporter.py with tests for each method: various state dicts, edge cases (no tasks, all done, errors present, stuck state)",
+    "Ensure tests pass and coverage stays >= 90%"
+  ],
+  "acceptance_criteria": [
+    "kernel/reporter.py exists with Reporter class and all 4 methods",
+    "report_iteration produces concise one-line progress strings",
+    "report_completion produces multi-line summary with key stats",
+    "report_stuck provides actionable information about the failure",
+    "format_status shows current state without running the kernel",
+    "runner.py --verbose shows iteration-by-iteration output in Mode 3",
+    "runner.py --status --goal dummy (or without --goal) prints status and exits",
+    "All tests pass with python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/test_reporter.py -v",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 609 tests pass with 98.62% coverage. Created kernel/reporter.py with Reporter class (4 methods: report_iteration, report_completion, report_stuck, format_status). Added --verbose and --status flags to runner.py. --status exits early without requiring --goal. --verbose prints iteration progress in Mode 3. Stuck detection in Mode 3 prints report_stuck to stderr. Completion report always prints after Mode 3 loop. Added yaml import to runner.py that was missing (needed by ralph export section). 24 new tests in test_reporter.py."
+}

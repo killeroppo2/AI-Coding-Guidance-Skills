@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Ralph Integration Adapter - Bridge between kernel TaskManager and Ralph's prd.json format, making Ralph an operational execution mode rather than a decorative skill.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/adapters/__init__.py (empty)",
+    "Create kernel/adapters/ralph_adapter.py with class RalphAdapter containing: export_to_prd_json(tasks, goal) -> dict that converts memory/tasks.yaml format to Ralph's prd.json structure (project, branchName, description, userStories with id/title/description/acceptanceCriteria/priority/passes/notes), and import_from_prd_json(prd_data) -> list[dict] that converts Ralph's prd.json userStories back to kernel task format (id, title, description, status, dependencies)",
+    "Add execution_mode field handling in memory/state_manager.py: state supports 'execution_mode' key with values 'kernel' (default) or 'ralph'. Add get_execution_mode() and set_execution_mode(mode) methods.",
+    "Add --execution-mode flag to runner.py (choices: kernel, ralph) that sets execution_mode in state. When mode is 'ralph', after the plan node generates tasks, export them to memory/prd.json using the adapter.",
+    "Create tests/test_ralph_adapter.py with comprehensive tests: export produces valid prd.json structure, import correctly maps fields back, round-trip consistency, edge cases (empty tasks, missing fields, special characters in names)",
+    "Ensure tests pass and coverage stays >= 90%"
+  ],
+  "acceptance_criteria": [
+    "kernel/adapters/ralph_adapter.py exists with export_to_prd_json and import_from_prd_json methods",
+    "RalphAdapter.export_to_prd_json converts kernel tasks to valid Ralph prd.json structure with all required fields",
+    "RalphAdapter.import_from_prd_json converts Ralph prd.json userStories back to kernel task format",
+    "StateManager supports execution_mode field with getter/setter",
+    "runner.py accepts --execution-mode flag",
+    "All tests pass with python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/test_ralph_adapter.py -v",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 520 tests pass with 98.74% coverage. ralph_adapter.py has 100% coverage. Added 41 new adapter tests plus 6 execution_mode tests in test_memory.py (47 new tests total)."
+}

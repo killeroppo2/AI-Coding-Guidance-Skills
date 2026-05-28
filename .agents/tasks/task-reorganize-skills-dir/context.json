@@ -1,0 +1,33 @@
+{
+  "project_type": "Python CLI application - Self-evolving AI development kernel",
+  "language": "Python 3.11+",
+  "build_system": "setuptools via pyproject.toml, no special build step needed",
+  "test_framework": "pytest with conftest.py fixtures in tests/",
+  "build_command": "N/A (pure Python, no build step)",
+  "test_command": "python -m pytest tests/ -q",
+  "verification_instructions": "Run 'python -m pytest tests/ -q' from project root. All 894 tests must pass.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install pyyaml pytest pytest-cov (already installed in environment)",
+  "environment_constraints": "Python 3.12 available. No external network needed for tests.",
+  "contribution_requirements": "All tests must pass. Skill paths in _index.yaml must resolve.",
+  "key_patterns": "KnowledgeStore uses self.skills_dir (Path) to locate skills. SkillComposer reads SKILL.md from skills_dir/path/SKILL.md or repo_root/path/SKILL.md. SkillFactory creates skills under knowledge_dir/skills/. WorkflowBridge reads _index.yaml via constructor path. setup_check.py checks knowledge/skills/_index.yaml and resolves paths relative to project root.",
+  "relevant_files": [
+    "knowledge/store.py",
+    "knowledge/skill_composer.py",
+    "kernel/skill_factory.py",
+    "kernel/skill_selector.py",
+    "kernel/workflow_bridge.py",
+    "kernel/event_detector.py",
+    "kernel/error_messages.py",
+    "setup_check.py",
+    "runner.py",
+    "README.md",
+    "knowledge/skills/_index.yaml",
+    "tests/conftest.py",
+    "tests/test_setup_check.py",
+    "tests/test_knowledge.py",
+    "tests/test_skill_factory.py",
+    "tests/test_workflow_bridge.py"
+  ],
+  "directory_structure": "Root: runner.py (entry point), setup_check.py, kernel/ (core engine), knowledge/ (rules, skills, patterns), memory/ (runtime state), tests/. Skills are currently in two places: 18 root-level skill dirs + 9 under knowledge/skills/."
+}

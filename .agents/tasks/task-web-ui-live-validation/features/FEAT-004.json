@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Web UI Metrics Dashboard + Real-time Charts + Security Hardening. Add Chart.js visualizations for success rates, iteration distribution, evolution velocity. Add CORS, rate limiting, input sanitization, and workspace sandboxing to the web API.",
+  "status": "completed",
+  "steps": [
+    "Add GET /api/metrics endpoint to web/app.py that returns: overall_health (from EvolutionMetrics), per_node_success_rates, evolution_velocity (changes per 10 iterations from history.jsonl), iteration_distribution (count per node from reflections.jsonl), skill_usage_frequency (from skills/_metrics.yaml if exists)",
+    "Add GET /api/metrics/history endpoint that returns time-series data for charting: success_rate_over_time (bucketed by 10-iteration windows from reflections.jsonl)",
+    "Update web/templates/dashboard.html to include Chart.js via CDN with: line chart for success rate over time, bar chart for iteration distribution per node, gauge/number for overall health score, color-coded per-node success rates (green > 80%, yellow > 50%, red < 50%)",
+    "Add CORS middleware to FastAPI app (allow configurable origins, default localhost)",
+    "Add simple rate limiting middleware (max 60 requests/minute per IP using in-memory counter with sliding window)",
+    "Add input sanitization to POST /api/goal - strip HTML, limit length to 500 chars, reject empty",
+    "Add workspace boundary validation to all file-reading endpoints (cannot read outside project root)",
+    "Create .env.example at project root with all configurable settings: HOST, PORT, CORS_ORIGINS, RATE_LIMIT_PER_MINUTE, KERNEL_ROOT",
+    "Add tests for metrics endpoints, CORS headers, rate limiting behavior, input sanitization, and path traversal rejection to tests/test_web.py"
+  ],
+  "acceptance_criteria": [
+    "/api/metrics returns correct health and distribution data",
+    "Chart.js charts render in dashboard HTML (verified by presence of canvas elements and chart initialization JS)",
+    "CORS headers present in responses",
+    "Rate limiting rejects excessive requests with 429 status",
+    "Input sanitization strips HTML and rejects overly long or empty goals",
+    "Path traversal attempts return 403/400",
+    "All tests pass, coverage >= 90%"
+  ],
+  "verification": [
+    "python -m pytest tests/test_web.py -v",
+    "python -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 49 web tests pass (18 new). Full suite: 995 tests, 98.48% coverage. Changed set_goal to return 400 status for empty/too-long goals (was 200 with error in body). Rate limiting is configurable via rate_limit param in create_app(). CORS allows localhost:8000 and 127.0.0.1:8000 by default."
+}

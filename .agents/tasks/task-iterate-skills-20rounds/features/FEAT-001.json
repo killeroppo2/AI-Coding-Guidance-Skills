@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Rounds 1-5: Surface-level improvements to both skill files. Fix unclear wording, add missing context, fix structural problems, improve readability. Personas: First-time AI creator, Experienced prompt engineer, Non-native English speaker, AI agent literally following instructions, Someone comparing to Cursor rules.",
+  "status": "completed",
+  "steps": [
+    "Round 1 (First-time AI creator persona): Read both skills/relentless-iteration/SKILL.md and skills/ux-audit/SKILL.md as someone who has never used structured AI skills before. Fix: unclear jargon without explanation, missing 'what is this?' context, confusing entry points, assumed knowledge. Add a brief 'What This Skill Does' section if missing.",
+    "Round 2 (Experienced prompt engineer persona): Read both files looking for ambiguity that would cause different AI models to interpret instructions differently. Fix: vague verbs ('consider', 'think about'), unclear scope boundaries, missing explicit constraints, instructions that could be interpreted multiple ways.",
+    "Round 3 (Non-native English speaker persona): Simplify complex sentences, replace idioms with direct language, ensure technical terms are defined on first use. Fix Chinese trigger phrases that lack explanation for non-Chinese speakers. Ensure bilingual elements are inclusive not excluding.",
+    "Round 4 (AI agent literal execution persona): Read as a machine that can only do what is explicitly stated. Fix: implicit steps that assume reasoning, 'use your judgment' gaps, missing fallback instructions, unclear when to stop vs continue, ambiguous conditionals.",
+    "Round 5 (Comparing to Cursor rules/Copilot instructions persona): Assess competitive positioning. Fix: anything that feels less precise than .cursorrules format, missing trigger specificity, unclear integration points, areas where competing frameworks handle better."
+  ],
+  "acceptance_criteria": [
+    "Both skill files have clear opening sections explaining what the skill does and who it's for",
+    "All Chinese text has English context/explanation alongside it",
+    "Zero instances of vague instructions like 'consider' or 'think about' without explicit actions",
+    "All trigger patterns are explicit and unambiguous",
+    "An AI agent reading either file can determine exactly what to do in the first 10 lines"
+  ],
+  "verification": [
+    "PYENV_VERSION=3.12.13 python -m pytest tests/ -q passes with no new failures",
+    "Both files maintain valid YAML frontmatter",
+    "Both files are well-structured markdown that renders correctly"
+  ],
+  "blocked_reason": null,
+  "findings": "Pre-existing test failure in test_knowledge.py::TestSkillPathResolution::test_skill_paths_resolve (expects 28 skills in index but 29 exist). Not caused by this change. 1025 tests pass, 1 pre-existing failure. Both files have valid YAML frontmatter confirmed via Python yaml.safe_load."
+}

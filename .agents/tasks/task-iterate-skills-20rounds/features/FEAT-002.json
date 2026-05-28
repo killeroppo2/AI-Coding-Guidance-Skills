@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-002",
+  "type": "refactor",
+  "description": "Rounds 6-10: Deeper structural improvements. Fix logical inconsistencies, add missing edge cases, strengthen examples, improve persona coverage. Personas: Power user wanting to customize, Steve Jobs (remove unnecessary), A skeptic (prove it works), Open source contributor, Production team lead.",
+  "status": "completed",
+  "steps": [
+    "Round 6 (Power user wanting to customize persona): Identify extension points that are unclear. Fix: add explicit guidance on how to customize persona pools, how to modify round counts, how to add custom dimensions, how to integrate with other skills. Make the skills composable and extensible.",
+    "Round 7 (Steve Jobs persona): Ruthlessly remove everything that doesn't earn its place. Fix: redundant sentences, sections that repeat information, decorative content that adds no actionable value, bloated tables that could be concise lists, philosophy quotes that don't connect to concrete actions.",
+    "Round 8 (Skeptic persona): For every claim ('this works better'), add proof mechanisms. Fix: add concrete before/after examples showing what iteration actually improves, add measurable success criteria, add failure mode documentation, show why this approach beats ad-hoc prompting.",
+    "Round 9 (Open source contributor persona): Make the skill easy to understand, modify, and improve. Fix: add clear section boundaries, ensure consistent formatting conventions, document design decisions, make the internal logic transparent and traceable.",
+    "Round 10 (Production team lead persona): Evaluate for team adoption. Fix: add guidance on when NOT to use this skill, add time estimates, add complexity warnings, ensure output format is standardized enough for team processes, add integration with CI/review workflows."
+  ],
+  "acceptance_criteria": [
+    "Both skills have clear extension/customization guidance",
+    "No redundant or decorative-only content remains - every section is actionable",
+    "At least 2 concrete before/after examples in the relentless-iteration skill",
+    "Clear 'When NOT to use this' guidance in both skills",
+    "Output formats are precisely specified with no ambiguous fields"
+  ],
+  "verification": [
+    "PYENV_VERSION=3.12.13 python -m pytest tests/ -q passes with no new failures",
+    "Both files maintain valid YAML frontmatter",
+    "File sizes are reasonable (not bloated) - relentless-iteration under 400 lines, ux-audit under 250 lines"
+  ],
+  "blocked_reason": null,
+  "findings": "Successfully applied all 5 rounds (6-10). Round 6: Added Customization section with extension points, composability guidance, and format for adding custom personas/checklists. Round 7: Reduced relentless-iteration from 379 to 332 lines, ux-audit from 298 to 204 lines - cut redundant tables, merged sections, tightened language. Round 8: Added 'Why This Approach' section and concrete before/after code example in relentless-iteration. Round 9: Standardized formatting (consistent table styles, predictable section order: definition->rules->content). Round 10: Added 'When NOT to Use' section with clear anti-use-cases, time expectations, and CI/Workflow Integration section for team adoption. Pre-existing test failure unchanged: test_skill_paths_resolve expects 28 skills but 29 exist. 1025 tests pass."
+}

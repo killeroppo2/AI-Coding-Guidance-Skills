@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Skill Content Token Limit Protection - Add max_skill_content_chars parameter to ContextAssembler, truncate oversized skills, add skill summary mode for large skills, add _estimate_total_context_size() warning method, and reporter logging for truncation events.",
+  "status": "completed",
+  "steps": [
+    "In kernel/context_assembler.py, add a max_skill_content_chars parameter to __init__ (default 8000 chars per skill)",
+    "Modify the _load_skills() method: after calling composer.compose(), check each skill's content length. If a single skill exceeds max_skill_content_chars, truncate to first N chars with '[TRUNCATED - full content in {skill_path}]' appended. For the 'summary mode': if content is oversized, extract only the content before the first ## heading after the intro paragraph.",
+    "Add _estimate_total_context_size(sections: list[str]) -> int method that returns total char count and logs a warning via stderr if total exceeds 100000 chars",
+    "Wire the estimation into the assemble() method - call it before returning and emit warning if over limit",
+    "Add tests in a new file tests/test_context_assembler_truncation.py: test that skills over the limit are truncated, test the summary extraction mode, test the warning is emitted for oversized contexts, test that skills under the limit are NOT truncated"
+  ],
+  "acceptance_criteria": [
+    "Skills exceeding max_skill_content_chars are truncated with a clear marker",
+    "Summary mode extracts only intro+first section for oversized skills",
+    "_estimate_total_context_size logs warning to stderr when context > 100K chars",
+    "Skills under the limit pass through unmodified",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": ["python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"],
+  "blocked_reason": null,
+  "findings": "All 820 tests pass with 98.94% coverage. Added 14 new tests for truncation logic. SkillComposer is imported locally in _load_skills() so patch target must be knowledge.skill_composer.SkillComposer not kernel.context_assembler.SkillComposer."
+}

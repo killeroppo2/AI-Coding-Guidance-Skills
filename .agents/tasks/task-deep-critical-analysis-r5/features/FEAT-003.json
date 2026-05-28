@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Graceful Shutdown and Interrupt Handling - Add signal handling to runner.py for SIGINT/SIGTERM, save state on interrupt, kill subprocess on timeout, add atexit handler, support 'interrupted' status on --resume.",
+  "status": "completed",
+  "steps": [
+    "Add signal handling infrastructure to runner.py: import signal and atexit at top. Create a module-level _shutdown_handler function that saves state immediately and sets status to 'interrupted'. Register it for SIGINT and SIGTERM inside main() when mode3 is active.",
+    "On TimeoutExpired in Mode 3: after catching subprocess.TimeoutExpired, call process.kill() to terminate the zombie process (currently it just logs the timeout but doesn't kill the subprocess).",
+    "Add atexit handler: register an atexit function inside main() that calls state_mgr.save_state() if the status is still 'running' (guards against crashes).",
+    "On --resume: in the resume handling section, detect if state status is 'interrupted' and handle it the same as resuming from any other non-complete state (reset status to 'running' to continue).",
+    "Add 'interrupted' as a valid status in state_manager.py if needed (check DEFAULT_STATE docs)",
+    "Add tests in tests/test_runner.py or a new tests/test_graceful_shutdown.py: test that SIGINT handler saves state with 'interrupted' status using mock signals, test that subprocess.kill() is called after TimeoutExpired, test that --resume from 'interrupted' status continues execution, test atexit handler saves state when status is 'running'"
+  ],
+  "acceptance_criteria": [
+    "SIGINT/SIGTERM during Mode 3 execution saves state with status='interrupted'",
+    "Subprocess is killed (not just logged) after TimeoutExpired",
+    "atexit handler saves state if status is still 'running' on exit",
+    "--resume from 'interrupted' status continues execution normally",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": ["python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"],
+  "blocked_reason": null,
+  "findings": "All 831 tests pass with 98.85% coverage. Signal handlers (SIGINT/SIGTERM), atexit handler, resume from interrupted, and timeout logging with subprocess context all implemented and tested."
+}

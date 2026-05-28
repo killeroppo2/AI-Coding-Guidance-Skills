@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-006",
+  "type": "fix",
+  "description": "ROUND 6 - Error Recovery is Broken: Node visits are tracked AFTER execution so failed attempts do not count toward stuck detection. Errors list grows forever without pruning. When a node fails in Mode 3, the runner continues without incrementing retry counters. Fix by tracking visits before execution, adding error pruning, and improving retry strategies.",
+  "status": "completed",
+  "steps": [
+    "In runner.py Mode 3 section: move track_node_visit() and check_stuck() to BEFORE the subprocess execution (not after transition parsing). This way failed attempts count toward stuck detection. The current node (not the next node) should be tracked.",
+    "In runner.py Mode 1 (dry-run/scaffolding) section: similarly track the current node BEFORE advancing to the next one.",
+    "Add errors_max_kept config to state (default 10). Add trim_errors() method to StateManager that keeps only the last N errors and archives older ones to memory/error_history.jsonl",
+    "Call trim_errors() in StateManager after appending any error in runner.py (or after each iteration)",
+    "Add clear_errors() method to StateManager that moves all current errors to error_history.jsonl and resets the errors list",
+    "Add --retry-strategy flag to runner.py parse_args with choices: continue (default, current behavior), skip (on failure, force transition to next node's first transition), backoff (add exponential sleep between retries: 1s, 2s, 4s, 8s up to 60s based on retry count for current node)",
+    "Implement the backoff and skip strategies in the Mode 3 failure handling code path",
+    "Write tests in tests/test_error_recovery.py: stuck detection triggers on failed attempts (not just successful transitions), errors are trimmed to max_kept, error_history.jsonl is populated, retry strategies work correctly (skip advances, backoff waits appropriately)"
+  ],
+  "acceptance_criteria": [
+    "track_node_visit is called BEFORE execution so failures count toward stuck detection",
+    "StateManager has trim_errors(max_kept=10) and clear_errors() methods",
+    "errors list is capped at max_kept entries, overflow goes to error_history.jsonl",
+    "runner.py has --retry-strategy flag with continue/skip/backoff options",
+    "backoff strategy adds exponential delay between retries",
+    "skip strategy forces advancement past failed nodes",
+    "tests/test_error_recovery.py passes",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 436 tests pass at 98.58% coverage. Moved track_node_visit before execution in both Mode 1 and Mode 3 so failures count toward stuck detection. Added trim_errors(max_kept=10) and clear_errors() to StateManager with archival to error_history.jsonl. Added --retry-strategy flag with continue/skip/backoff options. Backoff uses min(2^(visit_count-1), 60). trim_errors is called after every error path and after successful transitions. The Mode 1 stuck detection logic was refactored to track before advancing (same pattern as Mode 3). 14 new tests in tests/test_error_recovery.py cover all acceptance criteria."
+}

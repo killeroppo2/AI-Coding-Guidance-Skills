@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-006",
+  "type": "feat",
+  "description": "User-Friendly Error Messages - Create kernel/error_messages.py with a mapping of error types to human-readable messages with recovery suggestions. Integrate into runner.py to replace raw error strings with formatted messages.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/error_messages.py with: ERROR_MESSAGES dict mapping error_type strings to dicts with keys 'what', 'why', 'fix'. Cover: 'stuck_node' -> what: 'The system got stuck on node [{node}]', why: 'It visited this node {visits} times without making progress', fix: 'Try: simplify your goal, add relevant skills, or increase max_retries with --max-iterations'. 'command_not_found' -> what: 'AI command [{cmd}] not found', why: 'The command is not installed or not in PATH', fix: 'Install it: pip install {cmd} or check your PATH configuration'. 'timeout' -> what: 'Iteration timed out after {seconds}s', why: 'The AI took too long to respond', fix: 'Try: increase --timeout, simplify current task, or check if AI service is responding'. 'skill_not_found' -> what: 'Skill [{name}] not found in knowledge store', why: 'The skill is referenced but not installed', fix: 'Run: python3.12 setup_check.py to validate skill installation'. 'contract_violation' -> what: 'AI output did not match expected format', why: 'Missing TRANSITION or STATUS line in response', fix: 'This usually means the AI prompt needs adjustment. Try --retry-strategy continue'.",
+    "Add function format_error(error_type: str, **kwargs) -> str that looks up the error type, formats the template with kwargs, and returns a multi-line string: 'What happened: {what}\\nWhy it matters: {why}\\nWhat to do: {fix}'",
+    "Add function classify_error(raw_error: str) -> tuple[str, dict] that takes a raw error string and classifies it into one of the known types + extracts kwargs (e.g. parses 'Command not found: claude' into ('command_not_found', {'cmd': 'claude'}))",
+    "Integrate into runner.py: in the stuck detection block, use format_error('stuck_node', node=stuck_node, visits=visits) for the stderr output. In FileNotFoundError handler, use format_error('command_not_found', cmd=...). In TimeoutExpired handler, use format_error('timeout', seconds=args.timeout). Keep existing error list entries unchanged (they're machine-readable), add the formatted messages only for stderr user-facing output.",
+    "Add tests in tests/test_error_messages.py: test format_error produces correct multi-line output for each error type, test classify_error correctly categorizes raw error strings, test unknown error types return a generic fallback message, test kwargs substitution works correctly"
+  ],
+  "acceptance_criteria": [
+    "kernel/error_messages.py exists with ERROR_MESSAGES mapping and format_error/classify_error functions",
+    "At least 5 error types are defined with what/why/fix fields",
+    "runner.py uses format_error for user-facing stderr messages in stuck/timeout/command-not-found cases",
+    "Unknown errors produce a generic fallback rather than crashing",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": ["python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"],
+  "blocked_reason": null,
+  "findings": "All 894 tests pass with 98.89% coverage. kernel/error_messages.py at 100% coverage. Integration into runner.py adds format_error calls to stderr in stuck, timeout, and command-not-found blocks without changing existing machine-readable error list entries."
+}

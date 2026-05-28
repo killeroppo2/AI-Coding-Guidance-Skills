@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "ROUND 2 - The Workspace Problem: Add workspace isolation so generated code goes to a dedicated directory separate from the kernel. Currently there is no workspace concept - the coder is told to 'write code' but there is no target directory specification. Generated code could overwrite kernel files.",
+  "status": "completed",
+  "steps": [
+    "Add workspace_path field to state.yaml DEFAULT_STATE in memory/state_manager.py (default: empty string, set during init)",
+    "Add set_workspace(project_name: str) method to StateManager that sets workspace_path to './workspace/{project_name}/' and creates the directory",
+    "Add get_workspace() method to StateManager that returns the workspace Path (resolving from kernel root)",
+    "Update kernel/prompts/orchestrator.md to include workspace initialization: after loading goal, set workspace_path based on a sanitized version of the goal",
+    "Update kernel/prompts/coder.md to explicitly state: 'All generated code MUST be written to the workspace directory: {workspace_path}. You may NEVER write to kernel/, memory/, knowledge/, or any kernel system directory.'",
+    "Update kernel/constitution.md to add Article IX: Workspace Protection - 'Generated code is isolated in workspace/. The AI agent must never write generated project files outside the workspace directory. Kernel system files (kernel/, memory/, knowledge/) are protected from generated code writes.'",
+    "Update kernel/BOOT.md Step 6 to include: 'Generated code goes in the workspace directory specified in state.yaml workspace_path. You may NEVER write kernel system files except where explicitly allowed by your role prompt.'",
+    "Update context_assembler.py _format_state() to include workspace_path in the state summary",
+    "Add workspace initialization logic to runner.py: after set_goal, derive project name from goal and call set_workspace(). Add --workspace CLI flag for manual override.",
+    "Write tests in tests/test_workspace.py: workspace path is set correctly, directory is created, get_workspace returns valid path, constitution article exists, prompts reference workspace"
+  ],
+  "acceptance_criteria": [
+    "StateManager has workspace_path in DEFAULT_STATE, set_workspace(), and get_workspace() methods",
+    "runner.py initializes workspace and supports --workspace override flag",
+    "constitution.md has Article IX about workspace protection",
+    "BOOT.md mentions workspace boundaries",
+    "coder.md explicitly forbids writing outside workspace",
+    "context_assembler includes workspace_path in state display",
+    "tests/test_workspace.py passes with full coverage",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": [
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 343 tests pass at 99.07% coverage. Added workspace_path to DEFAULT_STATE, set_workspace() and get_workspace() to StateManager, _sanitize_project_name helper and --workspace CLI flag to runner.py, Article IX to constitution.md, workspace reference to BOOT.md Step 6, workspace constraint to coder.md, workspace init instruction to orchestrator.md, and workspace_path to context_assembler _format_state(). No existing tests were broken by the workspace_path addition since DEFAULT_STATE merge logic handles missing keys gracefully."
+}

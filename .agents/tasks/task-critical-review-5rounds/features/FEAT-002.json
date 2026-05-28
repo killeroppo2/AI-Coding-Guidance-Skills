@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "ROUND 2: Implement real dependency-aware skill composition. Currently resolve_order() returns input as-is. Add conflict detection, dependency ordering using composable_with metadata, phase-based auto-selection, and token budget enforcement.",
+  "status": "completed",
+  "steps": [
+    "In knowledge/skill_composer.py, update resolve_order() to use the composable_with field from _index.yaml: skills that are composable_with each other should be ordered so that more 'foundational' skills (those depended on by many others) come first. Use a simple topological sort based on composable_with as 'compatible dependency' hints.",
+    "Add detect_conflicts(skill_names) method to SkillComposer that checks: if any skill in the list is NOT in another's composable_with list (and vice versa), flag a potential incompatibility. Return list of conflict warnings (not hard errors, since composable_with is about known-good combos, not exclusive combos).",
+    "Add compose_for_phase(phase_name) method that reads the workflow section of knowledge/skills/_index.yaml, gets the skills listed for that phase, and composes them. E.g., compose_for_phase('execution_phase') would compose ralph, tdd, prototype.",
+    "Add token budget enforcement: add a max_tokens parameter to compose() (default None = no limit). If provided, estimate tokens as len(content)//4 and stop adding skills once budget would be exceeded, returning what fits. Add a warning in the composed output listing what was truncated.",
+    "Update validate_composition() to also call detect_conflicts() and include conflict warnings in issues if incompatible skills are detected.",
+    "Write tests in tests/test_knowledge.py (new class TestSkillComposerAdvanced) covering: resolve_order with real composable_with data, detect_conflicts with compatible and incompatible skills, compose_for_phase with various phase names (including unknown phase), token budget truncation behavior, conflict detection integration with validate_composition."
+  ],
+  "acceptance_criteria": [
+    "resolve_order() produces a meaningful ordering based on composable_with data",
+    "detect_conflicts() identifies skills not known to be composable together",
+    "compose_for_phase() auto-selects skills based on _index.yaml workflow phases",
+    "Token budget truncation works and includes warning in output",
+    "All existing SkillComposer tests still pass",
+    "New tests cover all new methods",
+    "Coverage remains >= 90%"
+  ],
+  "verification": [
+    "eval \"$(pyenv init -)\" && pyenv shell 3.12.13 && python -m pytest tests/ --cov=. --cov-report=term-missing --tb=short -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 231 tests pass (11 new tests added in TestSkillComposerAdvanced). Coverage 99%. resolve_order uses foundation_score (how many other input skills reference a skill in their composable_with) with Kahn's algorithm for cycle detection. detect_conflicts checks bidirectional composable_with. compose_for_phase reads workflow from _index.yaml. Token budget uses len(content)//4 estimation. validate_composition returns warnings prefixed with 'Warning:' that don't block compose()."
+}

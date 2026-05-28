@@ -1,0 +1,23 @@
+context:
+  current_task: "T-006"
+  phase: completed
+  skills_loaded: []
+current_node: reflect
+errors: []
+execution_mode: kernel
+goal: 写一个用户登录 API
+iteration_count: 16
+last_updated: '2026-05-28T12:10:00+08:00'
+max_iterations: 30
+node_visits:
+  code: 4
+  init: 5
+  plan: 11
+  review: 1
+  reflect: 1
+  test: 1
+progress_history: []
+status: completed
+user_owned_files:
+- kernel/prompts/orchestrator.md
+workspace_path: ./workspace/-api/

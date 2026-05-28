@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Add concurrency safety: file locking, atomic writes for state.yaml, lock_id for runner exclusivity, advisory locks for JSONL appends.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/file_lock.py with: (a) class FileLock that uses a .lock file with PID and timestamp, (b) acquire(timeout=10) method that creates lock file atomically (open with O_CREAT|O_EXCL), (c) release() method that removes lock file, (d) is_stale(max_age_seconds=600) classmethod that checks if lock is older than max_age, (e) context manager support (__enter__/__exit__), (f) force_release() classmethod for --force override of stale locks",
+    "Create kernel/atomic_write.py with: atomic_write(path, content) function that writes to path.tmp then os.rename() for POSIX atomicity",
+    "Modify memory/state_manager.py save_state() to use atomic_write instead of direct file write",
+    "Add lock_id field to state: when runner starts, generate a UUID lock_id and write it. On startup, check if lock_id exists and last_updated is < 10 minutes ago. If so, refuse to start (raise RuntimeError with clear message). Add --force support that clears stale locks.",
+    "Add advisory locking wrapper for JSONL append operations in state_manager (record_decision, record_reflection) using FileLock",
+    "Create tests/test_file_lock.py with tests: basic acquire/release, stale lock detection, force release, context manager, concurrent simulation (threading), atomic write correctness",
+    "Run tests to confirm everything passes"
+  ],
+  "acceptance_criteria": [
+    "kernel/file_lock.py exists with FileLock class supporting acquire/release/context manager",
+    "kernel/atomic_write.py exists with atomic_write function",
+    "state_manager.save_state() uses atomic writes",
+    "Lock staleness detection works (locks older than 10 min are considered stale)",
+    "JSONL append operations use advisory locking",
+    "All new tests pass with coverage >= 90%"
+  ],
+  "verification": [
+    "export PYENV_VERSION=3.12.13 && python -m pytest tests/test_file_lock.py -v",
+    "export PYENV_VERSION=3.12.13 && python -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 28 new tests pass. Full suite 741 tests pass with 98.87% coverage. Added FileLock class with O_CREAT|O_EXCL atomic acquisition, stale detection, force release. Added atomic_write with temp-then-rename. StateManager.save_state uses atomic_write. record_decision and record_reflection use advisory FileLock. Added runner lock management (acquire/check/release). FileLock constructor accepts timeout parameter used by context manager."
+}

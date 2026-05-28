@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "ROUND 1: Add Mode 3 (real AI execution) to runner.py. Currently the runner only does dry-run traversal. Add a real execution mode that accepts --ai-command, assembles context, invokes AI via subprocess, and handles timeouts and resume.",
+  "status": "completed",
+  "steps": [
+    "In runner.py, add new CLI arguments: --ai-command (string, optional AI CLI command like 'claude --print'), --timeout (int, default 300 seconds per iteration), --resume (flag to continue from saved state instead of starting fresh)",
+    "Add a Mode 3 execution path in main(): when --ai-command is provided and --dry-run is NOT set, use the real AI execution mode. When neither --ai-command nor --dry-run is provided, fall back to dry-run with a warning message.",
+    "Create kernel/context_assembler.py with a ContextAssembler class that: (a) reads BOOT.md, (b) reads current state from state.yaml, (c) reads the current node's prompt file, (d) reads kernel/philosophy/dao.md and strategy.md, (e) reads relevant skills if any loaded in state.context.skills_loaded, (f) combines them into a single formatted string prompt. Method: assemble(state, node, graph_executor, knowledge_store) -> str",
+    "In runner.py Mode 3 loop: for each iteration, call ContextAssembler.assemble() to get the full prompt, then invoke the AI subprocess with that prompt as stdin (using subprocess.run with timeout). Capture stdout. Parse the AI output to determine the transition condition (look for a line like 'TRANSITION: <condition>' in the output). If found, advance the state. If not found, use the first available transition (fallback).",
+    "Add --generate-prompt flag to runner.py that outputs the assembled prompt for the current state to stdout and exits (useful for piping to any AI manually).",
+    "Add error handling: subprocess.TimeoutExpired sets status to 'timeout' and retries the same node. subprocess.CalledProcessError records the error. If --ai-command binary not found, exit with helpful error message.",
+    "Write comprehensive tests in tests/test_runner.py (new class TestMode3) covering: --ai-command argument parsing, --timeout parsing, --resume flag, --generate-prompt output, subprocess invocation (mocked), timeout handling, transition parsing from AI output, fallback when no TRANSITION line found. Use monkeypatch and unittest.mock.patch for subprocess calls."
+  ],
+  "acceptance_criteria": [
+    "runner.py accepts --ai-command, --timeout, --resume, --generate-prompt flags",
+    "--generate-prompt outputs the assembled context and exits",
+    "Mode 3 with mocked subprocess correctly advances through nodes",
+    "Timeout handling works correctly and records errors",
+    "All existing tests still pass",
+    "New tests cover Mode 3 logic comprehensively",
+    "Coverage remains >= 90%"
+  ],
+  "verification": [
+    "eval \"$(pyenv init -)\" && pyenv shell 3.12.13 && python -m pytest tests/ --cov=. --cov-report=term-missing --tb=short -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 220 tests pass (37 new tests added). Coverage 99%. Mode 3 uses subprocess.run with text=True, capture_output=True, and timeout. ContextAssembler is in kernel/context_assembler.py. The fallback when neither --ai-command nor --dry-run preserves original Mode 1 scaffolding behavior (saves state)."
+}

@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(workspace/**)",
+      "Write(memory/**)",
+      "Write(memory/*.yaml)",
+      "Write(memory/*.md)",
+      "Write(memory/*.jsonl)",
+      "Write(knowledge/**)",
+      "Bash(python3.12 -m pytest*)",
+      "Bash(python3.12 runner.py*)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(mkdir workspace/*)",
+      "Bash(mkdir memory/*)",
+      "Bash(mkdir knowledge/*)",
+      "Bash(mkdir tests/*)",
+      "Bash(cat kernel/*)",
+      "Bash(cat tests/*)",
+      "Bash(cat skills/*)",
+      "Bash(cat memory/*)",
+      "Bash(cat knowledge/*)",
+      "Bash(cat docs/*)",
+      "Bash(cat *.md)",
+      "Bash(cat *.py)",
+      "Bash(cat *.yaml)",
+      "Bash(cat *.json)",
+      "Bash(cat *.toml)"
+    ],
+    "deny": [
+      "Write(kernel/constitution.md)",
+      "Write(kernel/BOOT.md)",
+      "Write(runner.py)",
+      "Bash(rm -rf*)",
+      "Bash(rm -r *)",
+      "Bash(rm -r /*)",
+      "Bash(git push*)",
+      "Bash(curl*)",
+      "Bash(wget*)"
+    ]
+  }
+}

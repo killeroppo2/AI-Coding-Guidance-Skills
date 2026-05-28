@@ -1,0 +1,49 @@
+scenarios:
+  - name: "React app with failing tests"
+    description: "Code node fails 10 times with test failures"
+    iterations:
+      - repeat: 10
+        node: "code"
+        result: "failed"
+        errors:
+          - "tests fail: Expected component to render, got null"
+          - "TypeError: Cannot read properties of undefined"
+    expected_outcome:
+      proposal_type: "modify_prompt"
+      target_node: "code"
+      min_confidence: 0.3
+
+  - name: "Backend API all reviews pass"
+    description: "Review node succeeds consistently"
+    iterations:
+      - repeat: 8
+        node: "review"
+        result: "success"
+        errors: []
+    expected_outcome:
+      proposal_type: "add_rule"
+      target_node: "review"
+      min_confidence: 0.5
+
+  - name: "Full stack code-test loop"
+    description: "Code and test nodes alternate failures"
+    iterations:
+      - repeat: 5
+        node: "code"
+        result: "failed"
+        errors:
+          - "SyntaxError: unexpected token"
+      - repeat: 5
+        node: "test"
+        result: "failed"
+        errors:
+          - "pytest: FAILED test_api.py::test_create - AssertionError"
+      - repeat: 3
+        node: "code"
+        result: "failed"
+        errors:
+          - "ImportError: cannot import name 'Router' from 'fastapi'"
+    expected_outcome:
+      proposal_type: "modify_prompt"
+      target_node: "code"
+      min_confidence: 0.5

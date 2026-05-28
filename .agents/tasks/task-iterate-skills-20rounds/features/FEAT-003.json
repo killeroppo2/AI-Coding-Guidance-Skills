@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-003",
+  "type": "refactor",
+  "description": "Rounds 11-15: AI-agent usability and completeness. Can an AI agent follow these instructions with zero interpretation? Are there missing scenarios? Personas rotate through: AI agent literal execution (again, deeper), First-time creator (again, with fresh eyes), Experienced engineer (precision pass), Non-native speaker (clarity pass), Malicious/adversarial user.",
+  "status": "completed",
+  "steps": [
+    "Round 11 (AI agent - zero interpretation pass): Go through every instruction in both files and ask: 'If an LLM reads this, will it produce EXACTLY the intended behavior?' Fix: any instruction that requires world knowledge not stated in the document, any 'obvious' step that isn't spelled out, any conditional without a clear else-branch.",
+    "Round 12 (First-time creator - fresh eyes): Re-read both files as if encountering them for the first time after the previous improvements. Fix: any remaining confusion points, verify the learning curve is gentle, ensure examples are progressive (simple to complex), verify the 'first 30 seconds' experience.",
+    "Round 13 (Experienced engineer - precision pass): Verify every technical claim is accurate. Fix: any metrics that are unrealistic (e.g., '98% coverage' as ideal may be wrong for some projects), any process steps that conflict with each other, any output format fields that are undefined or overlap.",
+    "Round 14 (Non-native speaker - final clarity): Read for pure linguistic clarity. Fix: any remaining complex sentence structures, ensure all lists use parallel grammatical structure, verify markdown formatting aids comprehension, ensure headings form a readable outline on their own.",
+    "Round 15 (Adversarial/edge-case user): Think about how these skills could be misused or produce bad outcomes. Fix: add guardrails for infinite loops, add guidance for when iteration finds nothing (false positives vs genuine completion), add handling for conflicting persona recommendations, add scope-creep prevention."
+  ],
+  "acceptance_criteria": [
+    "Every conditional instruction has an explicit else/default path",
+    "All metrics and targets include context about when they apply vs don't apply",
+    "No instruction requires unstated world knowledge to execute",
+    "Clear guardrails exist for: infinite loops, scope creep, false completion, conflicting recommendations",
+    "The document outline (headings only) tells a coherent story on its own"
+  ],
+  "verification": [
+    "PYENV_VERSION=3.12.13 python -m pytest tests/ -q passes with no new failures",
+    "Both files maintain valid YAML frontmatter",
+    "Reading just the H2/H3 headings of each file creates a logical flow"
+  ],
+  "blocked_reason": null,
+  "findings": "All 5 rounds (11-15) applied successfully. Key changes: (1) Every instruction now has explicit output format and else-branches, (2) All abbreviations defined on first use (CTA, ARIA, WCAG), (3) Persona table now specifies exact primary task to attempt, (4) Scope definitions table added with file patterns, (5) Guardrails added for: zero-finding rounds, conflicting personas, scope creep, repeated file edits, fix-chain loops, no-test-runner projects. Pre-existing test failure: test_skill_paths_resolve expects 28 skills but index has 29 - unrelated to changes."
+}

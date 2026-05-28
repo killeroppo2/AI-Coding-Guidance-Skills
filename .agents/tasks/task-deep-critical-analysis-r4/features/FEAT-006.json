@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-006",
+  "type": "docs",
+  "description": "Replace the single-line README.md with a comprehensive project README under 300 lines covering architecture, quickstart, skills, philosophy, and contributing.",
+  "status": "completed",
+  "steps": [
+    "Rewrite README.md with the following sections: (1) Title + one-line description, (2) Badge placeholder for tests/coverage, (3) What Is This paragraph explaining the self-evolving AI kernel concept, (4) Architecture text diagram showing the graph flow (init->plan->code->test->review->reflect->evolve), (5) Quick Start (3 commands: clone, dry-run, mode 3), (6) Three Execution Modes explanation (Mode 1 dry-run, Mode 2 AI reads BOOT.md, Mode 3 runner pipes to AI), (7) Skill Inventory table with all skills from _index.yaml showing name/phase/description, (8) Philosophy section mentioning Dao and Art of War principles briefly, (9) How Evolution Works (feedback loop -> reflector -> evolution engine), (10) Contributing section explaining how to add skills via write-a-skill, (11) License placeholder. Keep total under 300 lines.",
+    "Ensure the README references actual commands from runner.py (--goal, --dry-run, --ai-command, --check)",
+    "Do NOT modify any Python code in this step"
+  ],
+  "acceptance_criteria": [
+    "README.md is between 100 and 300 lines",
+    "Contains architecture diagram (text-based)",
+    "Contains quick start with 3 commands",
+    "Contains skill inventory table",
+    "Contains philosophy section",
+    "Contains contributing section",
+    "All referenced commands actually exist in runner.py"
+  ],
+  "verification": [
+    "wc -l README.md shows between 100-300 lines",
+    "export PYENV_VERSION=3.12.13 && python -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "README is 148 lines. All 26 skills from _index.yaml included. All CLI flags verified against runner.py. Tests pass at 98.94% coverage."
+}

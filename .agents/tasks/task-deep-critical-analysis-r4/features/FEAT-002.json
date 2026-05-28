@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Enhance ContextAssembler to include tasks, progress, recent decisions, workspace file list, and plan.md content. Add token budgeting to truncate least-important sections when total exceeds budget.",
+  "status": "completed",
+  "steps": [
+    "Modify kernel/context_assembler.py: Add _load_progress() method that reads memory/progress.yaml and formats iteration/tasks_done/tasks_total",
+    "Add _load_recent_decisions(count=5) method that reads last N lines from memory/decisions.jsonl",
+    "Add _load_workspace_manifest(max_entries=100) method that lists files in the workspace directory from state['workspace_path']",
+    "Add _load_plan() method that reads memory/plan.md content",
+    "Add these sections to assemble() in priority order: tasks (already exists as section 4) > progress > plan > workspace > decisions. Insert them between the current task section and the node prompt section",
+    "Add a token_budget parameter to assemble() (default 32000). Estimate tokens as len(text)//4. If total exceeds budget, truncate from least important (decisions first, then workspace, then plan, then progress) until within budget",
+    "Create tests/test_context_assembler_enhanced.py with tests for each new section, token budgeting truncation, missing files graceful handling",
+    "Run tests to confirm everything passes"
+  ],
+  "acceptance_criteria": [
+    "assemble() output includes progress section when progress.yaml exists",
+    "assemble() output includes recent decisions when decisions.jsonl has entries",
+    "assemble() output includes workspace manifest when workspace_path is set and directory exists",
+    "assemble() output includes plan.md content when file exists",
+    "Token budgeting truncates least important sections first",
+    "All new tests pass with coverage >= 90%"
+  ],
+  "verification": [
+    "export PYENV_VERSION=3.12.13 && python -m pytest tests/test_context_assembler_enhanced.py -v",
+    "export PYENV_VERSION=3.12.13 && python -m pytest tests/ --cov --cov-fail-under=90 -q"
+  ],
+  "blocked_reason": null,
+  "findings": "All 23 new tests pass. Full suite 713 tests pass with 98.92% coverage. Added _load_progress, _load_recent_decisions, _load_workspace_manifest, _load_plan methods. Token budgeting removes sections in order: decisions, workspace, plan, progress. New sections inserted between current task and node prompt via _build_text helper."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Mode 2 Protocol Documentation and State Transitions - Create kernel/contracts/mode2_protocol.md with explicit instructions for Mode 2 AI agents (file operations, YAML format examples) and kernel/contracts/state_transitions.md documenting valid state transitions. Add a Mode 2 Helper reference section to BOOT.md. Add tests that validate mode2_protocol.md references are consistent with actual code.",
+  "status": "completed",
+  "steps": [
+    "Create kernel/contracts/mode2_protocol.md: document exactly which files to read (kernel/state.yaml, memory/tasks.yaml, kernel/graph.yaml), what format to write (YAML for state, JSONL for decisions/reflections), provide concrete examples for: picking next task (read tasks.yaml, find first pending with all deps done), marking a task done (set status: done in tasks.yaml), advancing the node (update current_node in state.yaml), recording a decision (append JSON line to memory/decisions.jsonl)",
+    "Create kernel/contracts/state_transitions.md: document all valid state transitions from graph.yaml (init->plan via goal_loaded, plan->code via plan_ready, etc.), document pre-conditions and post-conditions for each transition, document the state.yaml fields that must be updated (current_node, iteration_count, last_updated, node_visits)",
+    "Update kernel/BOOT.md: add a 'Mode 2 Helper' subsection after the 'State ownership depends on your execution mode' block that references kernel/contracts/mode2_protocol.md and kernel/contracts/state_transitions.md for Mode 2 AI agents",
+    "Add test in tests/test_contracts.py (or a new test file tests/test_mode2_protocol.py): validate that all node IDs in state_transitions.md exist in graph.yaml, validate that file paths referenced in mode2_protocol.md match actual project structure, validate that YAML examples in mode2_protocol.md parse correctly"
+  ],
+  "acceptance_criteria": [
+    "kernel/contracts/mode2_protocol.md exists with concrete YAML examples for all common operations",
+    "kernel/contracts/state_transitions.md exists documenting all valid transitions from graph.yaml",
+    "kernel/BOOT.md references these new contract files in a Mode 2 Helper section",
+    "Tests validate consistency between documentation and actual codebase",
+    "python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q passes"
+  ],
+  "verification": ["python3.12 -m pytest tests/ --cov --cov-fail-under=90 -q"],
+  "blocked_reason": null,
+  "findings": "All 806 tests pass with 98.93% coverage. 11 new tests added for Mode 2 protocol consistency validation."
+}

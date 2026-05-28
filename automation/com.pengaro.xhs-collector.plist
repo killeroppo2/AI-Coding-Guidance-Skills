@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 任务标识符 -->
+    <key>Label</key>
+    <string>com.pengaro.xhs-collector</string>
+
+    <!-- 执行的脚本 -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/pengaro/Documents/work/codeDevelop/ideaSpace/AI-Coding-Guidance-Skills/xhs_collector/scripts/run_collector.sh</string>
+    </array>
+
+    <!-- 每天凌晨 0:00 执行 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>0</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- 工作目录 -->
+    <key>WorkingDirectory</key>
+    <string>/Users/pengaro/Documents/work/codeDevelop/ideaSpace/AI-Coding-Guidance-Skills/xhs_collector/scripts</string>
+
+    <!-- launchd 自身的日志输出（备用） -->
+    <key>StandardOutPath</key>
+    <string>/Users/pengaro/Documents/work/codeDevelop/ideaSpace/AI-Coding-Guidance-Skills/xhs_collector/logs/launchd-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/pengaro/Documents/work/codeDevelop/ideaSpace/AI-Coding-Guidance-Skills/xhs_collector/logs/launchd-stderr.log</string>
+
+    <!-- 如果错过了执行时间（比如电脑关机），开机后补执行 -->
+    <key>StartInterval</key>
+    <integer>86400</integer>
+</dict>
+</plist>

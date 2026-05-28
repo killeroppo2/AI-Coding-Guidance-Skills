@@ -1,0 +1,74 @@
+version: "1.0"
+description: "Self-evolving AI development kernel workflow"
+
+nodes:
+  - id: init
+    prompt_file: prompts/orchestrator.md
+    description: "Initialize context, load goal, assess current state"
+    transitions:
+      - to: plan
+        condition: "goal_loaded"
+    max_retries: 5
+
+  - id: plan
+    prompt_file: prompts/planner.md
+    description: "Break goal into tasks, create execution plan"
+    transitions:
+      - to: code
+        condition: "plan_ready"
+      - to: plan
+        condition: "plan_needs_revision"
+    max_retries: 5
+
+  - id: code
+    prompt_file: prompts/coder.md
+    description: "Implement next task from plan"
+    transitions:
+      - to: test
+        condition: "code_written"
+      - to: code
+        condition: "code_needs_retry"
+    max_retries: 5
+    stuck_handler: reflect
+
+  - id: test
+    prompt_file: prompts/tester.md
+    description: "Run tests, verify coverage"
+    transitions:
+      - to: review
+        condition: "tests_pass"
+      - to: code
+        condition: "tests_fail"
+    max_retries: 5
+    stuck_handler: reflect
+
+  - id: review
+    prompt_file: prompts/reviewer.md
+    description: "Code review for quality and patterns"
+    transitions:
+      - to: reflect
+        condition: "review_pass"
+      - to: code
+        condition: "review_needs_changes"
+    max_retries: 5
+
+  - id: reflect
+    prompt_file: prompts/reflector.md
+    description: "Analyze iteration, extract learnings, propose evolution"
+    transitions:
+      - to: evolve
+        condition: "evolution_proposed"
+      - to: plan
+        condition: "no_evolution_needed"
+    max_retries: 5
+
+  - id: evolve
+    prompt_file: prompts/reflector.md
+    description: "Apply approved evolution changes to kernel"
+    transitions:
+      - to: plan
+        condition: "evolution_applied"
+    max_retries: 5
+
+default_start: init
+max_iterations: 30
