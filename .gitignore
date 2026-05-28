@@ -1,8 +1,51 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .coverage
 .pytest_cache/
 *.egg-info/
+.venv/
+venv/
+env/
+dist/
+build/
 
-.venv
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 本地/个人配置
+.claude/settings.local.json
+
+# Agent 运行时任务产物
+.agents/tasks/
+
+# 运行时日志
+automation/logs/
+
+# 数据库文件
+*.db
+*.sqlite3
+
+# 运行时状态（每次运行会变化）
+kernel/state.yaml
+kernel/evolution/history.jsonl
+memory/decisions.jsonl
+memory/reflections.jsonl
+memory/progress.yaml
+memory/assessment.yaml
+memory/current_goal.md
+memory/plan.md
+memory/tasks.yaml
+
+# 环境变量（真实值）
+.env
