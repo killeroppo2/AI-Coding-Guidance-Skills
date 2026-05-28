@@ -109,7 +109,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
     # Validate that --goal is required unless --check or --status is used
     if not args.goal:
-        print("error: the following arguments are required: --goal", file=sys.stderr)
+        print(
+            "error: the following arguments are required: --goal\n"
+            "usage: runner --goal \"<your development goal>\" [--dry-run] [--max-iterations N]\n"
+            "       runner --init | --check | --status",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    # Validate --max-iterations is positive
+    if args.max_iterations < 1:
+        print(
+            f"error: --max-iterations must be a positive integer, got {args.max_iterations}",
+            file=sys.stderr,
+        )
         sys.exit(2)
 
     state_path = str(KERNEL_ROOT / "kernel" / "state.yaml")

@@ -1310,3 +1310,51 @@ class TestReviewFixes:
         with open(assessment_path) as f:
             saved = yaml.safe_load(f)
         assert saved["goal"] == "test fresh assessment"
+
+
+class TestNoGoalErrorMessage:
+    """Tests for the no-goal error message including usage hint."""
+
+    def test_no_goal_error_includes_usage_hint(self, capsys) -> None:
+        """Test that running without --goal shows a usage hint."""
+        with pytest.raises(SystemExit) as exc_info:
+            runner.main([])
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "usage:" in captured.err
+        assert "--goal" in captured.err
+
+    def test_empty_goal_error_includes_usage_hint(self, capsys) -> None:
+        """Test that --goal '' shows the same usage hint."""
+        with pytest.raises(SystemExit) as exc_info:
+            runner.main(["--goal", ""])
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "usage:" in captured.err
+        assert "--goal" in captured.err
+
+
+class TestMaxIterationsValidation:
+    """Tests for --max-iterations input validation."""
+
+    def test_negative_max_iterations_rejected(self, capsys) -> None:
+        """Test that --max-iterations -1 produces an error."""
+        with pytest.raises(SystemExit) as exc_info:
+            runner.main(["--goal", "test", "--max-iterations", "-1"])
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "positive integer" in captured.err
+
+    def test_zero_max_iterations_rejected(self, capsys) -> None:
+        """Test that --max-iterations 0 produces an error."""
+        with pytest.raises(SystemExit) as exc_info:
+            runner.main(["--goal", "test", "--max-iterations", "0"])
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "positive integer" in captured.err
+
+    def test_valid_max_iterations_accepted(self) -> None:
+        """Test that --max-iterations 1 is accepted."""
+        state = runner.main(["--goal", "test", "--max-iterations", "1", "--dry-run"])
+        assert state["max_iterations"] == 1
+

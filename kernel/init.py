@@ -38,10 +38,18 @@ def init_runtime_files(kernel_root: Path) -> None:
             print(f"  [skip] {path.relative_to(kernel_root)} (already exists)")
             skipped += 1
         else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
-            print(f"  [created] {path.relative_to(kernel_root)}")
-            created += 1
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+                print(f"  [created] {path.relative_to(kernel_root)}")
+                created += 1
+            except PermissionError:
+                print(
+                    f"  [error] {path.relative_to(kernel_root)}"
+                    " (permission denied - check directory permissions)"
+                )
+            except OSError as e:
+                print(f"  [error] {path.relative_to(kernel_root)} ({e})")
 
     print(
         f"\nInitialization complete. Created {created} file(s), "

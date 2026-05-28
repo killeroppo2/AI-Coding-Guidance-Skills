@@ -119,3 +119,22 @@ class TestInitRuntimeFiles:
         captured = capsys.readouterr()
         assert "Created 7 file(s)" in captured.out
         assert "skipped 2 file(s)" in captured.out
+
+    def test_permission_error_handled_gracefully(self, tmp_path: Path, capsys) -> None:
+        """Test that permission errors are reported without crashing."""
+        from unittest.mock import patch
+
+        # Mock Path.write_text to raise PermissionError for state.yaml
+        original_write_text = Path.write_text
+
+        def _mock_write_text(self_path, content, encoding=None):
+            if "state.yaml" in str(self_path):
+                raise PermissionError("Permission denied")
+            return original_write_text(self_path, content, encoding=encoding)
+
+        with patch.object(Path, "write_text", _mock_write_text):
+            init_runtime_files(tmp_path)
+
+        captured = capsys.readouterr()
+        assert "[error]" in captured.out
+        assert "permission denied" in captured.out.lower()
