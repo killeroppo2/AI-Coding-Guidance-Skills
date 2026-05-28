@@ -116,6 +116,40 @@ class TestFactory:
             AnthropicProvider(api_key="test-key")
 
 
+class TestFactoryProviderCreation:
+    """Tests for factory creating openai and anthropic providers."""
+
+    def test_factory_openai_import_error(self) -> None:
+        """Factory for 'openai' raises ImportError when package missing."""
+        with pytest.raises((ImportError, ValueError)):
+            factory_create_provider("openai", api_key="test-key")
+
+    def test_factory_anthropic_import_error(self) -> None:
+        """Factory for 'anthropic' raises ImportError when package missing."""
+        with pytest.raises((ImportError, ValueError)):
+            factory_create_provider("anthropic", api_key="test-key")
+
+    def test_factory_openai_with_mock(self) -> None:
+        """Factory for 'openai' creates OpenAIProvider when package available."""
+        import kernel.providers.openai_provider as oai_mod
+
+        mock_openai = type("MockOpenAI", (), {"AsyncOpenAI": lambda *a, **kw: None})()
+        with patch.object(oai_mod, "openai", mock_openai):
+            provider = factory_create_provider("openai", api_key="test-key")
+            assert provider.model == "gpt-4o"
+
+    def test_factory_anthropic_with_mock(self) -> None:
+        """Factory for 'anthropic' creates AnthropicProvider when package available."""
+        import kernel.providers.anthropic_provider as ant_mod
+
+        mock_anthropic = type(
+            "MockAnthropic", (), {"AsyncAnthropic": lambda *a, **kw: None}
+        )()
+        with patch.object(ant_mod, "anthropic", mock_anthropic):
+            provider = factory_create_provider("anthropic", api_key="test-key")
+            assert provider.model == "claude-sonnet-4-20250514"
+
+
 class TestOpenAIProviderValidation:
     """Tests for OpenAI provider API key validation."""
 
