@@ -249,7 +249,7 @@ class TestRunner:
         assert get_current_version(tmp_path) == "0.2.0"
 
     def test_run_pending_migrations_skips_applied(self, tmp_path: Path) -> None:
-        """run_pending_migrations() skips already-applied migrations."""
+        """run_pending_migrations() advances version but does not list skipped migrations."""
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
@@ -261,7 +261,9 @@ class TestRunner:
 
         applied = run_pending_migrations(tmp_path)
 
-        assert applied == ["0.2.0"]
+        # M002 check() returns False because fields exist, so it's not in applied
+        assert applied == []
+        # But the version marker still advances past the migration
         assert get_current_version(tmp_path) == "0.2.0"
 
     def test_run_pending_migrations_none_pending(self, tmp_path: Path) -> None:
@@ -277,6 +279,32 @@ class TestRunner:
         applied = run_pending_migrations(tmp_path)
 
         assert applied == []
+
+    def test_run_pending_migrations_error_in_up(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """run_pending_migrations() prints diagnostic and re-raises on up() failure."""
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        state_path = kernel_dir / "state.yaml"
+        state_path.write_text(
+            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
+        )
+
+        # Patch M001's up() to raise an error
+        def bad_up(self: object, kernel_root: Path) -> None:
+            raise RuntimeError("disk full")
+
+        monkeypatch.setattr(M001InitialSchema, "up", bad_up)
+
+        with pytest.raises(RuntimeError, match="disk full"):
+            run_pending_migrations(tmp_path)
+
+        captured = capsys.readouterr()
+        assert "Migration 0.1.0" in captured.out
+        assert "disk full" in captured.out
+        # Version should NOT have advanced past the failed migration
+        assert get_current_version(tmp_path) == "0.0.0"
 
 
 class TestRegistry:

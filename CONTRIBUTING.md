@@ -71,6 +71,9 @@ make typecheck
 - **Line length:** 100 characters maximum.
 - **Imports:** Sorted by `isort` rules via Ruff.
 
+> **Note:** Pre-commit hooks will reject unformatted code. Run `make format` (or
+> `ruff format .`) before committing to auto-fix formatting issues.
+
 ## Adding a New Skill
 
 Skills live in the `skills/` directory. Each skill is a directory containing at least a `SKILL.md` file that describes the skill's purpose and behavior.

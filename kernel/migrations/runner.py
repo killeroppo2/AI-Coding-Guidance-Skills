@@ -37,11 +37,15 @@ def set_current_version(kernel_root: Path, version: str) -> None:
 def run_pending_migrations(kernel_root: Path) -> list[str]:
     """Run all pending migrations and return the list of applied versions.
 
+    Migrations whose ``check()`` returns False are considered already satisfied;
+    the version marker advances past them but they are not included in the
+    returned list.  Only migrations that actually executed ``up()`` are returned.
+
     Args:
         kernel_root: The root directory of the kernel project.
 
     Returns:
-        List of version strings for migrations that were applied.
+        List of version strings for migrations that actually mutated state.
     """
     current = get_current_version(kernel_root)
     pending = get_pending_migrations(current)
@@ -50,8 +54,15 @@ def run_pending_migrations(kernel_root: Path) -> list[str]:
     for migration_cls in pending:
         migration = migration_cls()
         if migration.check(kernel_root):
-            migration.up(kernel_root)
+            try:
+                migration.up(kernel_root)
+            except Exception as exc:
+                print(
+                    f"Migration {migration.version} "
+                    f"({migration.description}) failed: {exc}"
+                )
+                raise
+            applied.append(migration.version)
         set_current_version(kernel_root, migration.version)
-        applied.append(migration.version)
 
     return applied
