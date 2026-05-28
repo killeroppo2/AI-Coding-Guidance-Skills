@@ -2,10 +2,11 @@
 # ─── 小红书爆款采集器 - Mac 定时任务启动脚本 ───
 # 功能：运行采集脚本，日志按日期保存，错误信息同步记录
 
-# 项目根目录
-PROJECT_DIR="/Users/pengaro/Documents/work/codeDevelop/ideaSpace/AI-Coding-Guidance-Skills/automation"
-SCRIPT_PATH="${PROJECT_DIR}/xhs_collector/scripts/collector.py"
-LOG_DIR="${PROJECT_DIR}/logs"
+# 项目根目录（基于脚本自身位置自动计算）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_PATH="${PROJECT_ROOT}/skills/xhs_collector/scripts/collector.py"
+LOG_DIR="${SCRIPT_DIR}/logs"
 
 # 创建日志目录
 mkdir -p "${LOG_DIR}"

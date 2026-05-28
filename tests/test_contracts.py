@@ -1,5 +1,10 @@
-"""Tests for kernel/contracts - output format contract validation."""
+"""Tests for kernel/contracts - output format contract validation.
 
+Covers ContractResult dataclass, OutputContractValidator initialization,
+basic parsing, robust markdown parsing variants, and output format enforcement.
+"""
+
+import warnings
 from pathlib import Path
 
 import pytest
@@ -670,3 +675,718 @@ class TestContextAssemblerContract:
         result = assembler.assemble(state, node, graph, knowledge)
         # Should not include the section when file is missing
         assert "=== OUTPUT FORMAT CONTRACT ===" not in result
+
+
+# --- Robust Markdown Parsing Tests ---
+
+
+@pytest.fixture
+def validator() -> OutputContractValidator:
+    """Create a validator without graph validation (for markdown variant tests)."""
+    return OutputContractValidator()
+
+
+class TestTransitionMarkdownBold:
+    """Tests for TRANSITION parsing with markdown bold formatting."""
+
+    def test_bold_transition(self, validator: OutputContractValidator) -> None:
+        """Test parsing **TRANSITION:** plan_ready."""
+        output = "**TRANSITION:** plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_bold_keyword_and_value(self, validator: OutputContractValidator) -> None:
+        """Test parsing **TRANSITION: plan_ready**."""
+        output = "**TRANSITION: plan_ready**\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionInlineCode:
+    """Tests for TRANSITION parsing with inline code formatting."""
+
+    def test_inline_code_transition(self, validator: OutputContractValidator) -> None:
+        """Test parsing `TRANSITION: plan_ready`."""
+        output = "`TRANSITION: plan_ready`\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_inline_code_keyword_only(self, validator: OutputContractValidator) -> None:
+        """Test parsing `TRANSITION`: plan_ready."""
+        output = "`TRANSITION`: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionBlockquote:
+    """Tests for TRANSITION parsing with blockquote formatting."""
+
+    def test_blockquote_transition(self, validator: OutputContractValidator) -> None:
+        """Test parsing > TRANSITION: plan_ready."""
+        output = "> TRANSITION: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_blockquote_no_space(self, validator: OutputContractValidator) -> None:
+        """Test parsing >TRANSITION: plan_ready."""
+        output = ">TRANSITION: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionLowercase:
+    """Tests for TRANSITION parsing with lowercase keyword."""
+
+    def test_lowercase_transition(self, validator: OutputContractValidator) -> None:
+        """Test parsing transition: plan_ready."""
+        output = "transition: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_mixed_case_transition(self, validator: OutputContractValidator) -> None:
+        """Test parsing Transition: plan_ready."""
+        output = "Transition: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionNoSpaceAfterColon:
+    """Tests for TRANSITION parsing with no space after colon."""
+
+    def test_no_space_after_colon(self, validator: OutputContractValidator) -> None:
+        """Test parsing TRANSITION:plan_ready."""
+        output = "TRANSITION:plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionCodeBlock:
+    """Tests for TRANSITION parsing inside code blocks."""
+
+    def test_transition_in_code_block(self, validator: OutputContractValidator) -> None:
+        """Test parsing TRANSITION inside a ``` code block."""
+        output = "Some text\n```\nTRANSITION: plan_ready\nSTATUS: success\n```"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_transition_in_code_block_with_language(self, validator: OutputContractValidator) -> None:
+        """Test parsing TRANSITION inside a ```text code block."""
+        output = "Output:\n```text\nTRANSITION: plan_ready\nSTATUS: success\n```"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestTransitionListItem:
+    """Tests for TRANSITION parsing with list item formatting."""
+
+    def test_dash_list_item(self, validator: OutputContractValidator) -> None:
+        """Test parsing - TRANSITION: plan_ready."""
+        output = "- TRANSITION: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_asterisk_list_item(self, validator: OutputContractValidator) -> None:
+        """Test parsing * TRANSITION: plan_ready."""
+        output = "* TRANSITION: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+class TestSemanticInference:
+    """Tests for semantic inference fallback for TRANSITION."""
+
+    def test_infer_tests_pass(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: all tests pass -> tests_pass."""
+        output = "All tests pass successfully.\nSTATUS: success"
+        result = validator.validate_output(output, "test")
+        assert result.transition == "tests_pass"
+
+    def test_infer_tests_passing(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: tests passing -> tests_pass."""
+        output = "The tests passing without errors.\nSTATUS: success"
+        result = validator.validate_output(output, "test")
+        assert result.transition == "tests_pass"
+
+    def test_infer_plan_ready(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: plan is ready -> plan_ready."""
+        output = "The plan is ready for implementation.\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_infer_plan_complete(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: plan complete -> plan_ready."""
+        output = "The plan complete and approved.\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+    def test_infer_goal_loaded(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: goal loaded -> goal_loaded."""
+        output = "The goal loaded into context.\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.transition == "goal_loaded"
+
+    def test_infer_context_initialized(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: context initialized -> goal_loaded."""
+        output = "The context initialized successfully.\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.transition == "goal_loaded"
+
+    def test_infer_code_written(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: code written -> code_written."""
+        output = "The code written to disk.\nSTATUS: success"
+        result = validator.validate_output(output, "code")
+        assert result.transition == "code_written"
+
+    def test_infer_implementation_complete(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: implementation complete -> code_written."""
+        output = "The implementation complete.\nSTATUS: success"
+        result = validator.validate_output(output, "code")
+        assert result.transition == "code_written"
+
+    def test_infer_review_pass(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: review pass -> review_pass."""
+        output = "Code review pass with no issues.\nSTATUS: success"
+        result = validator.validate_output(output, "review")
+        assert result.transition == "review_pass"
+
+    def test_infer_code_quality_acceptable(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: code quality acceptable -> review_pass."""
+        output = "The code quality acceptable for merge.\nSTATUS: success"
+        result = validator.validate_output(output, "review")
+        assert result.transition == "review_pass"
+
+    def test_infer_no_evolution(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: no evolution -> no_evolution_needed."""
+        output = "There is no evolution required.\nSTATUS: success"
+        result = validator.validate_output(output, "reflect")
+        assert result.transition == "no_evolution_needed"
+
+    def test_infer_no_changes_needed(self, validator: OutputContractValidator) -> None:
+        """Test semantic inference: no changes needed -> no_evolution_needed."""
+        output = "No changes needed at this time.\nSTATUS: success"
+        result = validator.validate_output(output, "reflect")
+        assert result.transition == "no_evolution_needed"
+
+    def test_semantic_inference_emits_warning(self, validator: OutputContractValidator) -> None:
+        """Test that semantic inference emits a WARNING."""
+        output = "All tests pass successfully.\nSTATUS: success"
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = validator.validate_output(output, "test")
+            assert len(w) >= 1
+            warning_messages = [str(warning.message) for warning in w]
+            assert any("TRANSITION inferred" in msg for msg in warning_messages)
+            assert any("tests_pass" in msg for msg in warning_messages)
+
+
+class TestStatusMarkdownVariants:
+    """Tests for STATUS parsing with various markdown formats."""
+
+    def test_bold_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing **STATUS:** success."""
+        output = "TRANSITION: plan_ready\n**STATUS:** success"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_inline_code_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing `STATUS: success`."""
+        output = "TRANSITION: plan_ready\n`STATUS: success`"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_blockquote_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing > STATUS: success."""
+        output = "TRANSITION: plan_ready\n> STATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_lowercase_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing status: success."""
+        output = "TRANSITION: plan_ready\nstatus: success"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_no_space_after_colon_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing STATUS:success."""
+        output = "TRANSITION: plan_ready\nSTATUS:success"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_list_item_status(self, validator: OutputContractValidator) -> None:
+        """Test parsing - STATUS: success."""
+        output = "TRANSITION: plan_ready\n- STATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_status_in_code_block(self, validator: OutputContractValidator) -> None:
+        """Test parsing STATUS inside a ``` code block."""
+        output = "Some text\n```\nTRANSITION: plan_ready\nSTATUS: success\n```"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+
+class TestFilesWrittenMarkdownVariants:
+    """Tests for FILES_WRITTEN parsing with various markdown formats."""
+
+    def test_bold_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing **FILES_WRITTEN:** src/main.py."""
+        output = "TRANSITION: code_written\nSTATUS: success\n**FILES_WRITTEN:** src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_inline_code_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing `FILES_WRITTEN: src/main.py`."""
+        output = "TRANSITION: code_written\nSTATUS: success\n`FILES_WRITTEN: src/main.py`"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_blockquote_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing > FILES_WRITTEN: src/main.py."""
+        output = "TRANSITION: code_written\nSTATUS: success\n> FILES_WRITTEN: src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_lowercase_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing files_written: src/main.py."""
+        output = "TRANSITION: code_written\nSTATUS: success\nfiles_written: src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_no_space_after_colon_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing FILES_WRITTEN:src/main.py."""
+        output = "TRANSITION: code_written\nSTATUS: success\nFILES_WRITTEN:src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_list_item_files_written(self, validator: OutputContractValidator) -> None:
+        """Test parsing - FILES_WRITTEN: src/main.py."""
+        output = "TRANSITION: code_written\nSTATUS: success\n- FILES_WRITTEN: src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_files_written_in_code_block(self, validator: OutputContractValidator) -> None:
+        """Test parsing FILES_WRITTEN inside a ``` code block."""
+        output = "Some text\n```\nTRANSITION: code_written\nSTATUS: success\nFILES_WRITTEN: src/main.py\n```"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/main.py"]
+
+    def test_files_written_multiple_bold(self, validator: OutputContractValidator) -> None:
+        """Test parsing **FILES_WRITTEN:** with multiple files."""
+        output = "TRANSITION: code_written\nSTATUS: success\n**FILES_WRITTEN:** src/a.py, src/b.py"
+        result = validator.validate_output(output, "code")
+        assert result.files_written == ["src/a.py", "src/b.py"]
+
+
+class TestErrorMarkdownVariants:
+    """Tests for ERROR parsing with various markdown formats."""
+
+    def test_bold_error(self, validator: OutputContractValidator) -> None:
+        """Test parsing **ERROR:** Something failed."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\n**ERROR:** Something failed"
+        result = validator.validate_output(output, "code")
+        assert result.errors == ["Something failed"]
+
+    def test_inline_code_error(self, validator: OutputContractValidator) -> None:
+        """Test parsing `ERROR: Something failed`."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\n`ERROR: Something failed`"
+        result = validator.validate_output(output, "code")
+        assert result.errors == ["Something failed"]
+
+    def test_blockquote_error(self, validator: OutputContractValidator) -> None:
+        """Test parsing > ERROR: Something failed."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\n> ERROR: Something failed"
+        result = validator.validate_output(output, "code")
+        assert result.errors == ["Something failed"]
+
+    def test_lowercase_error(self, validator: OutputContractValidator) -> None:
+        """Test parsing error: Something failed."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\nerror: Something failed"
+        result = validator.validate_output(output, "code")
+        assert result.errors == ["Something failed"]
+
+
+class TestCombinedMarkdownFormats:
+    """Tests for output with mixed markdown formatting."""
+
+    def test_all_fields_bold(self, validator: OutputContractValidator) -> None:
+        """Test all fields with bold formatting."""
+        output = "**TRANSITION:** goal_loaded\n**STATUS:** success\n**FILES_WRITTEN:** src/main.py"
+        result = validator.validate_output(output, "init")
+        assert result.valid is True
+        assert result.transition == "goal_loaded"
+        assert result.status == "success"
+        assert result.files_written == ["src/main.py"]
+
+    def test_all_fields_in_blockquote(self, validator: OutputContractValidator) -> None:
+        """Test all fields with blockquote formatting."""
+        output = "> TRANSITION: goal_loaded\n> STATUS: success\n> FILES_WRITTEN: src/main.py"
+        result = validator.validate_output(output, "init")
+        assert result.valid is True
+        assert result.transition == "goal_loaded"
+        assert result.status == "success"
+        assert result.files_written == ["src/main.py"]
+
+    def test_all_fields_lowercase(self, validator: OutputContractValidator) -> None:
+        """Test all fields with lowercase keywords."""
+        output = "transition: goal_loaded\nstatus: success\nfiles_written: src/main.py"
+        result = validator.validate_output(output, "init")
+        assert result.valid is True
+        assert result.transition == "goal_loaded"
+        assert result.status == "success"
+        assert result.files_written == ["src/main.py"]
+
+
+class TestFalsePositiveRejection:
+    """Tests that prose containing keywords does NOT produce false matches."""
+
+    def test_error_in_prose_not_matched(self, validator: OutputContractValidator) -> None:
+        """A line like 'An error: the file was not found' should NOT produce an ERROR entry."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\nAn error: the file was not found"
+        result = validator.validate_output(output, "code")
+        assert result.errors == []
+
+    def test_syntax_error_in_prose_not_matched(self, validator: OutputContractValidator) -> None:
+        """A line like 'Syntax error: unexpected token' should NOT produce an ERROR entry."""
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure\nSyntax error: unexpected token"
+        result = validator.validate_output(output, "code")
+        assert result.errors == []
+
+    def test_current_status_in_prose_not_matched(self, validator: OutputContractValidator) -> None:
+        """A line like 'Current status: processing' should NOT match as STATUS."""
+        output = "TRANSITION: plan_ready\nSTATUS: success\nCurrent status: processing"
+        result = validator.validate_output(output, "plan")
+        assert result.status == "success"
+
+    def test_transition_in_prose_not_matched(self, validator: OutputContractValidator) -> None:
+        """A line like 'Check the transition: it should work' should NOT match as TRANSITION."""
+        output = "Check the transition: it should work\nTRANSITION: plan_ready\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.transition == "plan_ready"
+
+
+# --- Output Format Enforcement Tests ---
+
+
+@pytest.fixture
+def contract_graph(tmp_path: Path) -> Path:
+    """Create a temporary graph.yaml for contract validation tests.
+
+    Returns:
+        Path to the temporary graph.yaml file.
+    """
+    graph_data = {
+        "version": "1.0",
+        "description": "Contract validation test graph",
+        "nodes": [
+            {
+                "id": "init",
+                "prompt_file": "prompts/orchestrator.md",
+                "description": "Initialize",
+                "transitions": [{"to": "plan", "condition": "goal_loaded"}],
+            },
+            {
+                "id": "plan",
+                "prompt_file": "prompts/planner.md",
+                "description": "Plan",
+                "transitions": [
+                    {"to": "code", "condition": "plan_ready"},
+                    {"to": "plan", "condition": "plan_needs_revision"},
+                ],
+            },
+            {
+                "id": "code",
+                "prompt_file": "prompts/coder.md",
+                "description": "Code",
+                "transitions": [
+                    {"to": "test", "condition": "code_written"},
+                    {"to": "code", "condition": "code_needs_retry"},
+                ],
+            },
+            {
+                "id": "test",
+                "prompt_file": "prompts/tester.md",
+                "description": "Test",
+                "transitions": [
+                    {"to": "review", "condition": "tests_pass"},
+                    {"to": "code", "condition": "tests_fail"},
+                ],
+            },
+            {
+                "id": "review",
+                "prompt_file": "prompts/reviewer.md",
+                "description": "Review",
+                "transitions": [
+                    {"to": "reflect", "condition": "review_pass"},
+                    {"to": "code", "condition": "review_needs_changes"},
+                ],
+            },
+            {
+                "id": "reflect",
+                "prompt_file": "prompts/reflector.md",
+                "description": "Reflect",
+                "transitions": [
+                    {"to": "evolve", "condition": "evolution_proposed"},
+                    {"to": "plan", "condition": "no_evolution_needed"},
+                ],
+            },
+        ],
+        "default_start": "init",
+        "max_iterations": 30,
+    }
+    graph_file = tmp_path / "graph.yaml"
+    with open(graph_file, "w") as f:
+        yaml.safe_dump(graph_data, f)
+    return graph_file
+
+
+class TestValidOutputForEachNode:
+    """Tests that valid output for each node passes validation."""
+
+    @pytest.mark.parametrize(
+        "node_id,transition",
+        [
+            ("init", "goal_loaded"),
+            ("plan", "plan_ready"),
+            ("plan", "plan_needs_revision"),
+            ("code", "code_written"),
+            ("code", "code_needs_retry"),
+            ("test", "tests_pass"),
+            ("test", "tests_fail"),
+            ("review", "review_pass"),
+            ("review", "review_needs_changes"),
+            ("reflect", "evolution_proposed"),
+            ("reflect", "no_evolution_needed"),
+        ],
+    )
+    def test_valid_output_passes(
+        self, contract_graph: Path, node_id: str, transition: str
+    ) -> None:
+        """Test that a valid TRANSITION + STATUS output passes for each node."""
+        validator = OutputContractValidator(contract_graph)
+        output = f"TRANSITION: {transition}\nSTATUS: success"
+        result = validator.validate_output(output, node_id)
+        assert result.valid is True
+        assert result.transition == transition
+        assert result.status == "success"
+        assert result.violations == []
+
+
+class TestMissingTransitionIsViolation:
+    """Tests that missing TRANSITION line is detected as a violation."""
+
+    def test_missing_transition_is_violation(self, contract_graph: Path) -> None:
+        """Test that output without TRANSITION line fails validation."""
+        validator = OutputContractValidator(contract_graph)
+        output = "STATUS: success\nSome other content here"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert result.transition is None
+        assert any("Missing required TRANSITION" in v for v in result.violations)
+
+    def test_empty_output_has_violations(self, contract_graph: Path) -> None:
+        """Test that empty output fails with multiple violations."""
+        validator = OutputContractValidator(contract_graph)
+        result = validator.validate_output("", "init")
+        assert result.valid is False
+        assert any("Missing required TRANSITION" in v for v in result.violations)
+        assert any("Missing required STATUS" in v for v in result.violations)
+
+
+class TestInvalidTransitionForNode:
+    """Tests that wrong TRANSITION value for a specific node is flagged."""
+
+    def test_invalid_transition_for_node(self, contract_graph: Path) -> None:
+        """Test that a wrong transition condition for a node is flagged."""
+        validator = OutputContractValidator(contract_graph)
+        # "tests_pass" is valid for test node, not for init node
+        output = "TRANSITION: tests_pass\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert any("Invalid TRANSITION" in v for v in result.violations)
+        assert any("init" in v for v in result.violations)
+
+    def test_invalid_transition_shows_valid_options(self, contract_graph: Path) -> None:
+        """Test that the violation message includes the valid transitions."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: wrong_value\nSTATUS: success"
+        result = validator.validate_output(output, "plan")
+        assert result.valid is False
+        violation_text = " ".join(result.violations)
+        assert "plan_ready" in violation_text
+        assert "plan_needs_revision" in violation_text
+
+
+class TestFilesWrittenParsingWithGraph:
+    """Tests for FILES_WRITTEN line parsing with graph validation."""
+
+    def test_files_written_single_file(self, contract_graph: Path) -> None:
+        """Test parsing a single FILES_WRITTEN entry."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: code_written\nSTATUS: success\nFILES_WRITTEN: src/main.py"
+        result = validator.validate_output(output, "code")
+        assert result.valid is True
+        assert result.files_written == ["src/main.py"]
+
+    def test_files_written_multiple_files(self, contract_graph: Path) -> None:
+        """Test parsing multiple comma-separated FILES_WRITTEN entries."""
+        validator = OutputContractValidator(contract_graph)
+        output = (
+            "TRANSITION: code_written\nSTATUS: success\n"
+            "FILES_WRITTEN: src/main.py, src/utils.py, tests/test_main.py"
+        )
+        result = validator.validate_output(output, "code")
+        assert result.valid is True
+        assert result.files_written == ["src/main.py", "src/utils.py", "tests/test_main.py"]
+
+    def test_files_written_multiple_lines(self, contract_graph: Path) -> None:
+        """Test parsing multiple FILES_WRITTEN lines."""
+        validator = OutputContractValidator(contract_graph)
+        output = (
+            "TRANSITION: code_written\nSTATUS: success\n"
+            "FILES_WRITTEN: src/main.py\n"
+            "FILES_WRITTEN: src/utils.py"
+        )
+        result = validator.validate_output(output, "code")
+        assert result.valid is True
+        assert "src/main.py" in result.files_written
+        assert "src/utils.py" in result.files_written
+
+    def test_no_files_written(self, contract_graph: Path) -> None:
+        """Test that output without FILES_WRITTEN has empty list."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: goal_loaded\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.files_written == []
+
+
+class TestErrorLineParsing:
+    """Tests for ERROR line parsing."""
+
+    def test_error_line_captured(self, contract_graph: Path) -> None:
+        """Test that ERROR: lines are captured in the result."""
+        validator = OutputContractValidator(contract_graph)
+        output = (
+            "TRANSITION: code_needs_retry\nSTATUS: failure\n"
+            "ERROR: Compilation failed - missing module"
+        )
+        result = validator.validate_output(output, "code")
+        assert result.valid is True
+        assert len(result.errors) == 1
+        assert "Compilation failed" in result.errors[0]
+
+    def test_multiple_error_lines(self, contract_graph: Path) -> None:
+        """Test that multiple ERROR: lines are all captured."""
+        validator = OutputContractValidator(contract_graph)
+        output = (
+            "TRANSITION: code_needs_retry\nSTATUS: failure\n"
+            "ERROR: First error\n"
+            "ERROR: Second error\n"
+            "ERROR: Third error"
+        )
+        result = validator.validate_output(output, "code")
+        assert len(result.errors) == 3
+        assert result.errors[0] == "First error"
+        assert result.errors[1] == "Second error"
+        assert result.errors[2] == "Third error"
+
+
+class TestStatusLineParsing:
+    """Tests for STATUS line parsing."""
+
+    def test_status_success(self, contract_graph: Path) -> None:
+        """Test that STATUS: success is parsed correctly."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: goal_loaded\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.status == "success"
+        assert result.valid is True
+
+    def test_status_failure(self, contract_graph: Path) -> None:
+        """Test that STATUS: failure is parsed correctly."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: code_needs_retry\nSTATUS: failure"
+        result = validator.validate_output(output, "code")
+        assert result.status == "failure"
+        assert result.valid is True
+
+    def test_invalid_status_value(self, contract_graph: Path) -> None:
+        """Test that an invalid STATUS value is flagged."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: goal_loaded\nSTATUS: maybe"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert any("Invalid STATUS" in v for v in result.violations)
+
+    def test_missing_status(self, contract_graph: Path) -> None:
+        """Test that missing STATUS line is flagged."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: goal_loaded"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert any("Missing required STATUS" in v for v in result.violations)
+
+
+class TestMultipleViolationsReported:
+    """Tests that multiple problems are all reported."""
+
+    def test_multiple_violations_reported(self, contract_graph: Path) -> None:
+        """Test that output with multiple problems reports all violations."""
+        validator = OutputContractValidator(contract_graph)
+        # No TRANSITION, no STATUS - two violations
+        output = "Some random output with no required fields"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert len(result.violations) >= 2
+        violation_text = " ".join(result.violations)
+        assert "TRANSITION" in violation_text
+        assert "STATUS" in violation_text
+
+    def test_invalid_transition_and_invalid_status(self, contract_graph: Path) -> None:
+        """Test that both invalid TRANSITION and invalid STATUS are reported."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: completely_wrong\nSTATUS: invalid_value"
+        result = validator.validate_output(output, "init")
+        assert result.valid is False
+        assert len(result.violations) == 2
+        violation_text = " ".join(result.violations)
+        assert "Invalid TRANSITION" in violation_text
+        assert "Invalid STATUS" in violation_text
+
+
+class TestUnknownNodeValidation:
+    """Tests for validating output against an unknown node."""
+
+    def test_unknown_node_accepts_any_transition(self, contract_graph: Path) -> None:
+        """Test that validating against an unknown node just checks TRANSITION exists."""
+        validator = OutputContractValidator(contract_graph)
+        output = "TRANSITION: anything_goes\nSTATUS: success"
+        result = validator.validate_output(output, "nonexistent_node")
+        # Unknown node has no valid_transitions constraint, so any TRANSITION is ok
+        assert result.valid is True
+        assert result.transition == "anything_goes"
+
+    def test_unknown_node_still_requires_transition(self, contract_graph: Path) -> None:
+        """Test that unknown node still requires TRANSITION line to be present."""
+        validator = OutputContractValidator(contract_graph)
+        output = "STATUS: success"
+        result = validator.validate_output(output, "nonexistent_node")
+        assert result.valid is False
+        assert any("Missing required TRANSITION" in v for v in result.violations)
+
+
+class TestValidatorWithoutGraph:
+    """Tests for validator initialized without a graph path."""
+
+    def test_validator_without_graph_skips_transition_validation(self) -> None:
+        """Test that validator without graph accepts any transition value."""
+        validator = OutputContractValidator(None)
+        output = "TRANSITION: anything\nSTATUS: success"
+        result = validator.validate_output(output, "init")
+        assert result.valid is True
+
+    def test_validator_without_graph_still_checks_required_fields(self) -> None:
+        """Test that validator without graph still checks for required fields."""
+        validator = OutputContractValidator(None)
+        result = validator.validate_output("", "init")
+        assert result.valid is False
+        assert len(result.violations) >= 2
