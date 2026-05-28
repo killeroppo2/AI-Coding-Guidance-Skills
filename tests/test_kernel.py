@@ -338,6 +338,30 @@ class TestContextAssembler:
         from kernel.context_assembler import ContextAssembler
         assert ContextAssembler is not None
 
+    def test_load_current_task_malformed_yaml(self, tmp_path: Path) -> None:
+        """Test that _load_current_task handles malformed tasks.yaml gracefully."""
+        from kernel.context_assembler import ContextAssembler
+
+        (tmp_path / "memory").mkdir(parents=True)
+        (tmp_path / "memory" / "tasks.yaml").write_text(
+            "not: valid: yaml: {{", encoding="utf-8"
+        )
+
+        assembler = ContextAssembler(tmp_path)
+        result = assembler._load_current_task()
+        assert result == ""
+
+    def test_load_current_task_missing_file(self, tmp_path: Path) -> None:
+        """Test that _load_current_task handles missing tasks.yaml gracefully."""
+        from kernel.context_assembler import ContextAssembler
+
+        (tmp_path / "memory").mkdir(parents=True)
+        # Do not create tasks.yaml
+
+        assembler = ContextAssembler(tmp_path)
+        result = assembler._load_current_task()
+        assert result == ""
+
 
 class TestBootstrapGenerator:
     """Tests for the BootstrapGenerator class."""

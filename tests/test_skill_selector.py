@@ -427,3 +427,47 @@ class TestCoreSkillPriorityBoost:
         ]
         result = select_skills_for_goal("quantum physics", skills)
         assert result == []
+
+
+class TestSkillSelectorEdgeCases:
+    """Tests for edge cases in skill_selector (Round 2)."""
+
+    def test_stop_words_only_goal(self) -> None:
+        """Test that a goal with only common stop words returns empty list."""
+        skills = [
+            {"name": "tdd", "tags": ["testing", "tdd"],
+             "description": "Test-driven development"},
+            {"name": "api", "tags": ["api", "rest"],
+             "description": "Build REST API services"},
+        ]
+        result = select_skills_for_goal("the a an", skills)
+        assert result == []
+
+    def test_very_long_goal(self) -> None:
+        """Test that a very long goal (10000+ chars) still works."""
+        skills = [
+            {"name": "api", "tags": ["api", "rest"],
+             "description": "Build REST API services"},
+        ]
+        long_goal = "Build a REST API " * 600  # ~10200 chars
+        result = select_skills_for_goal(long_goal, skills)
+        assert "api" in result
+
+    def test_unicode_goal(self) -> None:
+        """Test that unicode characters in goal are handled."""
+        skills = [
+            {"name": "api", "tags": ["api", "rest"],
+             "description": "Build REST API services"},
+        ]
+        result = select_skills_for_goal(
+            "Build a REST API for Chinese characters", skills
+        )
+        assert "api" in result
+
+    def test_none_goal_returns_empty(self) -> None:
+        """Test that None goal returns empty list without crashing."""
+        skills = [
+            {"name": "tdd", "tags": ["testing"], "description": "Testing"},
+        ]
+        result = select_skills_for_goal(None, skills)
+        assert result == []

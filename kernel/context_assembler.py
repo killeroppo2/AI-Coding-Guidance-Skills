@@ -425,8 +425,11 @@ class ContextAssembler:
         from kernel.task_manager import TaskManager
 
         memory_dir = str(self.kernel_root / "memory")
-        task_mgr = TaskManager(memory_dir)
-        tasks = task_mgr.load_tasks()
+        try:
+            task_mgr = TaskManager(memory_dir)
+            tasks = task_mgr.load_tasks()
+        except (yaml.YAMLError, OSError, ValueError):
+            return ""
         if not tasks:
             return ""
 
