@@ -189,8 +189,7 @@ class Reflector:
                             "prompt_file": f"prompts/{node}.md",
                         },
                         "reason": (
-                            f"Node '{node}' has failed {count} times"
-                            " - prompt may need revision"
+                            f"Node '{node}' has failed {count} times - prompt may need revision"
                         ),
                         "confidence_score": confidence_score,
                         "failure_category": most_common_category,

@@ -1,12 +1,12 @@
 """Tests for kernel/session_tracker.py."""
 
 import json
-import time
+from datetime import datetime
 from pathlib import Path
 
 import pytest
 
-from kernel.session_tracker import SessionTracker
+from kernel.session_tracker import SessionTracker, _safe_serialize
 
 
 @pytest.fixture
@@ -15,6 +15,71 @@ def memory_dir(tmp_path):
     mem = tmp_path / "memory"
     mem.mkdir()
     return str(mem)
+
+
+class TestSafeSerialize:
+    """Tests for _safe_serialize helper."""
+
+    def test_primitives_pass_through(self):
+        """Primitive types pass through unchanged."""
+        assert _safe_serialize("hello") == "hello"
+        assert _safe_serialize(42) == 42
+        assert _safe_serialize(3.14) == 3.14
+        assert _safe_serialize(True) is True
+        assert _safe_serialize(None) is None
+
+    def test_path_converted_to_string(self):
+        """Path objects are converted to strings."""
+        result = _safe_serialize(Path("/tmp/test.py"))
+        assert result == "/tmp/test.py"
+        assert isinstance(result, str)
+
+    def test_datetime_converted_to_string(self):
+        """datetime objects are converted to string representation."""
+        dt = datetime(2024, 1, 15, 10, 30, 0)
+        result = _safe_serialize(dt)
+        assert "2024" in result
+        assert isinstance(result, str)
+
+    def test_nested_dict_with_non_serializable(self):
+        """Nested dicts with non-serializable values are handled."""
+        data = {"path": Path("/tmp"), "nested": {"ts": datetime.now()}}
+        result = _safe_serialize(data)
+        assert isinstance(result, dict)
+        assert result["path"] == "/tmp"
+        assert isinstance(result["nested"]["ts"], str)
+
+    def test_list_with_non_serializable(self):
+        """Lists with non-serializable items are handled."""
+        data = [Path("/a"), Path("/b"), 42]
+        result = _safe_serialize(data)
+        assert result == ["/a", "/b", 42]
+
+    def test_set_converted_to_sorted_list(self):
+        """Sets are converted to sorted lists."""
+        data = {3, 1, 2}
+        result = _safe_serialize(data)
+        assert result == [1, 2, 3]
+
+    def test_bytes_decoded(self):
+        """Bytes are decoded to string."""
+        result = _safe_serialize(b"hello bytes")
+        assert result == "hello bytes"
+
+    def test_tuple_converted_to_list(self):
+        """Tuples are converted to lists."""
+        result = _safe_serialize((1, "a", Path("/x")))
+        assert result == [1, "a", "/x"]
+
+    def test_custom_object_uses_str(self):
+        """Custom objects fall back to str()."""
+
+        class CustomObj:
+            def __str__(self):
+                return "custom_repr"
+
+        result = _safe_serialize(CustomObj())
+        assert result == "custom_repr"
 
 
 class TestSessionTracker:
@@ -60,6 +125,65 @@ class TestSessionTracker:
         tracker.track_event("test", {"x": 1})
         assert Path(mem).exists()
 
+    def test_track_event_with_path_objects(self, memory_dir):
+        """track_event handles Path objects in data gracefully."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event("file_op", {"path": Path("/tmp/test.py"), "backup": Path("./bak")})
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["data"]["path"] == "/tmp/test.py"
+        assert events[0]["data"]["backup"] == "bak"
+
+    def test_track_event_with_datetime(self, memory_dir):
+        """track_event handles datetime objects in data gracefully."""
+        tracker = SessionTracker(memory_dir)
+        dt = datetime(2024, 6, 15, 12, 0, 0)
+        tracker.track_event("timed", {"started": dt})
+
+        events = tracker.get_recent_events(1)
+        assert "2024" in events[0]["data"]["started"]
+
+    def test_track_event_with_nested_non_serializable(self, memory_dir):
+        """track_event handles nested non-serializable objects."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event(
+            "complex",
+            {
+                "files": [Path("/a"), Path("/b")],
+                "meta": {"created": datetime(2024, 1, 1)},
+            },
+        )
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["data"]["files"] == ["/a", "/b"]
+        assert "2024" in events[0]["data"]["meta"]["created"]
+
+    def test_track_event_with_unicode(self, memory_dir):
+        """track_event handles Unicode data correctly."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event(
+            "unicode_test",
+            {
+                "message": "Hello \u4e16\u754c",
+                "emoji": "\U0001f680",
+                "japanese": "\u3053\u3093\u306b\u3061\u306f",
+            },
+        )
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["data"]["message"] == "Hello \u4e16\u754c"
+        assert events[0]["data"]["emoji"] == "\U0001f680"
+        assert events[0]["data"]["japanese"] == "\u3053\u3093\u306b\u3061\u306f"
+
+    def test_track_event_with_none_values(self, memory_dir):
+        """track_event handles None values in data dict."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event("nullable", {"result": None, "count": 0})
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["data"]["result"] is None
+        assert events[0]["data"]["count"] == 0
+
     def test_get_recent_events_returns_correct_count(self, memory_dir):
         """get_recent_events should return the last n events."""
         tracker = SessionTracker(memory_dir)
@@ -88,6 +212,35 @@ class TestSessionTracker:
         events = tracker.get_recent_events(10)
         assert len(events) == 1
         assert events[0]["type"] == "valid"
+
+    def test_get_recent_events_handles_corrupted_file(self, memory_dir):
+        """get_recent_events handles file with partial/corrupted JSON lines."""
+        events_path = Path(memory_dir) / "session_events.jsonl"
+        # Simulate corruption: truncated line, empty line, partial JSON
+        content = (
+            '{"type": "good1", "timestamp": 1.0, "data": {}}\n'
+            '{"type": "trun\n'
+            "\n"
+            '{"unclosed": true\n'
+            '{"type": "good2", "timestamp": 2.0, "data": {"x": 1}}\n'
+        )
+        events_path.write_text(content, encoding="utf-8")
+        tracker = SessionTracker(memory_dir)
+        events = tracker.get_recent_events(10)
+        assert len(events) == 2
+        assert events[0]["type"] == "good1"
+        assert events[1]["type"] == "good2"
+
+    def test_get_recent_events_handles_empty_lines(self, memory_dir):
+        """get_recent_events handles file with empty lines gracefully."""
+        events_path = Path(memory_dir) / "session_events.jsonl"
+        events_path.write_text(
+            '\n\n{"type": "valid", "timestamp": 1.0, "data": {}}\n\n',
+            encoding="utf-8",
+        )
+        tracker = SessionTracker(memory_dir)
+        events = tracker.get_recent_events(10)
+        assert len(events) == 1
 
     def test_build_resume_snapshot_no_data(self, memory_dir):
         """build_resume_snapshot with no events returns no_session_data."""

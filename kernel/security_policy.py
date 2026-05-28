@@ -53,6 +53,11 @@ class SecurityPolicy:
         if "\x00" in path:
             return "deny"
 
+        # Reject Unicode path traversal (fullwidth dots and slashes)
+        # Fullwidth period: \uff0e, fullwidth solidus: \uff0f, fullwidth reverse solidus: \uff3c
+        if "\uff0e" in path or "\uff0f" in path or "\uff3c" in path:
+            return "deny"
+
         # Reject path traversal attempts
         if ".." in path.split(os.sep) or ".." in path.split("/"):
             return "deny"

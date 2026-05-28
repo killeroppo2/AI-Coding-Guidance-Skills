@@ -55,10 +55,13 @@ class ContextBudgetTracker:
 
         Args:
             node_id: The node for which context was assembled.
-            total_tokens: Total tokens used.
+            total_tokens: Total tokens used (negative values treated as 0).
             sections: Mapping of section names to token counts.
-            budget_limit: The token budget limit.
+            budget_limit: The token budget limit (negative values treated as 0).
         """
+        # Clamp negative values to 0
+        total_tokens = max(0, total_tokens)
+        budget_limit = max(0, budget_limit)
         utilization = (total_tokens / budget_limit * 100) if budget_limit > 0 else 0.0
         record = AssemblyRecord(
             node_id=node_id,

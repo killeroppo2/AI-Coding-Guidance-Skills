@@ -5,8 +5,6 @@ import threading
 import time
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from kernel.lifecycle_guard import LifecycleGuard
 
 
@@ -175,3 +173,70 @@ class TestHandlesMissingGetppid:
             guard.start()
         assert guard._thread is None
         assert guard._running is False
+
+    @patch("kernel.lifecycle_guard.os.getppid", side_effect=OSError("container"))
+    def test_is_parent_alive_with_os_error(self, mock_getppid):
+        """is_parent_alive returns True when os.getppid raises OSError."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback)
+        guard._initial_ppid = 1234
+        # Should not crash, returns True (assume alive)
+        assert guard.is_parent_alive() is True
+
+    def test_stop_cleans_up_thread_completely(self):
+        """After stop(), the thread reference is None and thread is dead."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=60.0)
+        guard.start()
+        assert guard._thread is not None
+        thread_ref = guard._thread
+        guard.stop()
+        assert guard._thread is None
+        assert not thread_ref.is_alive()
+
+    def test_stop_is_idempotent(self):
+        """Calling stop() multiple times does not raise."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=60.0)
+        guard.start()
+        guard.stop()
+        guard.stop()  # Second stop should be safe
+        guard.stop()  # Third stop should be safe
+        assert guard._running is False
+
+    @patch("kernel.lifecycle_guard.os.getppid")
+    def test_callback_exception_does_not_crash_thread(self, mock_getppid):
+        """on_shutdown exceptions are swallowed, thread exits cleanly."""
+        callback = MagicMock(side_effect=Exception("boom"))
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=0.05)
+
+        mock_getppid.return_value = 9999
+        guard._initial_ppid = 9999
+        guard._running = True
+        guard._stop_event.clear()
+        guard._thread = threading.Thread(
+            target=guard._monitor_loop, daemon=True, name="lifecycle-guard"
+        )
+        guard._thread.start()
+
+        # Simulate parent death
+        time.sleep(0.02)
+        mock_getppid.return_value = 1
+
+        # Wait for guard to detect and handle
+        time.sleep(0.2)
+        callback.assert_called_once()
+        assert guard._running is False
+        # Thread should have exited
+        assert not guard._thread.is_alive()
+
+    def test_no_zombie_thread_after_stop(self):
+        """After stop(), no lingering threads remain from the guard."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=0.05)
+        guard.start()
+        time.sleep(0.05)
+        guard.stop()
+        # Verify no lifecycle-guard threads are alive
+        for t in threading.enumerate():
+            assert t.name != "lifecycle-guard" or not t.is_alive()

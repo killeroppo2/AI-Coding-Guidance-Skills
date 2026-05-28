@@ -31,15 +31,15 @@ from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
+from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
 from kernel.mode3_executor import _parse_transition
 from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
 from kernel.reporter import Reporter
+from kernel.security_policy import SecurityPolicy
 from kernel.skill_selector import select_skills_for_goal
 from kernel.task_manager import TaskManager
-from kernel.lifecycle_guard import LifecycleGuard
-from kernel.security_policy import SecurityPolicy
 from kernel.validators import _sanitize_project_name, _validate_workspace_paths
 from knowledge.store import KnowledgeStore
 from memory.state_manager import StateManager
@@ -313,9 +313,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         # Lifecycle guard: detect orphan process and trigger graceful shutdown
         def _orphan_shutdown():
             state_mgr.state["status"] = "interrupted"
-            state_mgr.state.setdefault("errors", []).append(
-                "Parent process died - orphan detected"
-            )
+            state_mgr.state.setdefault("errors", []).append("Parent process died - orphan detected")
             state_mgr.save_state()
             sys.exit(1)
 
@@ -591,9 +589,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        logger.warning(
-                            f"[SECURITY] Denied file write: {fpath}"
-                        )
+                        logger.warning(f"[SECURITY] Denied file write: {fpath}")
 
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])

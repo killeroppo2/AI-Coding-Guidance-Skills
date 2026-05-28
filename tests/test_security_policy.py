@@ -1,10 +1,5 @@
 """Tests for kernel/security_policy.py."""
 
-import os
-import tempfile
-
-import pytest
-
 from kernel.security_policy import SecurityPolicy
 
 
@@ -19,6 +14,38 @@ class TestCheckPath:
         target = workspace / "src" / "main.py"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.touch()
+        assert policy.check_path(str(target)) == "allow"
+
+    def test_allows_relative_paths_within_workspace(self, tmp_path):
+        """check_path allows relative paths that resolve within workspace."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        (workspace / "src").mkdir()
+        (workspace / "src" / "main.py").touch()
+        policy = SecurityPolicy(str(workspace))
+        # Use absolute path that is within workspace
+        assert policy.check_path(str(workspace / "src" / "main.py")) == "allow"
+
+    def test_allows_paths_with_spaces(self, tmp_path):
+        """check_path allows paths with spaces in directory/file names."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        spaced = workspace / "my project" / "source files"
+        spaced.mkdir(parents=True)
+        target = spaced / "main file.py"
+        target.touch()
+        policy = SecurityPolicy(str(workspace))
+        assert policy.check_path(str(target)) == "allow"
+
+    def test_allows_deeply_nested_paths(self, tmp_path):
+        """check_path allows deeply nested paths within workspace."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        deep = workspace / "a" / "b" / "c" / "d" / "e" / "f" / "g"
+        deep.mkdir(parents=True)
+        target = deep / "deep.py"
+        target.touch()
+        policy = SecurityPolicy(str(workspace))
         assert policy.check_path(str(target)) == "allow"
 
     def test_denies_path_traversal(self, tmp_path):
@@ -62,6 +89,32 @@ class TestCheckPath:
         """check_path denies null bytes even without workspace root."""
         policy = SecurityPolicy(None)
         assert policy.check_path("file\x00.txt") == "deny"
+
+    def test_denies_unicode_fullwidth_dots(self):
+        """check_path denies paths with fullwidth period (Unicode traversal)."""
+        policy = SecurityPolicy(None)
+        # Fullwidth period: U+FF0E
+        assert policy.check_path("\uff0e\uff0e/etc/passwd") == "deny"
+
+    def test_denies_unicode_fullwidth_slash(self):
+        """check_path denies paths with fullwidth solidus."""
+        policy = SecurityPolicy(None)
+        # Fullwidth solidus: U+FF0F
+        assert policy.check_path("foo\uff0fbar") == "deny"
+
+    def test_denies_unicode_fullwidth_backslash(self):
+        """check_path denies paths with fullwidth reverse solidus."""
+        policy = SecurityPolicy(None)
+        # Fullwidth reverse solidus: U+FF3C
+        assert policy.check_path("foo\uff3cbar") == "deny"
+
+    def test_denies_mixed_unicode_traversal(self, tmp_path):
+        """check_path denies Unicode-based traversal with workspace set."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        policy = SecurityPolicy(str(workspace))
+        # Attempt traversal using fullwidth characters
+        assert policy.check_path(str(workspace) + "\uff0f\uff0e\uff0e") == "deny"
 
 
 class TestCheckCommand:

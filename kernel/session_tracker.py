@@ -11,6 +11,34 @@ from pathlib import Path
 from typing import Any
 
 
+def _safe_serialize(obj: Any) -> Any:
+    """Convert non-serializable objects to string representations.
+
+    Args:
+        obj: Any object to make JSON-safe.
+
+    Returns:
+        A JSON-serializable version of the object.
+    """
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    if isinstance(obj, dict):
+        return {str(k): _safe_serialize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_safe_serialize(item) for item in obj]
+    if isinstance(obj, (set, frozenset)):
+        return [_safe_serialize(item) for item in sorted(obj, key=str)]
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors="replace")
+    # Fallback: convert to string
+    try:
+        return str(obj)
+    except Exception:
+        return "<unserializable>"
+
+
 class SessionTracker:
     """Tracks session events to memory/session_events.jsonl.
 
@@ -32,14 +60,19 @@ class SessionTracker:
     def track_event(self, event_type: str, data: dict[str, Any] | None = None) -> None:
         """Append an event to the session log.
 
+        Handles non-serializable objects by converting them to string
+        representations. This ensures tracking never crashes even with
+        unexpected data types (Path objects, datetime, custom classes).
+
         Args:
             event_type: Type of event (e.g. node_enter, iteration_complete).
             data: Optional dict of event-specific data.
         """
+        safe_data = _safe_serialize(data) if data else {}
         event = {
             "timestamp": time.time(),
             "type": event_type,
-            "data": data or {},
+            "data": safe_data,
         }
         self.memory_dir.mkdir(parents=True, exist_ok=True)
         with open(self.events_path, "a", encoding="utf-8") as f:
