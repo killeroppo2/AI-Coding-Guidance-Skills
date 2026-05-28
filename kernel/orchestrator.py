@@ -7,6 +7,7 @@ Mode 3 (real AI execution via subprocess).
 
 import atexit
 import json
+import os
 import shlex
 import signal
 import subprocess
@@ -209,6 +210,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         if state_mgr.state.get("status") == "interrupted":
             state_mgr.state["status"] = "running"
 
+    # Resume snapshot: build session context for context assembler
+    if args.resume and not args.dry_run:
+        from kernel.session_tracker import SessionTracker as _ResumeTracker
+
+        _resume_tracker = _ResumeTracker(memory_dir)
+        snapshot = _resume_tracker.build_resume_snapshot()
+        state_mgr.state.setdefault("context", {})["resume_snapshot"] = snapshot
+
     # Skill auto-selection
     if hasattr(args, "skills") and args.skills is not None:
         # Manual override: use provided skill list
@@ -347,7 +356,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         from kernel.session_tracker import SessionTracker
 
         session_tracker = SessionTracker(memory_dir)
-        session_tracker.track_event("session_start", {"goal": args.goal, "mode": "mode3"})
+
+        # Performance guard: skip event tracking in dry-run or high LOG_LEVEL
+        _tracking_enabled = not args.dry_run and os.environ.get(
+            "LOG_LEVEL", ""
+        ).upper() not in ("ERROR", "CRITICAL")
+
+        if _tracking_enabled:
+            session_tracker.track_event("session_start", {"goal": args.goal, "mode": "mode3"})
 
     # Build max_retries_map from graph nodes
     max_retries_map = {
@@ -398,7 +414,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
             # Mode 3: Track visit BEFORE execution so failures count
             state_mgr.track_node_visit(node["id"])
-            session_tracker.track_event("node_enter", {"node": node["id"], "iteration": i})
+            if _tracking_enabled:
+                session_tracker.track_event("node_enter", {"node": node["id"], "iteration": i})
             is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
             if is_stuck:
                 assert stuck_node is not None  # guaranteed when is_stuck=True
@@ -515,6 +532,12 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     state_mgr.state.setdefault("errors", []).append(
                         f"AI command exited with code {result_returncode} on node {node['id']}"
                     )
+                    # Track failed iteration
+                    if _tracking_enabled:
+                        session_tracker.track_event(
+                            "iteration_complete",
+                            {"node": node["id"], "result": "failed", "reason": "ai_error"},
+                        )
                     # Verbose: report failed iteration
                     if args.verbose:
                         reporter = Reporter()
@@ -572,6 +595,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     f"Contract violations on node {node['id']}: {contract_result.violations}"
                 )
                 state_mgr.trim_errors()
+                # Track failed iteration due to contract violation
+                if _tracking_enabled:
+                    session_tracker.track_event(
+                        "iteration_complete",
+                        {
+                            "node": node["id"],
+                            "result": "failed",
+                            "reason": "contract_violation",
+                        },
+                    )
                 # Check if violations are about missing format lines
                 has_format_violation = any(
                     "Missing required TRANSITION" in v or "Missing required STATUS" in v
@@ -637,9 +670,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 assembler.mark_iteration_success(node["id"])
 
                 # Track successful iteration transition
-                session_tracker.track_event(
-                    "iteration_complete", {"node": node["id"], "next_node": next_node_id}
-                )
+                if _tracking_enabled:
+                    session_tracker.track_event(
+                        "iteration_complete", {"node": node["id"], "next_node": next_node_id}
+                    )
 
                 # Verbose: report successful iteration
                 if args.verbose:
@@ -758,6 +792,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Stop lifecycle guard if running
     if mode3:
         lifecycle_guard.stop()
+
+    # Track session_end event
+    if mode3 and _tracking_enabled:
+        session_tracker.track_event(
+            "session_end",
+            {
+                "status": state_mgr.state.get("status"),
+                "iterations": state_mgr.state.get("iteration_count", 0),
+            },
+        )
 
     # Print completion report after Mode 3 execution
     if mode3:
