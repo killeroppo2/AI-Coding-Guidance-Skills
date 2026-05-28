@@ -132,4 +132,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Run pending data migrations and exit",
     )
+    parser.add_argument(
+        "--session-stats",
+        action="store_true",
+        help="Print session statistics and exit",
+    )
     return parser.parse_args(argv)

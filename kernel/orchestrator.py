@@ -126,6 +126,26 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         print(reporter.format_status(state_mgr.get_state(), tasks_list))
         return state_mgr.get_state()
 
+    # Handle --session-stats: print session statistics and exit early
+    if args.session_stats:
+        from kernel.session_tracker import SessionTracker
+
+        memory_dir = str(KERNEL_ROOT / "memory")
+        state_path = str(KERNEL_ROOT / "kernel" / "state.yaml")
+        state_mgr = StateManager(state_path, memory_dir)
+        tracker = SessionTracker(memory_dir)
+        snapshot = tracker.build_resume_snapshot()
+        print("Session Events:")
+        print(f"  Total events: {tracker.get_event_count()}")
+        print(f"  Status: {snapshot.get('status', 'unknown')}")
+        if snapshot.get("last_node"):
+            print(f"  Last node: {snapshot['last_node']}")
+        if snapshot.get("node_path"):
+            print(f"  Recent path: {' -> '.join(snapshot['node_path'])}")
+        if snapshot.get("recent_errors"):
+            print(f"  Recent errors: {len(snapshot['recent_errors'])}")
+        return state_mgr.get_state()
+
     # Validate that --goal is required unless --check or --status is used
     if not args.goal:
         print(
@@ -305,6 +325,11 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         retry_lightweight = False
         _last_was_lightweight = False
 
+        from kernel.session_tracker import SessionTracker
+
+        session_tracker = SessionTracker(memory_dir)
+        session_tracker.track_event("session_start", {"goal": args.goal, "mode": "mode3"})
+
     # Build max_retries_map from graph nodes
     max_retries_map = {
         node["id"]: node.get("max_retries", 10) for node in graph.graph.get("nodes", [])
@@ -354,6 +379,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
             # Mode 3: Track visit BEFORE execution so failures count
             state_mgr.track_node_visit(node["id"])
+            session_tracker.track_event("node_enter", {"node": node["id"], "iteration": i})
             is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
             if is_stuck:
                 assert stuck_node is not None  # guaranteed when is_stuck=True
@@ -585,6 +611,11 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
                 # Mark iteration success for incremental context
                 assembler.mark_iteration_success(node["id"])
+
+                # Track successful iteration transition
+                session_tracker.track_event(
+                    "iteration_complete", {"node": node["id"], "next_node": next_node_id}
+                )
 
                 # Verbose: report successful iteration
                 if args.verbose:
