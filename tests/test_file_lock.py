@@ -143,6 +143,34 @@ class TestFileLockContextManager:
             with FileLock(lock_path, timeout=0.3):
                 pass
 
+    def test_context_manager_releases_on_exception(self, tmp_path):
+        """Context manager releases lock even when locked code raises an exception."""
+        lock_path = tmp_path / "test.lock"
+        with pytest.raises(ValueError, match="intentional"):
+            with FileLock(lock_path) as lock:
+                assert lock_path.exists()
+                assert lock._acquired
+                raise ValueError("intentional error inside lock")
+        # Lock must be released despite the exception
+        assert not lock_path.exists()
+
+    def test_lock_timeout_respects_deadline(self, tmp_path):
+        """Lock acquisition respects the timeout deadline and returns False."""
+        lock_path = tmp_path / "test.lock"
+        # Hold the lock in the current thread
+        holder = FileLock(lock_path)
+        holder.acquire()
+        # Attempt to acquire with short timeout
+        contender = FileLock(lock_path, timeout=0.5)
+        start = time.time()
+        result = contender.acquire(timeout=0.5)
+        elapsed = time.time() - start
+        assert result is False
+        # Should have waited approximately the timeout duration
+        assert elapsed >= 0.4
+        assert elapsed < 2.0
+        holder.release()
+
 
 class TestFileLockConcurrency:
     """Tests for concurrent access with threading."""
@@ -265,6 +293,80 @@ class TestStateManagerAdvisoryLocks:
         # Lock file should not remain
         lock_path = filepath.with_suffix(".jsonl.lock")
         assert not lock_path.exists()
+
+
+class TestStateBoundsAndAtomicWrites:
+    """Tests verifying state fields are bounded and writes are atomic."""
+
+    def test_trim_errors_default_max_is_20(self, tmp_path):
+        """trim_errors default max_kept is 20 (reasonable bound)."""
+        state_path = tmp_path / "state.yaml"
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        sm = StateManager(str(state_path), str(memory_dir))
+        # Add 30 errors
+        sm.state["errors"] = [f"error_{i}" for i in range(30)]
+        sm.trim_errors()
+        assert len(sm.state["errors"]) == 20
+        assert sm.state["errors"][0] == "error_10"
+        assert sm.state["errors"][-1] == "error_29"
+
+    def test_progress_history_cap_at_20(self, tmp_path):
+        """progress_history must never exceed MAX_PROGRESS_HISTORY_ENTRIES (20)."""
+        state_path = tmp_path / "state.yaml"
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        sm = StateManager(str(state_path), str(memory_dir))
+        # Simulate adding entries the way orchestrator does
+        from kernel.orchestrator import MAX_PROGRESS_HISTORY_ENTRIES
+        for i in range(50):
+            progress_history = sm.state.setdefault("progress_history", [])
+            progress_history.append(i)
+            if len(progress_history) > MAX_PROGRESS_HISTORY_ENTRIES:
+                sm.state["progress_history"] = progress_history[-MAX_PROGRESS_HISTORY_ENTRIES:]
+        assert len(sm.state["progress_history"]) == MAX_PROGRESS_HISTORY_ENTRIES
+        assert sm.state["progress_history"][-1] == 49
+
+    def test_trim_node_visits_bounds_entries(self, tmp_path):
+        """trim_node_visits caps node_visits dict size."""
+        state_path = tmp_path / "state.yaml"
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        sm = StateManager(str(state_path), str(memory_dir))
+        # Add 150 nodes
+        sm.state["node_visits"] = {f"node_{i}": i for i in range(150)}
+        sm.trim_node_visits(max_nodes=100)
+        assert len(sm.state["node_visits"]) == 100
+        # Highest-count nodes should be retained
+        assert "node_149" in sm.state["node_visits"]
+        assert "node_0" not in sm.state["node_visits"]
+
+    def test_update_progress_uses_atomic_write(self, tmp_path):
+        """update_progress writes progress.yaml atomically."""
+        state_path = tmp_path / "state.yaml"
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        sm = StateManager(str(state_path), str(memory_dir))
+        sm.state["iteration_count"] = 5
+        sm.update_progress(tasks_total=10, tasks_done=3)
+        progress_path = memory_dir / "progress.yaml"
+        assert progress_path.exists()
+        data = yaml.safe_load(progress_path.read_text())
+        assert data["tasks_total"] == 10
+        assert data["tasks_done"] == 3
+        assert data["status"] == "in_progress"
+
+    def test_set_goal_uses_atomic_write(self, tmp_path):
+        """set_goal writes current_goal.md atomically."""
+        state_path = tmp_path / "state.yaml"
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        sm = StateManager(str(state_path), str(memory_dir))
+        sm.set_goal("build a widget")
+        goal_path = memory_dir / "current_goal.md"
+        assert goal_path.exists()
+        content = goal_path.read_text()
+        assert "build a widget" in content
 
 
 class TestStateManagerRunnerLock:

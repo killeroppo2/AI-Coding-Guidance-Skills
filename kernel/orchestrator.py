@@ -449,7 +449,6 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     stdout, stderr = proc.communicate()
-                    _mode3_mod._active_subprocess = None
                     timeout_detail = f"Timeout after {args.timeout}s on node {node['id']}"
                     if stdout:
                         preview = stdout[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
@@ -470,7 +469,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     assembler.mark_iteration_failure()
                     # Stay on same node - do not advance
                     continue
-                _mode3_mod._active_subprocess = None
+                finally:
+                    _mode3_mod._active_subprocess = None
                 result_returncode = proc.returncode
                 result_stdout = stdout
                 result_stderr = stderr
