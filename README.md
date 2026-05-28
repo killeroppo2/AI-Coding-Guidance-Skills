@@ -31,6 +31,11 @@ Each node loads a specialized prompt, assembles context from skills and memory, 
 ## Quick Start
 
 ```bash
+# Option A: Install from PyPI
+pip install ai-coding-guidance-skills
+ai-kernel --goal "Build a REST API" --dry-run
+
+# Option B: Clone for development
 # 1. Clone and enter
 git clone <repo-url> && cd AI-Coding-Guidance-Skills
 
