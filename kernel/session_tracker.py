@@ -56,6 +56,7 @@ class SessionTracker:
         self.memory_dir = Path(memory_dir)
         self.events_path = self.memory_dir / "session_events.jsonl"
         self.max_events = max_events
+        self._prune_threshold = int(max_events * 1.1)
 
     def track_event(self, event_type: str, data: dict[str, Any] | None = None) -> None:
         """Append an event to the session log.
@@ -144,10 +145,14 @@ class SessionTracker:
         return sum(1 for _ in open(self.events_path, encoding="utf-8"))
 
     def _prune_if_needed(self) -> None:
-        """Keep only the last max_events entries."""
+        """Keep only the last max_events entries.
+
+        Uses a 10% buffer threshold to avoid re-reading the file on every
+        single write. Only prunes when count exceeds max_events * 1.1.
+        """
         if not self.events_path.exists():
             return
         lines = self.events_path.read_text(encoding="utf-8").strip().splitlines()
-        if len(lines) > self.max_events:
+        if len(lines) > self._prune_threshold:
             pruned = lines[-self.max_events :]
             self.events_path.write_text("\n".join(pruned) + "\n", encoding="utf-8")

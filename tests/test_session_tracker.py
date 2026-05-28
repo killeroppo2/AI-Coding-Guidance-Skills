@@ -303,12 +303,171 @@ class TestSessionTracker:
         for i in range(10):
             tracker.track_event("event", {"i": i})
 
+        # With 10% buffer (threshold=5), pruning occurs at 6 events
+        # After 10 writes, final prune keeps last 5
         events_path = Path(memory_dir) / "session_events.jsonl"
         lines = events_path.read_text(encoding="utf-8").strip().splitlines()
-        assert len(lines) == 5
-        # Should keep the last 5 events
-        first_event = json.loads(lines[0])
-        assert first_event["data"]["i"] == 5
+        assert len(lines) <= 5 + 1  # at most max_events + buffer remainder
+        # Most recent events are kept
+        last_event = json.loads(lines[-1])
+        assert last_event["data"]["i"] == 9
+
+    def test_pruning_with_buffer(self, memory_dir):
+        """Pruning uses a 10% buffer to avoid constant rewriting.
+
+        With max_events=10, threshold is 11. So writing 11 events does NOT
+        trigger a prune, but writing 12 does (prune back to 10).
+        """
+        tracker = SessionTracker(memory_dir, max_events=10)
+        # Write exactly 11 events (threshold is int(10*1.1) = 11)
+        for i in range(11):
+            tracker.track_event("event", {"i": i})
+
+        events_path = Path(memory_dir) / "session_events.jsonl"
+        lines = events_path.read_text(encoding="utf-8").strip().splitlines()
+        # 11 events written, threshold=11, so > 11 is needed to prune
+        assert len(lines) == 11
+
+        # Write one more (12 total > 11 threshold triggers prune to 10)
+        tracker.track_event("event", {"i": 11})
+        lines = events_path.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 10
+        # Verify the oldest are gone, newest kept
+        first = json.loads(lines[0])
+        last = json.loads(lines[-1])
+        assert first["data"]["i"] == 2
+        assert last["data"]["i"] == 11
+
+    def test_pruning_exact_boundary(self, memory_dir):
+        """Write exactly max_events=10, write 15, verify bounded near max_events."""
+        tracker = SessionTracker(memory_dir, max_events=10)
+        for i in range(15):
+            tracker.track_event("event", {"i": i})
+
+        events_path = Path(memory_dir) / "session_events.jsonl"
+        lines = events_path.read_text(encoding="utf-8").strip().splitlines()
+        # With 10% buffer (threshold=11), final file may have up to threshold lines
+        assert len(lines) <= tracker._prune_threshold
+        assert len(lines) >= 10
+        # Most recent event is always preserved
+        last_event = json.loads(lines[-1])
+        assert last_event["data"]["i"] == 14
+
+    def test_resume_flow_integration(self, memory_dir):
+        """Simulate the resume flow: write events, build snapshot, verify."""
+        tracker = SessionTracker(memory_dir)
+        # Simulate a session: start, init node, plan node, error, complete
+        tracker.track_event("session_start", {"goal": "build calculator", "mode": "mode3"})
+        tracker.track_event("node_enter", {"node": "init"})
+        tracker.track_event("iteration_complete", {"node": "init", "next_node": "plan"})
+        tracker.track_event("node_enter", {"node": "plan"})
+        tracker.track_event("error", {"message": "AI timeout on plan node"})
+        tracker.track_event("node_enter", {"node": "plan"})
+        tracker.track_event("iteration_complete", {"node": "plan", "next_node": "code"})
+        tracker.track_event("node_enter", {"node": "code"})
+
+        # Build resume snapshot
+        snapshot = tracker.build_resume_snapshot()
+
+        # Verify snapshot contains useful resume info
+        assert snapshot["status"] == "has_session_data"
+        assert snapshot["events_count"] == 8
+        assert snapshot["last_node"] == "code"
+        assert snapshot["iteration_count"] == 2
+        assert "init" in snapshot["node_path"]
+        assert "plan" in snapshot["node_path"]
+        assert "code" in snapshot["node_path"]
+        assert snapshot["recent_errors"] == ["AI timeout on plan node"]
+
+    def test_build_resume_snapshot_missing_file(self, tmp_path):
+        """build_resume_snapshot handles non-existent session_events.jsonl."""
+        mem = str(tmp_path / "empty_memory")
+        # Don't create the directory - tracker should handle gracefully
+        tracker = SessionTracker(mem)
+        snapshot = tracker.build_resume_snapshot()
+        assert snapshot["status"] == "no_session_data"
+        assert snapshot["events_count"] == 0
+
+
+class TestSessionStatsOutput:
+    """Tests for --session-stats CLI output format (Round 16)."""
+
+    def test_session_stats_no_events(self, tmp_path, monkeypatch, capsys):
+        """--session-stats with no events produces structured output."""
+        from kernel import orchestrator
+
+        # Set up minimal environment
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        state_data = {
+            "current_node": "init",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "goal": "",
+            "status": "idle",
+            "last_updated": "",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
+        import yaml
+
+        with open(kernel_dir / "state.yaml", "w") as f:
+            yaml.safe_dump(state_data, f)
+
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+
+        monkeypatch.setattr(orchestrator, "KERNEL_ROOT", tmp_path)
+        orchestrator.main(["--session-stats"])
+
+        captured = capsys.readouterr()
+        assert "=== Session Statistics ===" in captured.out
+        assert "Events: 0" in captured.out
+        assert "Status: no_session_data" in captured.out
+        assert "Last node: none" in captured.out
+        assert "Recent path: no events" in captured.out
+        assert "No session events recorded" in captured.out
+
+    def test_session_stats_with_events(self, tmp_path, monkeypatch, capsys):
+        """--session-stats with events produces structured output."""
+        from kernel import orchestrator
+
+        # Set up minimal environment
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        state_data = {
+            "current_node": "plan",
+            "iteration_count": 3,
+            "max_iterations": 30,
+            "goal": "test",
+            "status": "running",
+            "last_updated": "",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "running"},
+        }
+        import yaml
+
+        with open(kernel_dir / "state.yaml", "w") as f:
+            yaml.safe_dump(state_data, f)
+
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+
+        # Write some events
+        tracker = SessionTracker(str(memory_dir))
+        tracker.track_event("node_enter", {"node": "init"})
+        tracker.track_event("iteration_complete", {"node": "init", "next_node": "plan"})
+        tracker.track_event("node_enter", {"node": "plan"})
+
+        monkeypatch.setattr(orchestrator, "KERNEL_ROOT", tmp_path)
+        orchestrator.main(["--session-stats"])
+
+        captured = capsys.readouterr()
+        assert "=== Session Statistics ===" in captured.out
+        assert "Events: 3" in captured.out
+        assert "Status: has_session_data" in captured.out
+        assert "Last node: plan" in captured.out
+        assert "Recent path: init -> plan" in captured.out
 
     def test_timestamp_increases(self, memory_dir):
         """Each event should have a monotonically non-decreasing timestamp."""

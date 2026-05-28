@@ -4,6 +4,7 @@ Inspired by context-mode's AnalyticsEngine, this module tracks token usage
 across iterations to report efficiency and identify waste.
 """
 
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -39,7 +40,7 @@ class ContextBudgetTracker:
         Args:
             max_records: Maximum number of assembly records to retain.
         """
-        self._records: list[AssemblyRecord] = []
+        self._records: deque[AssemblyRecord] = deque(maxlen=max_records)
         self._max_records = max_records
         self._total_assembled: int = 0
         self._total_budget: int = 0
@@ -70,14 +71,14 @@ class ContextBudgetTracker:
             budget_limit=budget_limit,
             utilization_pct=utilization,
         )
+        # If at capacity, the deque will auto-evict the oldest record
+        if len(self._records) == self._max_records:
+            removed = self._records[0]
+            self._total_assembled -= removed.total_tokens
+            self._total_budget -= removed.budget_limit
         self._records.append(record)
         self._total_assembled += total_tokens
         self._total_budget += budget_limit
-        # Bound records
-        if len(self._records) > self._max_records:
-            removed = self._records.pop(0)
-            self._total_assembled -= removed.total_tokens
-            self._total_budget -= removed.budget_limit
 
     def get_stats(self) -> dict[str, Any]:
         """Return summary statistics.

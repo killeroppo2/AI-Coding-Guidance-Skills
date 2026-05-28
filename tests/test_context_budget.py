@@ -195,3 +195,24 @@ class TestContextBudgetTracker:
         stats = tracker.get_stats()
         assert stats["total_tokens_assembled"] == large
         assert stats["avg_utilization_pct"] == 50.0
+
+    def test_memory_bounded_with_many_assemblies(self):
+        """10000 record_assembly calls should stay bounded at max_records."""
+        tracker = ContextBudgetTracker(max_records=100)
+        for i in range(10000):
+            tracker.record_assembly(f"node_{i}", 1000, {"s": 1000}, 2000)
+
+        stats = tracker.get_stats()
+        # Should only retain max_records entries
+        assert stats["assemblies"] == 100
+        # Total should reflect only the last 100 records
+        assert stats["total_tokens_assembled"] == 100 * 1000
+        assert stats["total_budget_available"] == 100 * 2000
+
+    def test_deque_backed_records_o1_operations(self):
+        """Verify that the tracker uses deque for O(1) append/eviction."""
+        from collections import deque
+
+        tracker = ContextBudgetTracker(max_records=50)
+        assert isinstance(tracker._records, deque)
+        assert tracker._records.maxlen == 50

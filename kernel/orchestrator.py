@@ -136,16 +136,23 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         state_path = str(KERNEL_ROOT / "kernel" / "state.yaml")
         state_mgr = StateManager(state_path, memory_dir)
         tracker = SessionTracker(memory_dir)
+        event_count = tracker.get_event_count()
         snapshot = tracker.build_resume_snapshot()
-        print("Session Events:")
-        print(f"  Total events: {tracker.get_event_count()}")
-        print(f"  Status: {snapshot.get('status', 'unknown')}")
-        if snapshot.get("last_node"):
-            print(f"  Last node: {snapshot['last_node']}")
-        if snapshot.get("node_path"):
-            print(f"  Recent path: {' -> '.join(snapshot['node_path'])}")
-        if snapshot.get("recent_errors"):
-            print(f"  Recent errors: {len(snapshot['recent_errors'])}")
+        print("=== Session Statistics ===")
+        print(f"Events: {event_count}")
+        print(f"Status: {snapshot.get('status', 'unknown')}")
+        if event_count == 0:
+            print("Last node: none")
+            print("Recent path: no events")
+            print("No session events recorded")
+        else:
+            print(f"Last node: {snapshot.get('last_node') or 'none'}")
+            if snapshot.get("node_path"):
+                print(f"Recent path: {' -> '.join(snapshot['node_path'])}")
+            else:
+                print("Recent path: no events")
+            if snapshot.get("recent_errors"):
+                print(f"Recent errors: {len(snapshot['recent_errors'])}")
         return state_mgr.get_state()
 
     # Validate that --goal is required unless --check or --status is used
