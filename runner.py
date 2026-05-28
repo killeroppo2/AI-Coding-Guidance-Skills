@@ -18,8 +18,7 @@ __all__ = ["main", "parse_args", "KERNEL_ROOT",
 
 def main(argv: list[str] | None = None) -> dict[str, Any]:
     """Main entry point. Delegates to kernel.orchestrator.main()."""
-    _orchestrator.KERNEL_ROOT = KERNEL_ROOT
-    return _orchestrator.main(argv)
+    return _orchestrator.main(argv, kernel_root=KERNEL_ROOT)
 
 
 if __name__ == "__main__":

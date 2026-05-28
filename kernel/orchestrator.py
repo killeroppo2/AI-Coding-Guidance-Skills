@@ -44,15 +44,20 @@ from memory.state_manager import StateManager
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
 
-def main(argv: list[str] | None = None) -> dict[str, Any]:
+def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict[str, Any]:
     """Main entry point for the kernel runner.
 
     Args:
         argv: Optional argument list for testing (defaults to sys.argv[1:]).
+        kernel_root: Optional project root path. If provided, overrides the
+            module-level KERNEL_ROOT.
 
     Returns:
         The final state dict after execution completes.
     """
+    global KERNEL_ROOT
+    if kernel_root is not None:
+        KERNEL_ROOT = kernel_root
     args = parse_args(argv)
 
     # Handle --check: run setup checks and exit early
