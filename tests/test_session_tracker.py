@@ -477,3 +477,73 @@ class TestSessionStatsOutput:
 
         events = tracker.get_recent_events(2)
         assert events[1]["timestamp"] >= events[0]["timestamp"]
+
+
+class TestSessionTrackerAdversarial:
+    """Adversarial tests for SessionTracker (Round 19)."""
+
+    def test_event_type_with_control_characters(self, memory_dir):
+        """track_event strips control characters from event type."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event("evil\x00\x01type", {"key": "val"})
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["type"] == "eviltype"
+        assert events[0]["data"] == {"key": "val"}
+
+    def test_event_type_only_control_chars(self, memory_dir):
+        """track_event with only control chars defaults to 'unknown'."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event("\x00\x01\x02\x03")
+
+        events = tracker.get_recent_events(1)
+        assert events[0]["type"] == "unknown"
+
+    def test_event_type_with_null_bytes(self, memory_dir):
+        """track_event strips null bytes from event type."""
+        tracker = SessionTracker(memory_dir)
+        tracker.track_event("test\x00event\x00name", {"data": 1})
+
+        events = tracker.get_recent_events(1)
+        assert "\x00" not in events[0]["type"]
+        assert events[0]["type"] == "testeventname"
+
+    def test_data_with_long_string(self, memory_dir):
+        """track_event handles data with 1MB strings without crashing."""
+        tracker = SessionTracker(memory_dir)
+        big_str = "A" * (1024 * 1024)  # 1MB
+        tracker.track_event("big_data", {"payload": big_str})
+
+        events = tracker.get_recent_events(1)
+        assert len(events[0]["data"]["payload"]) == 1024 * 1024
+
+    def test_data_deeply_nested(self, memory_dir):
+        """track_event handles deeply nested data (100 levels) gracefully."""
+        tracker = SessionTracker(memory_dir)
+        # Build a deeply nested dict
+        data: dict = {}
+        current = data
+        for i in range(100):
+            current[f"level_{i}"] = {}
+            current = current[f"level_{i}"]
+        current["leaf"] = "value"
+
+        # Should not crash - either serializes or falls back
+        tracker.track_event("deep", data)
+        events = tracker.get_recent_events(1)
+        assert events[0]["type"] == "deep"
+        assert "data" in events[0]
+
+    def test_rapid_consecutive_calls(self, memory_dir):
+        """100 rapid consecutive track_event calls should not corrupt the file."""
+        tracker = SessionTracker(memory_dir)
+        for i in range(100):
+            tracker.track_event("rapid", {"i": i})
+
+        events = tracker.get_recent_events(100)
+        # All events should be valid JSON and parseable
+        assert len(events) == 100
+        # Verify ordering
+        for idx, ev in enumerate(events):
+            assert ev["data"]["i"] == idx
+            assert ev["type"] == "rapid"

@@ -240,3 +240,98 @@ class TestHandlesMissingGetppid:
         # Verify no lifecycle-guard threads are alive
         for t in threading.enumerate():
             assert t.name != "lifecycle-guard" or not t.is_alive()
+
+
+class TestLifecycleGuardAdversarial:
+    """Adversarial tests for LifecycleGuard (Round 19)."""
+
+    def test_start_is_idempotent(self):
+        """Calling start() multiple times does not create multiple threads."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=60.0)
+        guard.start()
+        first_thread = guard._thread
+        assert first_thread is not None
+        assert first_thread.is_alive()
+
+        # Call start again - should be idempotent
+        guard.start()
+        assert guard._thread is first_thread  # Same thread, not a new one
+
+        # A third call should still be the same
+        guard.start()
+        assert guard._thread is first_thread
+
+        guard.stop()
+        callback.assert_not_called()
+
+    def test_start_idempotent_no_extra_threads(self):
+        """Multiple start() calls should not spawn extra threads."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=60.0)
+
+        guard.start()
+        guard.start()
+        guard.start()
+
+        # Count lifecycle-guard threads
+        guard_threads = [t for t in threading.enumerate() if t.name == "lifecycle-guard"]
+        assert len(guard_threads) == 1
+
+        guard.stop()
+
+    @patch("kernel.lifecycle_guard.os.getppid")
+    def test_blocking_callback_has_timeout(self, mock_getppid):
+        """on_shutdown callback that blocks forever is bounded by timeout."""
+        block_event = threading.Event()
+
+        def blocking_callback():
+            block_event.wait(timeout=30)  # Block for a long time
+
+        guard = LifecycleGuard(
+            on_shutdown=blocking_callback,
+            check_interval=0.05,
+            shutdown_timeout=0.2,
+        )
+
+        mock_getppid.return_value = 9999
+        guard._initial_ppid = 9999
+        guard._running = True
+        guard._stop_event.clear()
+        guard._thread = threading.Thread(
+            target=guard._monitor_loop, daemon=True, name="lifecycle-guard"
+        )
+        guard._thread.start()
+
+        # Simulate parent death
+        time.sleep(0.02)
+        mock_getppid.return_value = 1
+
+        # Wait enough for detection + timeout
+        time.sleep(0.5)
+
+        # Guard should have detected orphan and exited the loop
+        # even though the callback is still blocking
+        assert guard._running is False
+
+        # Clean up the blocking callback
+        block_event.set()
+
+    def test_start_after_stop_restarts(self):
+        """After stop(), calling start() again should restart monitoring."""
+        callback = MagicMock()
+        guard = LifecycleGuard(on_shutdown=callback, check_interval=60.0)
+
+        guard.start()
+        assert guard._running is True
+        first_thread = guard._thread
+        guard.stop()
+        assert guard._running is False
+
+        # Restart
+        guard.start()
+        assert guard._running is True
+        assert guard._thread is not first_thread  # New thread
+        assert guard._thread.is_alive()
+
+        guard.stop()

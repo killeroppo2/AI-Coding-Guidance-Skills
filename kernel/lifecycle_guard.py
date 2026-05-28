@@ -20,45 +20,59 @@ class LifecycleGuard:
     """
 
     DEFAULT_CHECK_INTERVAL = 30.0  # seconds
+    SHUTDOWN_TIMEOUT = 5.0  # seconds to wait for on_shutdown callback
 
     def __init__(
         self,
         on_shutdown: Callable[[], None],
         check_interval: float | None = None,
+        shutdown_timeout: float | None = None,
     ) -> None:
         """Initialize the lifecycle guard.
 
         Args:
             on_shutdown: Callback invoked when orphan state is detected.
             check_interval: Seconds between parent-liveness checks.
+            shutdown_timeout: Max seconds to wait for on_shutdown callback.
         """
         self._on_shutdown = on_shutdown
         self._check_interval = check_interval or self.DEFAULT_CHECK_INTERVAL
+        self._shutdown_timeout = shutdown_timeout or self.SHUTDOWN_TIMEOUT
         self._initial_ppid: int | None = None
         self._running = False
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
+        self._lock = threading.Lock()
 
     def start(self) -> None:
-        """Start the background liveness monitor."""
-        try:
-            self._initial_ppid = os.getppid()
-        except (OSError, AttributeError):
-            # os.getppid() not available on this platform
-            return
+        """Start the background liveness monitor.
 
-        if self._initial_ppid <= 1:
-            # Already orphaned or running as init child
-            return
+        This method is idempotent - calling it multiple times will not
+        create multiple monitor threads.
+        """
+        with self._lock:
+            # Idempotent: if already running, do nothing
+            if self._running and self._thread is not None and self._thread.is_alive():
+                return
 
-        self._running = True
-        self._stop_event.clear()
-        self._thread = threading.Thread(
-            target=self._monitor_loop,
-            daemon=True,
-            name="lifecycle-guard",
-        )
-        self._thread.start()
+            try:
+                self._initial_ppid = os.getppid()
+            except (OSError, AttributeError):
+                # os.getppid() not available on this platform
+                return
+
+            if self._initial_ppid <= 1:
+                # Already orphaned or running as init child
+                return
+
+            self._running = True
+            self._stop_event.clear()
+            self._thread = threading.Thread(
+                target=self._monitor_loop,
+                daemon=True,
+                name="lifecycle-guard",
+            )
+            self._thread.start()
 
     def stop(self) -> None:
         """Stop the background monitor."""
@@ -99,7 +113,21 @@ class LifecycleGuard:
             if not self.is_parent_alive():
                 self._running = False
                 try:
-                    self._on_shutdown()
+                    # Run callback with a timeout to prevent blocking forever
+                    cb_thread = threading.Thread(
+                        target=self._run_shutdown_callback,
+                        daemon=True,
+                        name="lifecycle-shutdown-cb",
+                    )
+                    cb_thread.start()
+                    cb_thread.join(timeout=self._shutdown_timeout)
                 except Exception:
                     pass
                 break
+
+    def _run_shutdown_callback(self) -> None:
+        """Execute the shutdown callback, swallowing any exceptions."""
+        try:
+            self._on_shutdown()
+        except Exception:
+            pass

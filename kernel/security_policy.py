@@ -83,16 +83,75 @@ class SecurityPolicy:
 
         Returns:
             'allow' if the command appears safe, 'deny' if it matches
-            dangerous patterns.
+            dangerous patterns or contains embedded control characters.
         """
         if not command:
             return "allow"
 
+        # Reject commands with embedded newlines (command injection)
+        if "\n" in command or "\r" in command:
+            return "deny"
+
+        # Reject null bytes
+        if "\x00" in command:
+            return "deny"
+
+        # Reject excessively long commands (>100KB is suspicious)
+        if len(command) > 102400:
+            return "deny"
+
+        # Normalize Unicode homoglyphs before pattern matching
+        # Replace common homoglyphs that could bypass pattern detection
+        normalized = self._normalize_homoglyphs(command)
+
         for pattern in self._compiled_patterns:
+            if pattern.search(normalized):
+                return "deny"
+            # Also check the original in case normalization masks something
             if pattern.search(command):
                 return "deny"
 
         return "allow"
+
+    @staticmethod
+    def _normalize_homoglyphs(text: str) -> str:
+        """Normalize Unicode homoglyphs to their ASCII equivalents.
+
+        Args:
+            text: Input string potentially containing homoglyphs.
+
+        Returns:
+            String with common homoglyphs replaced by ASCII equivalents.
+        """
+        # Map of common Unicode homoglyphs to ASCII
+        homoglyph_map = {
+            "\u0433": "r",  # Cyrillic small er
+            "\u043c": "m",  # Cyrillic small em
+            "\u0440": "p",  # Cyrillic small er (looks like 'p')
+            "\u0435": "e",  # Cyrillic small ie
+            "\u043e": "o",  # Cyrillic small o
+            "\u0430": "a",  # Cyrillic small a
+            "\u0441": "c",  # Cyrillic small es
+            "\u0445": "x",  # Cyrillic small ha
+            "\u0443": "y",  # Cyrillic small u (looks like 'y')
+            "\uff52": "r",  # Fullwidth r
+            "\uff4d": "m",  # Fullwidth m
+            "\uff45": "e",  # Fullwidth e
+            "\uff4f": "o",  # Fullwidth o
+            "\uff41": "a",  # Fullwidth a
+            "\uff43": "c",  # Fullwidth c
+            "\uff4c": "l",  # Fullwidth l
+            "\uff55": "u",  # Fullwidth u
+            "\uff57": "w",  # Fullwidth w
+            "\uff47": "g",  # Fullwidth g
+            "\uff53": "s",  # Fullwidth s
+            "\uff48": "h",  # Fullwidth h
+            "\uff42": "b",  # Fullwidth b
+            "\u2215": "/",  # Division slash
+            "\u2044": "/",  # Fraction slash
+            "\uff0f": "/",  # Fullwidth solidus
+        }
+        return "".join(homoglyph_map.get(ch, ch) for ch in text)
 
     def check_operation(self, op_type: str, target: str) -> PermissionDecision:
         """Unified check for any operation type.

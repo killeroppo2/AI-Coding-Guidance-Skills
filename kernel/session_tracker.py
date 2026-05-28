@@ -65,19 +65,32 @@ class SessionTracker:
         representations. This ensures tracking never crashes even with
         unexpected data types (Path objects, datetime, custom classes).
 
+        Control characters in event_type are stripped. Data is serialized
+        safely regardless of size or nesting depth.
+
         Args:
             event_type: Type of event (e.g. node_enter, iteration_complete).
             data: Optional dict of event-specific data.
         """
+        # Strip control characters from event type for safety
+        clean_type = "".join(ch for ch in event_type if ch >= " " or ch in "\t\n")
+        if not clean_type:
+            clean_type = "unknown"
         safe_data = _safe_serialize(data) if data else {}
         event = {
             "timestamp": time.time(),
-            "type": event_type,
+            "type": clean_type,
             "data": safe_data,
         }
         self.memory_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            serialized = json.dumps(event, ensure_ascii=False)
+        except (ValueError, RecursionError):
+            # Handle deeply nested or circular data by falling back
+            event["data"] = {"_serialization_error": "data too complex"}
+            serialized = json.dumps(event, ensure_ascii=False)
         with open(self.events_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+            f.write(serialized + "\n")
         self._prune_if_needed()
 
     def get_recent_events(self, n: int = 20) -> list[dict[str, Any]]:
