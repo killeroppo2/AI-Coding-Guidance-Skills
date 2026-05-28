@@ -5,6 +5,7 @@ and the lightweight retry mechanism for Mode 3 (real AI execution).
 """
 
 import atexit
+import logging
 import shlex
 import signal
 import subprocess
@@ -20,6 +21,8 @@ from kernel.graph_executor import GraphExecutor
 from kernel.reporter import Reporter
 from kernel.validators import _validate_workspace_paths
 from memory.state_manager import StateManager
+
+logger = logging.getLogger(__name__)
 
 # Module-level reference to the active subprocess for signal handler cleanup
 _active_subprocess = None  # type: subprocess.Popen | None
@@ -173,13 +176,12 @@ def run_mode3_iteration(
                 timeout_detail += f" | stderr: {stderr[:200]}"
             state_mgr.state.setdefault("errors", []).append(timeout_detail)
             state_mgr.trim_errors()
-            print(
+            logger.error(
                 format_error(
                     "timeout",
                     seconds=str(args.timeout),
                     node=node["id"],
-                ),
-                file=sys.stderr,
+                )
             )
             # Invalidate incremental context on failure
             assembler.mark_iteration_failure()
@@ -190,10 +192,9 @@ def run_mode3_iteration(
         result_stdout = stdout
         result_stderr = stderr
         if result_returncode != 0:
-            print(
+            logger.error(
                 f"[ERROR] AI command exited with code {result_returncode}: "
-                f"{result_stderr.strip()}",
-                file=sys.stderr,
+                f"{result_stderr.strip()}"
             )
             state_mgr.state.setdefault("errors", []).append(
                 f"AI command exited with code {result_returncode} on node {node['id']}"
@@ -233,17 +234,15 @@ def run_mode3_iteration(
         ai_output = result_stdout
         transition_condition = _parse_transition(ai_output)
     except FileNotFoundError:
-        print(
+        logger.error(
             f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
-            f"Please verify the command is installed and in your PATH.",
-            file=sys.stderr,
+            f"Please verify the command is installed and in your PATH."
         )
-        print(
+        logger.error(
             format_error(
                 "command_not_found",
                 cmd=shlex.split(args.ai_command)[0],
-            ),
-            file=sys.stderr,
+            )
         )
         state_mgr.state["status"] = "error"
         state_mgr.state.setdefault("errors", []).append(
@@ -256,9 +255,8 @@ def run_mode3_iteration(
     contract_result = validator.validate_output(ai_output, node["id"])
     if not contract_result.valid:
         for violation in contract_result.violations:
-            print(
-                f"[CONTRACT VIOLATION] {violation}",
-                file=sys.stderr,
+            logger.warning(
+                f"[CONTRACT VIOLATION] {violation}"
             )
         state_mgr.state.setdefault("errors", []).append(
             f"Contract violations on node {node['id']}: "
@@ -286,9 +284,8 @@ def run_mode3_iteration(
             contract_result.files_written, workspace_path
         )
         for v in ws_violations:
-            print(
-                f"[WARNING] Workspace boundary: {v}",
-                file=sys.stderr,
+            logger.warning(
+                f"[WARNING] Workspace boundary: {v}"
             )
 
     # Determine next node
@@ -305,19 +302,17 @@ def run_mode3_iteration(
             if not matched:
                 # Fallback to first transition
                 next_node_id = transitions[0]["to"]
-                print(
+                logger.warning(
                     f"[WARNING] TRANSITION condition '{transition_condition}' "
                     f"does not match any available transition, "
-                    f"falling back to first transition: {next_node_id}",
-                    file=sys.stderr,
+                    f"falling back to first transition: {next_node_id}"
                 )
         else:
             # No TRANSITION line - fallback to first transition
             next_node_id = transitions[0]["to"]
-            print(
+            logger.warning(
                 f"[WARNING] No TRANSITION line found in AI output, "
-                f"falling back to first transition: {next_node_id}",
-                file=sys.stderr,
+                f"falling back to first transition: {next_node_id}"
             )
             state_mgr.state.setdefault("errors", []).append(
                 f"No TRANSITION line in AI output on node {node['id']}, "

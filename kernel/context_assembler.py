@@ -4,11 +4,13 @@ This module assembles a full context prompt from kernel components,
 suitable for piping to an AI CLI tool via subprocess.
 """
 
-import sys
+import logging
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 class ContextAssembler:
@@ -585,10 +587,9 @@ class ContextAssembler:
         """
         total = sum(len(s) for s in sections)
         if total > 100000:
-            print(
+            logger.warning(
                 f"[WARNING] Context size ({total} chars) exceeds recommended "
-                f"limit. Skills may be over-loaded.",
-                file=sys.stderr,
+                f"limit. Skills may be over-loaded."
             )
         return total
 

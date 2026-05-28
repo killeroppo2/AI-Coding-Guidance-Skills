@@ -7,6 +7,7 @@ Mode 3 (real AI execution via subprocess).
 
 import atexit
 import json
+import logging
 import shlex
 import signal
 import subprocess
@@ -31,6 +32,7 @@ from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
+from kernel.logging_config import setup_logging
 from kernel.mode3_executor import _parse_transition
 from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
@@ -59,6 +61,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     if kernel_root is not None:
         KERNEL_ROOT = kernel_root
     args = parse_args(argv)
+
+    # Configure logging early
+    logger = setup_logging(verbose=args.verbose)
 
     # Handle --check: run setup checks and exit early
     if args.check:
@@ -155,17 +160,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             gaps = assessment.get("gaps", [])
 
             if confidence < 0.3 and gaps:
-                print(
+                logger.warning(
                     f"[WARNING] Low skill coverage ({confidence:.0%}). "
                     f"The kernel lacks skills for: {', '.join(gaps[:5])}. "
-                    f"Consider creating skills with 'write-a-skill'.",
-                    file=sys.stderr,
+                    f"Consider creating skills with 'write-a-skill'."
                 )
             elif confidence < 0.7 and gaps:
-                print(
+                logger.info(
                     f"[NOTE] Partial skill coverage ({confidence:.0%}). "
-                    f"Some areas may need new skills: {', '.join(gaps[:5])}",
-                    file=sys.stderr,
+                    f"Some areas may need new skills: {', '.join(gaps[:5])}"
                 )
 
             assessor.write_assessment(assessment, args.goal, memory_dir)
@@ -310,10 +313,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         if event["type"] == "prompt_modified":
                             event_detector.mark_user_owned(state_mgr.state, event["path"])
                     if args.verbose:
-                        print(
+                        logger.debug(
                             f"[INFO] Detected {len(external_events)}"
-                            " external change(s)",
-                            file=sys.stderr,
+                            " external change(s)"
                         )
 
             # Mode 3: Track visit BEFORE execution so failures count
@@ -331,10 +333,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 else:
                     # Philosophy: should_retreat check
                     if should_retreat(stuck_node, visits, max_retries_map.get(stuck_node, 5)):
-                        print(
+                        logger.info(
                             "[PHILOSOPHY] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a:"
-                            f" Retreating from node '{stuck_node}'",
-                            file=sys.stderr,
+                            f" Retreating from node '{stuck_node}'"
                         )
                     state_mgr.state["status"] = "stuck"
                     state_mgr.state.setdefault("errors", []).append(
@@ -343,21 +344,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     )
                     # Report stuck to stderr
                     reporter = Reporter()
-                    print(
+                    logger.error(
                         reporter.report_stuck(
                             state_mgr.state, stuck_node,
                             state_mgr.state.get("errors", [])
-                        ),
-                        file=sys.stderr,
+                        )
                     )
-                    print(
+                    logger.error(
                         format_error(
                             "stuck_node",
                             node=stuck_node,
                             visits=visits,
                             max_retries=max_retries_map.get(stuck_node, 5),
-                        ),
-                        file=sys.stderr,
+                        )
                     )
                     break
                 continue
@@ -416,13 +415,12 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         timeout_detail += f" | stderr: {stderr[:200]}"
                     state_mgr.state.setdefault("errors", []).append(timeout_detail)
                     state_mgr.trim_errors()
-                    print(
+                    logger.error(
                         format_error(
                             "timeout",
                             seconds=str(args.timeout),
                             node=node["id"],
-                        ),
-                        file=sys.stderr,
+                        )
                     )
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
@@ -433,10 +431,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 result_stdout = stdout
                 result_stderr = stderr
                 if result_returncode != 0:
-                    print(
+                    logger.error(
                         f"[ERROR] AI command exited with code {result_returncode}: "
-                        f"{result_stderr.strip()}",
-                        file=sys.stderr,
+                        f"{result_stderr.strip()}"
                     )
                     state_mgr.state.setdefault("errors", []).append(
                         f"AI command exited with code {result_returncode} on node {node['id']}"
@@ -473,17 +470,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 ai_output = result_stdout
                 transition_condition = _parse_transition(ai_output)
             except FileNotFoundError:
-                print(
+                logger.error(
                     f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
-                    f"Please verify the command is installed and in your PATH.",
-                    file=sys.stderr,
+                    f"Please verify the command is installed and in your PATH."
                 )
-                print(
+                logger.error(
                     format_error(
                         "command_not_found",
                         cmd=shlex.split(args.ai_command)[0],
-                    ),
-                    file=sys.stderr,
+                    )
                 )
                 state_mgr.state["status"] = "error"
                 state_mgr.state.setdefault("errors", []).append(
@@ -495,9 +490,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             contract_result = validator.validate_output(ai_output, node["id"])
             if not contract_result.valid:
                 for violation in contract_result.violations:
-                    print(
-                        f"[CONTRACT VIOLATION] {violation}",
-                        file=sys.stderr,
+                    logger.warning(
+                        f"[CONTRACT VIOLATION] {violation}"
                     )
                 state_mgr.state.setdefault("errors", []).append(
                     f"Contract violations on node {node['id']}: "
@@ -524,9 +518,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     contract_result.files_written, workspace_path
                 )
                 for v in ws_violations:
-                    print(
-                        f"[WARNING] Workspace boundary: {v}",
-                        file=sys.stderr,
+                    logger.warning(
+                        f"[WARNING] Workspace boundary: {v}"
                     )
 
             # Determine next node
@@ -543,19 +536,17 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     if not matched:
                         # Fallback to first transition
                         next_node_id = transitions[0]["to"]
-                        print(
+                        logger.warning(
                             f"[WARNING] TRANSITION condition '{transition_condition}' "
                             f"does not match any available transition, "
-                            f"falling back to first transition: {next_node_id}",
-                            file=sys.stderr,
+                            f"falling back to first transition: {next_node_id}"
                         )
                 else:
                     # No TRANSITION line - fallback to first transition
                     next_node_id = transitions[0]["to"]
-                    print(
+                    logger.warning(
                         f"[WARNING] No TRANSITION line found in AI output, "
-                        f"falling back to first transition: {next_node_id}",
-                        file=sys.stderr,
+                        f"falling back to first transition: {next_node_id}"
                     )
                     state_mgr.state.setdefault("errors", []).append(
                         f"No TRANSITION line in AI output on node {node['id']}, "
@@ -606,10 +597,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         except (json.JSONDecodeError, ValueError):
                             pass
                 if should_stop_iterating(state_mgr.state, recent_reflections):
-                    print(
+                    logger.info(
                         "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86:"
-                        " Diminishing returns detected, stopping.",
-                        file=sys.stderr,
+                        " Diminishing returns detected, stopping."
                     )
                     state_mgr.state["status"] = "complete"
                     break
