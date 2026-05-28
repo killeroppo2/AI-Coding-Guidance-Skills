@@ -4,11 +4,15 @@ This module assembles a full context prompt from kernel components,
 suitable for piping to an AI CLI tool via subprocess.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+from kernel.context_budget import ContextBudgetTracker
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +46,22 @@ class ContextAssembler:
         "decisions": ["reflect"],
     }
 
-    def __init__(self, kernel_root: Path, max_skill_content_chars: int = 8000):
+    def __init__(
+        self,
+        kernel_root: Path,
+        max_skill_content_chars: int = 8000,
+        budget_tracker: ContextBudgetTracker | None = None,
+    ):
         """Initialize the context assembler.
 
         Args:
             kernel_root: Path to the project root directory.
             max_skill_content_chars: Maximum characters allowed per skill content.
+            budget_tracker: Optional budget tracker for recording assembly stats.
         """
         self.kernel_root = kernel_root
         self.max_skill_content_chars = max_skill_content_chars
+        self._budget_tracker = budget_tracker
         self._last_node_id: str | None = None
         self._last_iteration_count: int = 0
         self._last_successful: bool = False
@@ -233,6 +244,23 @@ class ContextAssembler:
         # Check total context size and warn if over recommended limit
         all_sections = sections + active_trimmable
         self._estimate_total_context_size(all_sections)
+
+        # Record assembly in budget tracker if present
+        if self._budget_tracker is not None:
+            section_tokens: dict[str, int] = {}
+            for s in sections + active_trimmable:
+                header_line = s.split("\n")[0] if s else ""
+                if header_line.startswith("=== ") and header_line.endswith(" ==="):
+                    name = header_line[4:-4].strip().lower().replace(" ", "_")
+                else:
+                    name = "unknown"
+                section_tokens[name] = len(s) // 4
+            self._budget_tracker.record_assembly(
+                node_id=node_id or "unknown",
+                total_tokens=estimated_tokens,
+                sections=section_tokens,
+                budget_limit=token_budget,
+            )
 
         return full_text
 

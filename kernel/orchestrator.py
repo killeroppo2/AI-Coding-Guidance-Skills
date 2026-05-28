@@ -25,6 +25,7 @@ from kernel.capability_assessment import CapabilityAssessor
 from kernel.cli import parse_args
 from kernel.complexity_assessor import assess_complexity
 from kernel.context_assembler import ContextAssembler
+from kernel.context_budget import ContextBudgetTracker
 from kernel.contracts import OutputContractValidator
 from kernel.error_messages import format_error
 from kernel.event_detector import EventDetector
@@ -343,7 +344,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         print()
 
     if mode3:
-        assembler = ContextAssembler(KERNEL_ROOT)
+        budget_tracker = ContextBudgetTracker() if not args.dry_run else None
+        assembler = ContextAssembler(KERNEL_ROOT, budget_tracker=budget_tracker)
         validator = OutputContractValidator(str(KERNEL_ROOT / "kernel" / "graph.yaml"))
         reflector = Reflector(memory_dir, knowledge)
         evolution_engine = EvolutionEngine(str(KERNEL_ROOT / "kernel"), graph)
@@ -813,6 +815,11 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         else:
             tasks_list = []
         print(reporter.report_completion(state_mgr.get_state(), tasks_list))
+
+        if budget_tracker is not None:
+            budget_report = budget_tracker.get_efficiency_report()
+            if "No context assemblies" not in budget_report:
+                print(budget_report)
 
     # Export to prd.json if execution mode is ralph
     if state_mgr.get_execution_mode() == "ralph" and not args.dry_run:
