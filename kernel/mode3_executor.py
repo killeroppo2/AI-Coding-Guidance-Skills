@@ -3,10 +3,10 @@
 Contains AI output parsing utilities for Mode 3 (real AI execution).
 """
 
-import subprocess
+import subprocess  # noqa: F401 - Popen type used for _active_subprocess annotation
 
 # Module-level reference to the active subprocess for signal handler cleanup
-_active_subprocess = None  # type: subprocess.Popen | None
+_active_subprocess: subprocess.Popen | None = None
 
 
 def _parse_transition(output: str) -> str | None:

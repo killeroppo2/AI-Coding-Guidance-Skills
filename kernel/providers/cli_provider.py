@@ -58,7 +58,7 @@ class CLIProvider(AIProvider):
 
         if proc.returncode != 0:
             raise subprocess.CalledProcessError(
-                proc.returncode, self.ai_command, stdout, stderr
+                proc.returncode or 1, self.ai_command, stdout, stderr
             )
 
         transition = _parse_transition(stdout)

@@ -44,6 +44,21 @@ from memory.state_manager import StateManager
 
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
+# Maximum delay in seconds for exponential backoff retry strategy
+MAX_BACKOFF_DELAY_SECONDS = 60
+
+# Maximum number of progress history entries to retain
+MAX_PROGRESS_HISTORY_ENTRIES = 20
+
+# Number of recent reflections to check for stop-iterating philosophy
+RECENT_REFLECTIONS_WINDOW = 10
+
+# Timeout in seconds for graceful subprocess termination before kill
+SUBPROCESS_TERMINATE_TIMEOUT = 5
+
+# Maximum characters to capture from partial output in timeout messages
+PARTIAL_OUTPUT_PREVIEW_LENGTH = 200
+
 
 def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict[str, Any]:
     """Main entry point for the kernel runner.
@@ -247,7 +262,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             if _mode3_mod._active_subprocess is not None:
                 try:
                     _mode3_mod._active_subprocess.terminate()
-                    _mode3_mod._active_subprocess.wait(timeout=5)
+                    _mode3_mod._active_subprocess.wait(timeout=SUBPROCESS_TERMINATE_TIMEOUT)
                 except Exception:
                     try:
                         _mode3_mod._active_subprocess.kill()
@@ -348,6 +363,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             state_mgr.track_node_visit(node["id"])
             is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
             if is_stuck:
+                assert stuck_node is not None  # guaranteed when is_stuck=True
                 # Check for stuck_handler
                 try:
                     stuck_node_def = graph.get_node(stuck_node)
@@ -436,9 +452,11 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     _mode3_mod._active_subprocess = None
                     timeout_detail = f"Timeout after {args.timeout}s on node {node['id']}"
                     if stdout:
-                        timeout_detail += f" | partial stdout: {stdout[:200]}"
+                        preview = stdout[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
+                        timeout_detail += f" | partial stdout: {preview}"
                     if stderr:
-                        timeout_detail += f" | stderr: {stderr[:200]}"
+                        preview = stderr[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
+                        timeout_detail += f" | stderr: {preview}"
                     state_mgr.state.setdefault("errors", []).append(timeout_detail)
                     state_mgr.trim_errors()
                     logger.error(
@@ -488,7 +506,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         continue
                     elif args.retry_strategy == "backoff":
                         visit_count = state_mgr.state.get("node_visits", {}).get(node["id"], 1)
-                        delay = min(2 ** (visit_count - 1), 60)
+                        delay = min(2 ** (visit_count - 1), MAX_BACKOFF_DELAY_SECONDS)
                         time.sleep(delay)
                         continue
                     else:  # "continue"
@@ -609,15 +627,17 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         progress_history = state_mgr.state.setdefault("progress_history", [])
                         progress_history.append(tasks_done_count)
                         # Cap at 20 entries to prevent unbounded growth
-                        if len(progress_history) > 20:
-                            state_mgr.state["progress_history"] = progress_history[-20:]
+                        if len(progress_history) > MAX_PROGRESS_HISTORY_ENTRIES:
+                            state_mgr.state["progress_history"] = (
+                                progress_history[-MAX_PROGRESS_HISTORY_ENTRIES:]
+                            )
 
                 # Philosophy check: should_stop_iterating
                 reflections_path = Path(memory_dir) / "reflections.jsonl"
                 recent_reflections = []
                 if reflections_path.exists():
                     lines = reflections_path.read_text(encoding="utf-8").strip().splitlines()
-                    for line in lines[-10:]:
+                    for line in lines[-RECENT_REFLECTIONS_WINDOW:]:
                         try:
                             recent_reflections.append(json.loads(line))
                         except (json.JSONDecodeError, ValueError):
@@ -644,6 +664,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             state_mgr.track_node_visit(node["id"])
             is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
             if is_stuck:
+                assert stuck_node is not None  # guaranteed when is_stuck=True
                 # Check for stuck_handler
                 try:
                     stuck_node_def = graph.get_node(stuck_node)

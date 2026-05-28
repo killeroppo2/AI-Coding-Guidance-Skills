@@ -75,7 +75,7 @@ class GraphExecutor:
         """
         for node in self.graph.get("nodes", []):
             if node.get("id") == node_id:
-                return node
+                return dict(node)
         raise KeyError(f"Node not found: {node_id}")
 
     def get_prompt_for_node(self, node_id: str) -> str:
@@ -88,7 +88,8 @@ class GraphExecutor:
             The path string to the prompt file (relative as stored in graph).
         """
         node = self.get_node(node_id)
-        return node.get("prompt_file", "")
+        prompt_file: str = node.get("prompt_file", "")
+        return prompt_file
 
     def advance(self, current_node_id: str, condition: str) -> str:
         """Given current node and a condition, return the next node_id.
@@ -108,7 +109,8 @@ class GraphExecutor:
         transitions = node.get("transitions", [])
         for transition in transitions:
             if transition.get("condition") == condition:
-                return transition["to"]
+                next_id: str = transition["to"]
+                return next_id
         raise ValueError(
             f"No transition from '{current_node_id}' with condition '{condition}'"
         )
@@ -123,7 +125,8 @@ class GraphExecutor:
             List of transition dicts.
         """
         node = self.get_node(node_id)
-        return node.get("transitions", [])
+        transitions: list = node.get("transitions", [])
+        return transitions
 
     def validate_graph(self) -> tuple[bool, list]:
         """Check graph is valid.

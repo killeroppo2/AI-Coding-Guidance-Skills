@@ -236,7 +236,8 @@ class StateManager:
         Returns:
             The execution mode string ('kernel' or 'ralph').
         """
-        return self.state.get("execution_mode", "kernel")
+        mode: str = self.state.get("execution_mode", "kernel")
+        return mode
 
     def set_execution_mode(self, mode: str) -> None:
         """Set the execution mode.
@@ -259,7 +260,7 @@ class StateManager:
         Returns:
             Path to the workspace directory.
         """
-        workspace_rel = self.state.get("workspace_path", "")
+        workspace_rel: str = self.state.get("workspace_path", "")
         project_root = self.state_path.parent.parent
         if not workspace_rel:
             return project_root / "workspace"
@@ -304,7 +305,8 @@ class StateManager:
         if "node_visits" not in self.state:
             self.state["node_visits"] = {}
         self.state["node_visits"][node_id] = self.state["node_visits"].get(node_id, 0) + 1
-        return self.state["node_visits"][node_id]
+        count: int = self.state["node_visits"][node_id]
+        return count
 
     def check_stuck(self, max_retries_map: dict) -> tuple[bool, str | None, int]:
         """Check if any node has exceeded its max_retries.

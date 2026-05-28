@@ -113,7 +113,7 @@ class KnowledgeStore:
             List of rule dicts.
         """
         index = self._load_index(self.rules_dir)
-        items = index.get("items", [])
+        items: list = index.get("items", [])
         if filter_tags is None:
             return items
         return [
@@ -166,7 +166,8 @@ class KnowledgeStore:
         index = self._load_index(self.skills_dir)
         for item in index.get("items", []):
             if item.get("name") == name:
-                return item
+                result: dict = item
+                return result
         raise KeyError(f"Skill not found: {name}")
 
     def list_skills(self, tags: list | None = None) -> list:
@@ -179,7 +180,7 @@ class KnowledgeStore:
             List of skill dicts.
         """
         index = self._load_index(self.skills_dir)
-        items = index.get("items", [])
+        items: list = index.get("items", [])
         if tags is None:
             return items
         return [
@@ -198,9 +199,11 @@ class KnowledgeStore:
             with open(index_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
             if "core_items" in data:
-                return data["core_items"]
+                core: list = data["core_items"]
+                return core
             # Legacy format: all items are considered core
-            return data.get("items", [])
+            legacy: list = data.get("items", [])
+            return legacy
         return []
 
     def add_pattern(self, pattern: dict) -> None:
@@ -245,7 +248,7 @@ class KnowledgeStore:
             List of pattern dicts.
         """
         index = self._load_index(self.patterns_dir)
-        items = index.get("items", [])
+        items: list = index.get("items", [])
         if filter_tags is None:
             return items
         return [

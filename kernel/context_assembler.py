@@ -12,6 +12,15 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+# Default token budget for context assembly (estimated as len//4)
+DEFAULT_TOKEN_BUDGET = 32000
+
+# Maximum character count before emitting a context size warning
+CONTEXT_SIZE_WARNING_THRESHOLD = 100000
+
+# Default max tokens for skill composition
+DEFAULT_SKILL_COMPOSE_TOKENS = 4000
+
 
 class ContextAssembler:
     """Assembles full context prompt from kernel components."""
@@ -66,7 +75,7 @@ class ContextAssembler:
         return node_id in allowed
 
     def assemble(self, state: dict, node: dict, graph_executor: Any,
-                 knowledge_store: Any, token_budget: int = 32000) -> str:
+                 knowledge_store: Any, token_budget: int = DEFAULT_TOKEN_BUDGET) -> str:
         """Assemble full context from BOOT.md + state + node prompt + philosophy + skills.
 
         Returns a single formatted string suitable for piping to an AI.
@@ -522,7 +531,7 @@ class ContextAssembler:
 
         composer = SkillComposer(knowledge_store)
         try:
-            content = composer.compose(skill_names, max_tokens=4000)
+            content = composer.compose(skill_names, max_tokens=DEFAULT_SKILL_COMPOSE_TOKENS)
         except (ValueError, FileNotFoundError):
             # Fallback to descriptions if compose fails
             parts = []
@@ -580,7 +589,7 @@ class ContextAssembler:
     def _estimate_total_context_size(self, sections: list[str]) -> int:
         """Compute total character count from all sections.
 
-        Emits a warning to stderr if total exceeds 100000 chars.
+        Emits a warning to stderr if total exceeds CONTEXT_SIZE_WARNING_THRESHOLD chars.
 
         Args:
             sections: List of section strings.
@@ -589,7 +598,7 @@ class ContextAssembler:
             Total character count.
         """
         total = sum(len(s) for s in sections)
-        if total > 100000:
+        if total > CONTEXT_SIZE_WARNING_THRESHOLD:
             logger.warning(
                 f"[WARNING] Context size ({total} chars) exceeds recommended "
                 f"limit. Skills may be over-loaded."

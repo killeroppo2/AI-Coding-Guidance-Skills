@@ -36,7 +36,8 @@ class TaskManager:
             return []
         with open(self.tasks_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-        return data.get("tasks", [])
+        tasks: list[dict] = data.get("tasks", [])
+        return tasks
 
     def save_tasks(self, tasks: list[dict]) -> None:
         """Write tasks to memory/tasks.yaml.

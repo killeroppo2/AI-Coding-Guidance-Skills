@@ -39,7 +39,8 @@ class Reflector:
         """
         if self.graph_advisor is None:
             return []
-        return self.graph_advisor.suggest_graph_changes(goal, skills_loaded, history)
+        result: list[dict] = self.graph_advisor.suggest_graph_changes(goal, skills_loaded, history)
+        return result
 
     def analyze_iteration(self, iteration_data: dict) -> dict:
         """Analyze iteration data and produce a reflection dict.

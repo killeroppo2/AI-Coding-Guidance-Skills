@@ -82,7 +82,8 @@ class EventDetector:
         Returns:
             List of file paths that the user owns.
         """
-        return state.get("user_owned_files", [])
+        files: list[str] = state.get("user_owned_files", [])
+        return files
 
     def mark_user_owned(self, state: dict, file_path: str) -> None:
         """Mark a file as user-owned in state.

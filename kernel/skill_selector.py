@@ -74,4 +74,5 @@ def select_skills_for_phase(phase: str, workflow: dict) -> list[str]:
     """
     if not phase or not workflow:
         return []
-    return workflow.get(phase, [])
+    skills: list[str] = workflow.get(phase, [])
+    return skills

@@ -204,14 +204,16 @@ class SkillComposer:
         # Try relative to knowledge_root/skills/
         skill_md = self.knowledge_store.skills_dir / skill_path / "SKILL.md"
         if skill_md.exists():
-            return skill_md.read_text(encoding="utf-8")
+            content: str = skill_md.read_text(encoding="utf-8")
+            return content
 
         # Try the path directly (for skills at repo root level)
         # Go up from knowledge dir to find repo root
         repo_root = self.knowledge_store.knowledge_root.parent
         alt_path = repo_root / skill_path / "SKILL.md"
         if alt_path.exists():
-            return alt_path.read_text(encoding="utf-8")
+            content = alt_path.read_text(encoding="utf-8")
+            return content
 
         raise FileNotFoundError(
             f"SKILL.md not found for skill '{skill_name}' at {skill_md} or {alt_path}"
