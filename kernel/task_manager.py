@@ -9,6 +9,8 @@ from pathlib import Path
 
 import yaml
 
+from kernel.atomic_write import atomic_write
+
 
 class TaskManager:
     """Manages structured tasks in memory/tasks.yaml.
@@ -40,18 +42,18 @@ class TaskManager:
         return tasks
 
     def save_tasks(self, tasks: list[dict]) -> None:
-        """Write tasks to memory/tasks.yaml.
+        """Write tasks to memory/tasks.yaml using atomic write.
 
         Args:
             tasks: List of task dicts to persist.
         """
         self.memory_dir.mkdir(parents=True, exist_ok=True)
-        with open(self.tasks_path, "w", encoding="utf-8") as f:
-            yaml.safe_dump(
-                {"tasks": tasks}, f,
-                default_flow_style=False,
-                allow_unicode=True,
-            )
+        yaml_content = yaml.safe_dump(
+            {"tasks": tasks},
+            default_flow_style=False,
+            allow_unicode=True,
+        )
+        atomic_write(self.tasks_path, yaml_content)
 
     def add_task(self, task: dict) -> None:
         """Add a task, auto-generating an id if missing.

@@ -423,8 +423,8 @@ class TestErrorsTrimmedEachIteration:
                 "--max-iterations", "15",
             ])
 
-        # With 15 failures adding errors, trim_errors(10) should keep at most 10
-        assert len(state.get("errors", [])) <= 10
+        # With 15 failures adding errors, trim_errors(20) should keep at most 20
+        assert len(state.get("errors", [])) <= 20
 
     def test_errors_trimmed_on_success_path(self, runner_env: Path, monkeypatch) -> None:
         """Verify trim_errors is called after successful transitions too."""
@@ -449,5 +449,5 @@ class TestErrorsTrimmedEachIteration:
                 "--max-iterations", "1",
             ])
 
-        # After trimming, should have at most 10 errors
-        assert len(state.get("errors", [])) <= 10
+        # After trimming, should have at most 20 errors
+        assert len(state.get("errors", [])) <= 20

@@ -183,7 +183,7 @@ class StateManager:
                 f.write(json.dumps(reflection) + "\n")
 
     def update_progress(self, tasks_total: int, tasks_done: int) -> None:
-        """Update progress.yaml.
+        """Update progress.yaml using atomic write.
 
         Args:
             tasks_total: Total number of tasks.
@@ -201,11 +201,13 @@ class StateManager:
                 else "in_progress"
             ),
         }
-        with open(progress_path, "w", encoding="utf-8") as f:
-            yaml.safe_dump(progress, f, default_flow_style=False, allow_unicode=True)
+        yaml_content = yaml.safe_dump(
+            progress, default_flow_style=False, allow_unicode=True
+        )
+        atomic_write(progress_path, yaml_content)
 
     def set_goal(self, goal: str) -> None:
-        """Set goal in state and write to current_goal.md.
+        """Set goal in state and write to current_goal.md using atomic write.
 
         Args:
             goal: The goal string.
@@ -213,8 +215,7 @@ class StateManager:
         self.state["goal"] = goal
         self.memory_dir.mkdir(parents=True, exist_ok=True)
         goal_path = self.memory_dir / "current_goal.md"
-        with open(goal_path, "w", encoding="utf-8") as f:
-            f.write(f"# Current Goal\n\n{goal}\n")
+        atomic_write(goal_path, f"# Current Goal\n\n{goal}\n")
 
     def set_workspace(self, project_name: str) -> None:
         """Set workspace_path in state and create the workspace directory.
@@ -308,6 +309,21 @@ class StateManager:
         count: int = self.state["node_visits"][node_id]
         return count
 
+    def trim_node_visits(self, max_nodes: int = 100) -> None:
+        """Trim node_visits to prevent unbounded growth.
+
+        Keeps only the max_nodes most-visited nodes. In practice, this is
+        rarely needed since nodes are bounded by graph size, but protects
+        against pathological cases.
+
+        Args:
+            max_nodes: Maximum number of node entries to retain.
+        """
+        visits = self.state.get("node_visits", {})
+        if len(visits) > max_nodes:
+            sorted_nodes = sorted(visits.items(), key=lambda x: x[1], reverse=True)
+            self.state["node_visits"] = dict(sorted_nodes[:max_nodes])
+
     def check_stuck(self, max_retries_map: dict) -> tuple[bool, str | None, int]:
         """Check if any node has exceeded its max_retries.
 
@@ -332,11 +348,11 @@ class StateManager:
         """
         return self.memory_dir / "tasks.yaml"
 
-    def trim_errors(self, max_kept: int = 10) -> None:
+    def trim_errors(self, max_kept: int = 20) -> None:
         """Keep only the last max_kept errors, archive older ones to error_history.jsonl.
 
         Args:
-            max_kept: Maximum number of errors to retain in state.
+            max_kept: Maximum number of errors to retain in state (default 20).
         """
         errors = self.state.get("errors", [])
         if len(errors) > max_kept:
