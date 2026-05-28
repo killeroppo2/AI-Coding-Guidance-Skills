@@ -564,7 +564,7 @@ class TestSkillPathResolution:
         index_path = kernel_root / "skills" / "_index.yaml"
         data = yaml.safe_load(index_path.read_text())
         items = data.get("items", [])
-        assert len(items) == 28, f"Expected 28 skills in index, found {len(items)}"
+        assert len(items) == 29, f"Expected 29 skills in index, found {len(items)}"
 
         resolved = []
         unresolved = []

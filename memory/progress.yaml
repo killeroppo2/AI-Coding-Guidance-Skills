@@ -1,8 +1,8 @@
-iteration: 16
-tasks_total: 6
-tasks_done: 6
-status: completed
+iteration: 0
+tasks_total: 0
+tasks_done: 0
+status: idle
 test_results:
-  passed: 36
+  passed: 0
   failed: 0
-  coverage: 100
+  coverage: 0
