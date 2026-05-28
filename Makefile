@@ -39,6 +39,6 @@ clean: ## Remove generated files
 all: lint typecheck test ## Run lint, typecheck, and test
 
 release: ## Create a git tag from pyproject.toml version
-	$(eval VERSION := $(shell python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"))
+	$(eval VERSION := $(shell python -c "import tomllib; f = open('pyproject.toml','rb'); data = tomllib.load(f); f.close(); print(data['project']['version'])"))
 	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
 	@echo "Created tag v$(VERSION)"

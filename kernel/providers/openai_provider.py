@@ -23,6 +23,7 @@ class OpenAIProvider(AIProvider):
 
         Raises:
             ImportError: If the openai package is not installed.
+            ValueError: If no API key is provided and OPENAI_API_KEY is not set.
         """
         if openai is None:
             raise ImportError(
@@ -31,6 +32,11 @@ class OpenAIProvider(AIProvider):
             )
         self.model = model
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "OpenAI API key is required. Pass api_key= or set the "
+                "OPENAI_API_KEY environment variable."
+            )
         self._client = openai.AsyncOpenAI(api_key=self.api_key)
 
     async def generate(self, prompt: str, timeout: int = 300) -> ProviderResponse:

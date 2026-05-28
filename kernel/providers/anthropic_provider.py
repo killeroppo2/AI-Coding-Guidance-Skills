@@ -25,6 +25,7 @@ class AnthropicProvider(AIProvider):
 
         Raises:
             ImportError: If the anthropic package is not installed.
+            ValueError: If no API key is provided and ANTHROPIC_API_KEY is not set.
         """
         if anthropic is None:
             raise ImportError(
@@ -33,6 +34,11 @@ class AnthropicProvider(AIProvider):
             )
         self.model = model
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "Anthropic API key is required. Pass api_key= or set the "
+                "ANTHROPIC_API_KEY environment variable."
+            )
         self._client = anthropic.AsyncAnthropic(api_key=self.api_key)
 
     async def generate(self, prompt: str, timeout: int = 300) -> ProviderResponse:

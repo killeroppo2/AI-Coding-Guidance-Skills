@@ -1,5 +1,6 @@
-"""CLI-based AI provider using subprocess execution."""
+"""CLI-based AI provider using async subprocess execution."""
 
+import asyncio
 import shlex
 import subprocess
 
@@ -10,7 +11,8 @@ from kernel.providers.base import AIProvider, ProviderResponse
 class CLIProvider(AIProvider):
     """AI provider that wraps a CLI command via subprocess.
 
-    This preserves the existing Mode 3 subprocess behavior as a provider.
+    This preserves the existing Mode 3 subprocess behavior as a provider,
+    using asyncio subprocess to avoid blocking the event loop.
     """
 
     def __init__(self, ai_command: str) -> None:
@@ -32,17 +34,27 @@ class CLIProvider(AIProvider):
             ProviderResponse with text, transition, and raw output.
 
         Raises:
-            subprocess.TimeoutExpired: If the command times out.
+            asyncio.TimeoutError: If the command times out.
             FileNotFoundError: If the command is not found.
+            subprocess.CalledProcessError: If the command exits with non-zero status.
         """
-        proc = subprocess.Popen(
-            shlex.split(self.ai_command),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+        proc = await asyncio.create_subprocess_exec(
+            *shlex.split(self.ai_command),
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = proc.communicate(input=prompt, timeout=timeout)
+        try:
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(input=prompt.encode()), timeout=timeout
+            )
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            raise
+
+        stdout = stdout_bytes.decode() if stdout_bytes else ""
+        stderr = stderr_bytes.decode() if stderr_bytes else ""
 
         if proc.returncode != 0:
             raise subprocess.CalledProcessError(

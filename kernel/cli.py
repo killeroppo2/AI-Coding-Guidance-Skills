@@ -59,6 +59,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="AI CLI command for Mode 3 execution (e.g., 'claude --print')",
     )
+    # Provider flags are for future integration. The kernel currently uses
+    # direct subprocess execution via --ai-command. These flags are parsed
+    # and validated but not yet wired into the execution path.
     parser.add_argument(
         "--provider",
         type=str,
