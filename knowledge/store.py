@@ -48,8 +48,11 @@ class KnowledgeStore:
         if index_path.exists():
             with open(index_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
+            # Support both legacy "items" and new "core_items"/"community_items"
             if "items" not in data:
-                data["items"] = []
+                core = data.get("core_items", [])
+                community = data.get("community_items", [])
+                data["items"] = core + community
             return data
         return {"items": []}
 
@@ -183,6 +186,22 @@ class KnowledgeStore:
             item for item in items
             if any(tag in item.get("tags", []) for tag in tags)
         ]
+
+    def list_core_skills(self) -> list:
+        """List only core skills (those defined in core_items).
+
+        Returns:
+            List of core skill dicts, or all items if using legacy format.
+        """
+        index_path = self.skills_dir / "_index.yaml"
+        if index_path.exists():
+            with open(index_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            if "core_items" in data:
+                return data["core_items"]
+            # Legacy format: all items are considered core
+            return data.get("items", [])
+        return []
 
     def add_pattern(self, pattern: dict) -> None:
         """Add a pattern, update _index.yaml.

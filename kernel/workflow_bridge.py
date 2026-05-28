@@ -39,6 +39,11 @@ class WorkflowBridge:
             with open(path) as f:
                 data = yaml.safe_load(f) or {}
             self._workflow: dict[str, list[str]] = data.get("workflow", {})
+            # Support new format with core_workflow and community_workflow
+            if not self._workflow:
+                core_wf = data.get("core_workflow", {})
+                community_wf = data.get("community_workflow", {})
+                self._workflow = {**core_wf, **community_wf}
         else:
             self._workflow = {}
 

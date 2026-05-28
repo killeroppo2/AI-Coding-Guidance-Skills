@@ -387,3 +387,43 @@ class TestParseArgsSkills:
         """Test that --skills defaults to None."""
         args = runner.parse_args(["--goal", "test"])
         assert args.skills is None
+
+
+class TestCoreSkillPriorityBoost:
+    """Tests for core skill priority boost in select_skills_for_goal."""
+
+    def test_core_skill_boosted_over_community(self) -> None:
+        """Test that core skills get a 1.5x score boost over community skills."""
+        skills = [
+            {"name": "core-skill", "tags": ["testing"], "path": "core-skill",
+             "description": "A core testing skill"},
+            {"name": "community-skill", "tags": ["testing"], "path": "community/community-skill",
+             "description": "A community testing skill"},
+        ]
+        result = select_skills_for_goal("testing", skills)
+        # Both match on tag "testing" (score 3), but core gets 1.5x boost (4)
+        assert result[0] == "core-skill"
+        assert result[1] == "community-skill"
+
+    def test_community_skill_can_still_win_with_higher_base(self) -> None:
+        """Test that community skill can outrank core if base score is much higher."""
+        skills = [
+            {"name": "core-skill", "tags": ["testing"], "path": "core-skill",
+             "description": "Unrelated description"},
+            {"name": "community-skill", "tags": ["testing", "quality", "tdd"],
+             "path": "community/community-skill",
+             "description": "testing quality tdd development"},
+        ]
+        # core-skill: tag match "testing" = 3, boosted to 4
+        # community-skill: tag matches "testing", "quality", "tdd" = 9, plus desc matches
+        result = select_skills_for_goal("testing quality tdd", skills)
+        assert result[0] == "community-skill"
+
+    def test_core_boost_not_applied_when_score_zero(self) -> None:
+        """Test that core boost is not applied to skills with zero score."""
+        skills = [
+            {"name": "core-skill", "tags": ["design"], "path": "core-skill",
+             "description": "A design skill"},
+        ]
+        result = select_skills_for_goal("quantum physics", skills)
+        assert result == []

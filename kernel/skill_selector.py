@@ -46,6 +46,12 @@ def select_skills_for_goal(
 
         score = (tag_matches * 3) + (desc_matches * 1)
 
+        # Boost core skills (those not in community/ subdirectory)
+        path = skill.get("path", "")
+        is_core = not path.startswith("community/")
+        if is_core and score > 0:
+            score = int(score * 1.5)
+
         if score > 0:
             scored.append((name, score))
 

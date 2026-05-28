@@ -530,7 +530,8 @@ class TestKnowledgeFiles:
         path = kernel_root / "skills" / "_index.yaml"
         assert path.exists()
         data = yaml.safe_load(path.read_text())
-        assert "items" in data
+        # New format uses core_items and community_items instead of items
+        assert "core_items" in data or "items" in data
 
     def test_patterns_index_exists(self, kernel_root: Path) -> None:
         """Test that patterns/_index.yaml exists and is valid."""
@@ -558,12 +559,16 @@ class TestSkillPathResolution:
     def test_skill_paths_resolve(self, kernel_root: Path) -> None:
         """Test that skill paths in _index.yaml resolve to existing SKILL.md files.
 
-        At least 20 of 28 skills should resolve to actual SKILL.md files.
+        At least 20 of 29 skills should resolve to actual SKILL.md files.
         Skills with paths that do not resolve are reported as warnings.
         """
         index_path = kernel_root / "skills" / "_index.yaml"
         data = yaml.safe_load(index_path.read_text())
-        items = data.get("items", [])
+        # Support both legacy "items" and new core_items/community_items format
+        if "items" in data:
+            items = data["items"]
+        else:
+            items = data.get("core_items", []) + data.get("community_items", [])
         assert len(items) == 29, f"Expected 29 skills in index, found {len(items)}"
 
         resolved = []
@@ -581,9 +586,9 @@ class TestSkillPathResolution:
             else:
                 unresolved.append(name)
 
-        # At least 20 of 28 should resolve
+        # At least 20 of 29 should resolve
         assert len(resolved) >= 20, (
-            f"Only {len(resolved)}/28 skills resolved. "
+            f"Only {len(resolved)}/29 skills resolved. "
             f"Unresolved: {unresolved}"
         )
 
@@ -591,7 +596,11 @@ class TestSkillPathResolution:
         """Test that all skill entries have name, path, and description."""
         index_path = kernel_root / "skills" / "_index.yaml"
         data = yaml.safe_load(index_path.read_text())
-        items = data.get("items", [])
+        # Support both legacy "items" and new core_items/community_items format
+        if "items" in data:
+            items = data["items"]
+        else:
+            items = data.get("core_items", []) + data.get("community_items", [])
 
         for skill in items:
             assert "name" in skill, f"Skill missing 'name': {skill}"

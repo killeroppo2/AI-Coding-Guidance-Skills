@@ -171,6 +171,11 @@ class SkillComposer:
             index_data = {}
 
         workflow = index_data.get("workflow", {})
+        # Also check core_workflow and community_workflow for new format
+        if not workflow:
+            core_wf = index_data.get("core_workflow", {})
+            community_wf = index_data.get("community_workflow", {})
+            workflow = {**core_wf, **community_wf}
         if phase_name not in workflow:
             available = list(workflow.keys())
             raise ValueError(
