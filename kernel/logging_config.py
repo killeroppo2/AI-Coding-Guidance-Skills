@@ -75,7 +75,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     handler.setLevel(log_level)
 
     if log_format == "json":
-        formatter = JsonFormatter()
+        formatter: logging.Formatter = JsonFormatter()
     else:
         # Use message-only format to preserve existing output patterns
         formatter = logging.Formatter("%(message)s")

@@ -7,7 +7,6 @@ Mode 3 (real AI execution via subprocess).
 
 import atexit
 import json
-import logging
 import shlex
 import signal
 import subprocess
