@@ -7,8 +7,9 @@ import re
 def _sanitize_project_name(goal: str) -> str:
     """Derive a sanitized project name from a goal string.
 
-    Lowercases the goal, replaces spaces with hyphens, removes special
-    characters, and truncates to 50 characters.
+    Strips null bytes and control characters, lowercases the goal,
+    replaces spaces with hyphens, removes special characters, and
+    truncates to 50 characters.
 
     Args:
         goal: The goal string to sanitize.
@@ -16,7 +17,18 @@ def _sanitize_project_name(goal: str) -> str:
     Returns:
         A filesystem-safe project name.
     """
-    name = goal.lower().replace(" ", "-")
+    # Strip null bytes and control characters (U+0000-U+001F, U+007F-U+009F)
+    name = "".join(c for c in goal if c >= " " and c not in ("\x7f",) and ord(c) > 0x1F)
+    # Also strip Unicode direction override and other format characters
+    name = "".join(
+        c for c in name
+        if not (
+            0x200B <= ord(c) <= 0x200F
+            or 0x202A <= ord(c) <= 0x202E
+            or ord(c) == 0xFEFF
+        )
+    )
+    name = name.lower().replace(" ", "-")
     name = re.sub(r"[^a-z0-9-]", "", name)
     return name[:50]
 
