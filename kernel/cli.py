@@ -25,7 +25,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--init",
         action="store_true",
-        help="Initialize runtime files and exit",
+        help="Initialize runtime files, apply pending migrations, and exit",
     )
     parser.add_argument(
         "--check",
