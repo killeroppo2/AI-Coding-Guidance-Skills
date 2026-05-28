@@ -248,12 +248,12 @@ class ContextAssembler:
         # Record assembly in budget tracker if present
         if self._budget_tracker is not None:
             section_tokens: dict[str, int] = {}
-            for s in sections + active_trimmable:
+            for idx, s in enumerate(sections + active_trimmable):
                 header_line = s.split("\n")[0] if s else ""
                 if header_line.startswith("=== ") and header_line.endswith(" ==="):
                     name = header_line[4:-4].strip().lower().replace(" ", "_")
                 else:
-                    name = "unknown"
+                    name = f"section_{idx}"
                 section_tokens[name] = len(s) // 4
             self._budget_tracker.record_assembly(
                 node_id=node_id or "unknown",

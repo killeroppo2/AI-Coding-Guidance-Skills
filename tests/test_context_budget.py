@@ -216,3 +216,47 @@ class TestContextBudgetTracker:
         tracker = ContextBudgetTracker(max_records=50)
         assert isinstance(tracker._records, deque)
         assert tracker._records.maxlen == 50
+
+
+class TestBudgetTrackerIntegration:
+    """Integration test: ContextAssembler calls budget_tracker.record_assembly."""
+
+    def test_assemble_records_to_budget_tracker(self, tmp_path):
+        """When budget_tracker is provided, assemble() records assembly stats."""
+        from kernel.context_assembler import ContextAssembler
+
+        # Set up minimal kernel structure
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        (kernel_dir / "BOOT.md").write_text("Boot content")
+        (kernel_dir / "contracts").mkdir()
+        (kernel_dir / "contracts" / "output_format.md").write_text("Format contract")
+
+        # Create a minimal graph executor mock and knowledge store mock
+        class MockGraphExecutor:
+            def get_prompt_for_node(self, node_id):
+                return None
+
+        class MockKnowledgeStore:
+            def list_skills(self):
+                return []
+
+        tracker = ContextBudgetTracker()
+        assembler = ContextAssembler(tmp_path, budget_tracker=tracker)
+
+        state = {
+            "goal": "test goal",
+            "current_node": "init",
+            "iteration_count": 1,
+            "max_iterations": 30,
+            "status": "running",
+            "context": {"skills_loaded": []},
+        }
+        node = {"id": "init"}
+
+        assembler.assemble(state, node, MockGraphExecutor(), MockKnowledgeStore())
+
+        stats = tracker.get_stats()
+        assert stats["assemblies"] == 1
+        assert stats["total_tokens_assembled"] > 0
+        assert stats["total_budget_available"] == 32000  # DEFAULT_TOKEN_BUDGET

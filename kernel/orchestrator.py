@@ -299,6 +299,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Determine execution mode
     mode3 = args.ai_command is not None and not args.dry_run
 
+    _tracking_enabled = False  # Default: no tracking outside Mode 3
+
     # Register signal and atexit handlers for graceful shutdown in Mode 3
     if mode3:
 
