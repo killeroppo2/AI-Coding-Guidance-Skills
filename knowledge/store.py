@@ -6,7 +6,6 @@ including rules (manual and learned), skills, and patterns.
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -251,7 +250,10 @@ class KnowledgeStore:
         elif category == "patterns":
             category_dir = self.patterns_dir
         else:
-            raise ValueError(f"Invalid category: {category}. Must be one of: rules, skills, patterns")
+            raise ValueError(
+                f"Invalid category: {category}."
+                " Must be one of: rules, skills, patterns"
+            )
 
         items = []
         if category == "rules":

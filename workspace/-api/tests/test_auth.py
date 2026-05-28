@@ -1,5 +1,3 @@
-from jose import jwt
-
 from app.auth import (
     create_access_token,
     decode_token,
@@ -7,6 +5,7 @@ from app.auth import (
     verify_password,
 )
 from app.config import settings
+from jose import jwt
 
 
 class TestPasswordHashing:

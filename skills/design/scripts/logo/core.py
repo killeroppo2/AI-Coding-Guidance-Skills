@@ -6,9 +6,9 @@ Logo Design Core - BM25 search engine for logo design guidelines
 
 import csv
 import re
-from pathlib import Path
-from math import log
 from collections import defaultdict
+from math import log
+from pathlib import Path
 
 # ============ CONFIGURATION ============
 DATA_DIR = Path(__file__).parent.parent.parent / "data" / "logo"

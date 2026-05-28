@@ -6,7 +6,6 @@ and auto-applies confident proposals via the evolution engine.
 
 import json
 from pathlib import Path
-from typing import Any
 
 from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.historian import EvolutionHistorian

@@ -6,9 +6,9 @@ CIP Design Core - BM25 search engine for Corporate Identity Program design guide
 
 import csv
 import re
-from pathlib import Path
-from math import log
 from collections import defaultdict
+from math import log
+from pathlib import Path
 
 # ============ CONFIGURATION ============
 DATA_DIR = Path(__file__).parent.parent.parent / "data" / "cip"

@@ -6,10 +6,7 @@ Provides similarity search to bootstrap new goals from past successes.
 import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
-
 
 STOP_WORDS = frozenset({
     "a", "an", "the", "is", "of", "to", "for", "with", "in", "on",

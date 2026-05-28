@@ -1,12 +1,13 @@
 """Tests for the skill factory module."""
 
-import yaml
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from kernel.skill_factory import SkillFactory
+import pytest
+import yaml
+
 from kernel.evolution.engine import EvolutionEngine
+from kernel.skill_factory import SkillFactory
 
 
 class TestValidateSkillName:

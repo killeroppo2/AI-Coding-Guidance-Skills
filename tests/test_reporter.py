@@ -1,13 +1,12 @@
 """Tests for kernel/reporter.py - human-readable progress reporting."""
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
 
-from kernel.reporter import Reporter
 import runner
+from kernel.reporter import Reporter
 
 
 class TestReportIteration:

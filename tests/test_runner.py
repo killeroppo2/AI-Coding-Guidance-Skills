@@ -119,8 +119,9 @@ class TestMain:
 
     def test_main_non_dry_run(self, tmp_path: Path, monkeypatch) -> None:
         """Test main function without dry-run modifies state."""
-        import yaml
         import shutil
+
+        import yaml
 
         # Set up temp kernel structure
         state_file = tmp_path / "kernel" / "state.yaml"
@@ -318,7 +319,7 @@ class TestMode3:
 
     def test_mode3_advances_with_transition(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 advances node based on TRANSITION line in AI output."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -343,7 +344,7 @@ class TestMode3:
 
     def test_mode3_fallback_first_transition(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on same node when no TRANSITION line found (contract violation)."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -367,7 +368,7 @@ class TestMode3:
 
     def test_mode3_unmatched_transition_falls_back(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on node when transition condition is invalid (contract violation)."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -391,8 +392,8 @@ class TestMode3:
 
     def test_mode3_timeout_handling(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 handles subprocess timeout correctly."""
-        from unittest.mock import patch, MagicMock
         import subprocess as sp
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -441,7 +442,7 @@ class TestMode3:
 
     def test_mode3_completes_at_terminal_node(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 completes when reaching a node with no transitions."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -475,7 +476,7 @@ class TestMode3:
 
     def test_mode3_subprocess_receives_context(self, runner_env: Path, monkeypatch) -> None:
         """Test that subprocess receives assembled context as stdin."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -585,7 +586,7 @@ class TestGeneratePrompt:
     def test_generate_prompt_outputs_context(self, runner_env: Path, monkeypatch, capsys) -> None:
         """Test --generate-prompt outputs assembled context to stdout."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main(["--goal", "test prompt", "--generate-prompt"])
+        runner.main(["--goal", "test prompt", "--generate-prompt"])
         captured = capsys.readouterr()
         assert "=== BOOT SEQUENCE ===" in captured.out
         assert "=== CURRENT STATE ===" in captured.out
@@ -618,7 +619,7 @@ class TestGeneratePrompt:
             yaml.safe_dump(state_data, f)
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main(["--goal", "test", "--generate-prompt"])
+        runner.main(["--goal", "test", "--generate-prompt"])
         captured = capsys.readouterr()
         # BootstrapGenerator gracefully skips missing node prompt
         assert "=== BOOT SEQUENCE ===" in captured.out
@@ -1019,7 +1020,7 @@ class TestReviewFixes:
 
     def test_shlex_parsing_with_quoted_args(self, runner_env: Path, monkeypatch) -> None:
         """Test that AI command with quoted arguments is split correctly using shlex."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1047,7 +1048,7 @@ class TestReviewFixes:
 
     def test_fallback_produces_warning_no_transition(self, runner_env: Path, monkeypatch, capsys) -> None:
         """Test that missing TRANSITION line triggers contract violation."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1070,7 +1071,7 @@ class TestReviewFixes:
 
     def test_fallback_produces_warning_unmatched_condition(self, runner_env: Path, monkeypatch, capsys) -> None:
         """Test that invalid transition condition triggers contract violation."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1127,7 +1128,7 @@ class TestReviewFixes:
 
     def test_nonzero_returncode_handling(self, runner_env: Path, monkeypatch, capsys) -> None:
         """Test that non-zero returncode from AI command is handled as error."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1155,7 +1156,7 @@ class TestReviewFixes:
 
     def test_progress_history_populated_on_success(self, runner_env: Path, monkeypatch) -> None:
         """Test that progress_history is populated after successful Mode 3 iterations."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1202,7 +1203,7 @@ class TestReviewFixes:
 
     def test_progress_history_capped_at_20(self, runner_env: Path, monkeypatch) -> None:
         """Test that progress_history is capped at 20 entries."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1276,7 +1277,7 @@ class TestReviewFixes:
         with open(state_file, "w") as f:
             yaml.safe_dump(state_data, f)
 
-        state = runner.main([
+        runner.main([
             "--goal", "previous goal",
             "--resume",
             "--max-iterations", "1",
@@ -1299,7 +1300,7 @@ class TestReviewFixes:
         if assessment_path.exists():
             assessment_path.unlink()
 
-        state = runner.main([
+        runner.main([
             "--goal", "test fresh assessment",
             "--max-iterations", "1",
         ])

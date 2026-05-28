@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kernel.evolution.engine import EvolutionEngine, IMMUTABLE_FILES
+from kernel.evolution.engine import EvolutionEngine
 from kernel.graph_executor import GraphExecutor
 
 

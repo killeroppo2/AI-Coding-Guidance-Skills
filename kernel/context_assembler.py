@@ -318,7 +318,10 @@ class ContextAssembler:
             tasks_done = data.get("tasks_done", 0)
             tasks_total = data.get("tasks_total", 0)
             status = data.get("status", "unknown")
-            return f"Iteration: {iteration}, Tasks: {tasks_done}/{tasks_total} done, Status: {status}"
+            return (
+                f"Iteration: {iteration}, Tasks: "
+                f"{tasks_done}/{tasks_total} done, Status: {status}"
+            )
         except (yaml.YAMLError, OSError):
             return ""
 

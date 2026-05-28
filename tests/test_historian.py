@@ -3,7 +3,6 @@
 import json
 import uuid
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 import yaml
@@ -525,8 +524,8 @@ class TestFeedbackLoopHistorianIntegration:
             with open(knowledge_dir / sub / "_index.yaml", "w") as f:
                 yaml.safe_dump({"items": []}, f)
 
-        from kernel.graph_executor import GraphExecutor
         from kernel.evolution.engine import EvolutionEngine
+        from kernel.graph_executor import GraphExecutor
         from kernel.reflector import Reflector
         from knowledge.store import KnowledgeStore
 
@@ -685,8 +684,8 @@ class TestFeedbackLoopHistorianIntegration:
             with open(knowledge_dir / sub / "_index.yaml", "w") as f:
                 yaml.safe_dump({"items": []}, f)
 
-        from kernel.graph_executor import GraphExecutor
         from kernel.evolution.engine import EvolutionEngine
+        from kernel.graph_executor import GraphExecutor
         from kernel.reflector import Reflector
         from knowledge.store import KnowledgeStore
 

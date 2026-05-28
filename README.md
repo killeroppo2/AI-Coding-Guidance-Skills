@@ -34,10 +34,16 @@ Each node loads a specialized prompt, assembles context from skills and memory, 
 # 1. Clone and enter
 git clone <repo-url> && cd AI-Coding-Guidance-Skills
 
-# 2. Dry run to verify graph structure
+# 2. Install dependencies
+pip install -e ".[dev]"
+
+# 3. Initialize runtime files
+python3.12 runner.py --init
+
+# 4. Dry run to verify graph structure
 python3.12 runner.py --goal "Build a REST API" --dry-run
 
-# 3. Real execution with AI
+# 5. Real execution with AI
 python3.12 runner.py --goal "Build a REST API" --ai-command "claude --print"
 ```
 
@@ -114,6 +120,7 @@ The kernel draws on two philosophical traditions to guide its behavior:
 | Flag | Description |
 |------|-------------|
 | `--goal` | The development goal to work toward |
+| `--init` | Initialize runtime files and exit |
 | `--dry-run` | Print what would be done without modifying state |
 | `--ai-command` | AI CLI command for autonomous execution (e.g., `"claude --print"`) |
 | `--check` | Run setup checks and exit |
@@ -139,7 +146,7 @@ The kernel draws on two philosophical traditions to guide its behavior:
 ### Running Tests
 
 ```bash
-export PYENV_VERSION=3.12.13
+pip install -e ".[dev]"
 python -m pytest tests/ --cov --cov-fail-under=90 -q
 ```
 

@@ -9,20 +9,17 @@ These tests address the coverage gaps identified in:
 - runner.py (lines 96, 100-103, 119, 132-136, 153)
 """
 
-import json
-import shutil
 from pathlib import Path
 
 import pytest
 import yaml
 
+import runner
 from kernel.evolution.engine import EvolutionEngine
 from kernel.graph_executor import GraphExecutor
 from knowledge.skill_composer import SkillComposer
 from knowledge.store import KnowledgeStore
 from memory.state_manager import StateManager
-import runner
-
 
 # ============================================================
 # GraphExecutor coverage gaps

@@ -1,10 +1,10 @@
 """File-based locking for concurrency safety."""
 
+import json
 import os
 import time
-import json
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 
 class FileLock:

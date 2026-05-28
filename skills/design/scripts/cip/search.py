@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent))
-from core import search, search_all, get_cip_brief, CSV_CONFIG
+from core import CSV_CONFIG, get_cip_brief, search, search_all
 
 
 def format_results(results, domain):
@@ -48,14 +48,14 @@ def format_brief(brief):
         output.append(f"   Finishes: {brief['style'].get('Finishes', 'N/A')}")
 
     if brief.get("color_system"):
-        output.append(f"\n🎯 COLOR SYSTEM:")
+        output.append("\n🎯 COLOR SYSTEM:")
         output.append(f"   Primary: {brief['color_system'].get('primary', 'N/A')}")
         output.append(f"   Secondary: {brief['color_system'].get('secondary', 'N/A')}")
 
     output.append(f"\n✏️ TYPOGRAPHY: {brief.get('typography', 'N/A')}")
 
     if brief.get("recommended_deliverables"):
-        output.append(f"\n📦 RECOMMENDED DELIVERABLES:")
+        output.append("\n📦 RECOMMENDED DELIVERABLES:")
         for d in brief["recommended_deliverables"]:
             output.append(f"   • {d.get('Deliverable', 'N/A')}: {d.get('Description', '')[:60]}...")
 

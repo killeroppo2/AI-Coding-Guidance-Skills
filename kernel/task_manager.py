@@ -6,7 +6,6 @@ status transitions, and dependency validation.
 """
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 

@@ -1,12 +1,11 @@
 """Tests for the EvolutionEngine class."""
 
-import json
 from pathlib import Path
 
 import pytest
 import yaml
 
-from kernel.evolution.engine import EvolutionEngine, IMMUTABLE_FILES, VALID_CHANGE_TYPES
+from kernel.evolution.engine import IMMUTABLE_FILES, EvolutionEngine
 from kernel.graph_executor import GraphExecutor
 
 

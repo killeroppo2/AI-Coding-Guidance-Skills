@@ -16,7 +16,6 @@ import yaml
 from kernel.atomic_write import atomic_write
 from kernel.file_lock import FileLock
 
-
 DEFAULT_STATE = {
     "current_node": "init",
     "iteration_count": 0,
@@ -196,7 +195,11 @@ class StateManager:
             "iteration": self.state.get("iteration_count", 0),
             "tasks_total": tasks_total,
             "tasks_done": tasks_done,
-            "status": "complete" if tasks_done >= tasks_total and tasks_total > 0 else "in_progress",
+            "status": (
+                "complete"
+                if tasks_done >= tasks_total and tasks_total > 0
+                else "in_progress"
+            ),
         }
         with open(progress_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(progress, f, default_flow_style=False, allow_unicode=True)
@@ -342,7 +345,11 @@ class StateManager:
             self.memory_dir.mkdir(parents=True, exist_ok=True)
             with open(history_path, "a", encoding="utf-8") as f:
                 for error in archived:
-                    f.write(json.dumps({"error": error, "timestamp": datetime.now(timezone.utc).isoformat()}) + "\n")
+                    entry = json.dumps({
+                        "error": error,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                    f.write(entry + "\n")
 
     def clear_errors(self) -> None:
         """Move all errors to error_history.jsonl and reset errors list."""

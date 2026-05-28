@@ -176,7 +176,7 @@ class TestLiveEvolutionWithRealisticIterations:
         """After 20 code node failures, evolution engine modifies the prompt on disk."""
         feedback_loop = live_env["feedback_loop"]
         prompts_dir = live_env["prompts_dir"]
-        history_file = live_env["history_file"]
+        live_env["history_file"]
 
         original_prompt = (prompts_dir / "code.md").read_text()
 
@@ -222,7 +222,7 @@ class TestLiveEvolutionWithRealisticIterations:
 
         # Verify the prompt file content was actually modified on disk
         # The engine writes new content to the prompt file
-        modified_prompt = (prompts_dir / "code.md").read_text()
+        (prompts_dir / "code.md").read_text()
         # If the content was changed, the history entry should have original_content
         if prompt_changes[0].get("details", {}).get("original_content"):
             assert prompt_changes[0]["details"]["original_content"] == original_prompt
@@ -230,7 +230,7 @@ class TestLiveEvolutionWithRealisticIterations:
     def test_success_iterations_do_not_trigger_changes(self, live_env) -> None:
         """15 successful iterations do not trigger unwanted prompt modifications."""
         feedback_loop = live_env["feedback_loop"]
-        history_file = live_env["history_file"]
+        live_env["history_file"]
 
         for i in range(15):
             iteration_data = {
@@ -254,7 +254,7 @@ class TestLiveEvolutionWithRealisticIterations:
     def test_review_failures_trigger_review_prompt_modification(self, live_env) -> None:
         """After review node failures, evolution proposes changes for review prompt."""
         feedback_loop = live_env["feedback_loop"]
-        prompts_dir = live_env["prompts_dir"]
+        live_env["prompts_dir"]
 
         # Feed 15 review node failures
         for i in range(15):

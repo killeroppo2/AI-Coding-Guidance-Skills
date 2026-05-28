@@ -5,10 +5,7 @@ Tracks patterns across projects and auto-generates skills when patterns
 repeat 3+ times.
 """
 
-import json
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -53,7 +50,10 @@ class SkillAccumulator:
                 skill_name = self._pattern_to_skill_name(pattern["name"])
                 proposed_skills.append({
                     "name": skill_name,
-                    "description": f"Auto-generated from {pattern['pattern_type']} pattern: {pattern['name']}",
+                    "description": (
+                        f"Auto-generated from {pattern['pattern_type']}"
+                        f" pattern: {pattern['name']}"
+                    ),
                     "content": pattern["content"],
                     "tags": ["auto-generated", pattern["pattern_type"]],
                 })

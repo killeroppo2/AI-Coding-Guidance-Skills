@@ -1,8 +1,7 @@
 """Tests for kernel/event_detector.py and user-owned file protection."""
 
 import os
-import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 

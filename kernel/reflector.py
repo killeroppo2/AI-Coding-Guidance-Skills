@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
-from kernel.philosophy.principles import should_stop_iterating, should_simplify
+from kernel.philosophy.principles import should_simplify
 
 
 class Reflector:
@@ -30,7 +30,9 @@ class Reflector:
         self.knowledge_store = knowledge_store
         self.graph_advisor = graph_advisor
 
-    def suggest_graph_evolution(self, goal: str, skills_loaded: list[str], history: list[dict]) -> list[dict]:
+    def suggest_graph_evolution(
+        self, goal: str, skills_loaded: list[str], history: list[dict]
+    ) -> list[dict]:
         """Get structural graph change proposals from the graph advisor.
 
         Returns empty list if no graph_advisor is configured.
@@ -105,7 +107,12 @@ class Reflector:
             return "dependency_issue"
         if "test" in all_text and ("fail" in all_text or "error" in all_text):
             return "test_failure"
-        if "syntax" in all_text or "nameerror" in all_text or "typeerror" in all_text or "attributeerror" in all_text:
+        if (
+            "syntax" in all_text
+            or "nameerror" in all_text
+            or "typeerror" in all_text
+            or "attributeerror" in all_text
+        ):
             return "code_error"
         if "error" in all_text or "exception" in all_text or "fail" in all_text:
             return "code_error"
@@ -159,7 +166,10 @@ class Reflector:
                     categories.append(self.categorize_failure(err_subset, res))
 
                 category_counts = Counter(categories)
-                most_common_category = category_counts.most_common(1)[0][0] if categories else "unknown"
+                most_common_category = (
+                    category_counts.most_common(1)[0][0]
+                    if categories else "unknown"
+                )
 
                 # Calculate confidence score
                 data_points = count
@@ -192,7 +202,10 @@ class Reflector:
                             "node_id": node,
                             "prompt_file": f"prompts/{node}.md",
                         },
-                        "reason": f"\u5927\u9053\u81f3\u7b80: consider splitting this task - node '{node}' has failed {count} times",
+                        "reason": (
+                            f"\u5927\u9053\u81f3\u7b80: consider splitting this task"
+                            f" - node '{node}' has failed {count} times"
+                        ),
                         "confidence_score": min(1.0, count / 10) * 0.8,
                         "failure_category": "complexity",
                     })
@@ -207,7 +220,10 @@ class Reflector:
                         "description": f"Node '{node}' succeeds consistently ({count} times)",
                         "tags": ["learned", "success-pattern"],
                     },
-                    "reason": f"Node '{node}' has succeeded {count} times - pattern worth preserving",
+                    "reason": (
+                        f"Node '{node}' has succeeded {count} times"
+                        " - pattern worth preserving"
+                    ),
                     "confidence_score": min(1.0, count / 10),
                     "failure_category": None,
                 })

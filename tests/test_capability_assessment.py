@@ -309,7 +309,7 @@ class TestRunnerIntegration:
 
         # Patch KERNEL_ROOT to use our tmp structure
         with patch.object(runner, "KERNEL_ROOT", tmp_path):
-            result = runner.main(["--goal", "deploy kubernetes cluster monitoring"])
+            runner.main(["--goal", "deploy kubernetes cluster monitoring"])
 
         captured = capsys.readouterr()
         assert "[WARNING] Low skill coverage" in captured.err
@@ -375,7 +375,7 @@ class TestRunnerIntegration:
 
         # Patch KERNEL_ROOT to use our tmp structure
         with patch.object(runner, "KERNEL_ROOT", tmp_path):
-            result = runner.main(["--goal", "rest api testing"])
+            runner.main(["--goal", "rest api testing"])
 
         captured = capsys.readouterr()
         assert "[WARNING]" not in captured.err
@@ -417,7 +417,7 @@ class TestRunnerIntegration:
             with open(knowledge_dir / "patterns" / "_index.yaml", "w") as f:
                 yaml.safe_dump({"items": []}, f)
 
-            result = runner.main(["--goal", "deploy kubernetes", "--dry-run"])
+            runner.main(["--goal", "deploy kubernetes", "--dry-run"])
 
         # No assessment.yaml should be created in dry-run
         assessment_path = tmp_path / "memory" / "assessment.yaml"

@@ -4,15 +4,14 @@ import json
 import os
 import threading
 import time
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
 import yaml
 
-from kernel.file_lock import FileLock
 from kernel.atomic_write import atomic_write
+from kernel.file_lock import FileLock
 from memory.state_manager import StateManager
 
 

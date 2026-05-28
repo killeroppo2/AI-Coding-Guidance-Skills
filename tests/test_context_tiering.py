@@ -2,10 +2,8 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import yaml
-import pytest
 
 from kernel.context_assembler import ContextAssembler
 
@@ -352,7 +350,7 @@ class TestContextTieringBackwardCompat:
 
         env = _make_assembler_env(tmp_path)
         assembler = ContextAssembler(env)
-        graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
+        GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
             "current_node": "init", "goal": "test", "iteration_count": 0,

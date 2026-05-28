@@ -5,7 +5,6 @@ workflow graph defined in graph.yaml.
 """
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 
