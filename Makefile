@@ -1,4 +1,4 @@
-.PHONY: help init install test lint typecheck format run docker-build docker-run clean all release
+.PHONY: help init install test lint typecheck format run docker-build docker-run clean all release pre-commit setup migrate
 
 .DEFAULT_GOAL := help
 
@@ -31,6 +31,12 @@ docker-build: ## Build Docker image
 
 docker-run: ## Run Docker container
 	docker run -p 8000:8000 ai-coding-guidance-skills
+
+pre-commit: ## Run pre-commit hooks on all files
+	pre-commit run --all-files
+
+setup: ## One-command development setup
+	pip install -e ".[dev]" && pre-commit install
 
 clean: ## Remove generated files
 	rm -rf __pycache__ .pytest_cache .coverage .ruff_cache *.egg-info dist build

@@ -11,15 +11,25 @@ Thank you for your interest in contributing! This document provides guidelines a
    cd AI-Coding-Guidance-Skills
    ```
 
-2. Install the package in development mode with all dev dependencies:
+2. Run the one-command development setup:
 
    ```bash
-   pip install -e ".[dev]"
+   make setup
    ```
+
+   This installs the package in development mode with all dev dependencies and sets up pre-commit hooks to automatically check code quality before each commit.
 
 3. Initialize runtime files:
 
    ```bash
+   python runner.py --init
+   ```
+
+   Alternatively, you can perform the setup steps manually:
+
+   ```bash
+   pip install -e ".[dev]"
+   pre-commit install
    python runner.py --init
    ```
 
