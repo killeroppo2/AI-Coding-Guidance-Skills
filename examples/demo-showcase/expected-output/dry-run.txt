@@ -1,0 +1,113 @@
+=== Running Demo Showcase scenario (dry-run) ===
+[DRY RUN] Goal: Build a URL shortener CLI with SQLite backend
+[DRY RUN] Max iterations: 15
+[DRY RUN] Starting node: init
+
+[DRY RUN] Iteration 1:
+  Node: init
+  Description: Initialize context, load goal, assess current state
+  Prompt file: prompts/orchestrator.md
+  Prompt length: 2115 chars
+  Next node: plan
+
+[DRY RUN] Iteration 2:
+  Node: plan
+  Description: Break goal into tasks, create execution plan
+  Prompt file: prompts/planner.md
+  Prompt length: 2546 chars
+  Next node: code
+
+[DRY RUN] Iteration 3:
+  Node: code
+  Description: Implement next task from plan
+  Prompt file: prompts/coder.md
+  Prompt length: 2177 chars
+  Next node: test
+
+[DRY RUN] Iteration 4:
+  Node: test
+  Description: Run tests, verify coverage
+  Prompt file: prompts/tester.md
+  Prompt length: 1806 chars
+  Next node: review
+
+[DRY RUN] Iteration 5:
+  Node: review
+  Description: Code review for quality and patterns
+  Prompt file: prompts/reviewer.md
+  Prompt length: 1817 chars
+  Next node: plan
+
+[DRY RUN] Iteration 6:
+  Node: plan
+  Description: Break goal into tasks, create execution plan
+  Prompt file: prompts/planner.md
+  Prompt length: 2546 chars
+  Next node: code
+
+[DRY RUN] Iteration 7:
+  Node: code
+  Description: Implement next task from plan
+  Prompt file: prompts/coder.md
+  Prompt length: 2177 chars
+  Next node: test
+
+[DRY RUN] Iteration 8:
+  Node: test
+  Description: Run tests, verify coverage
+  Prompt file: prompts/tester.md
+  Prompt length: 1806 chars
+  Next node: review
+
+[DRY RUN] Iteration 9:
+  Node: review
+  Description: Code review for quality and patterns
+  Prompt file: prompts/reviewer.md
+  Prompt length: 1817 chars
+  Next node: plan
+
+[DRY RUN] Iteration 10:
+  Node: plan
+  Description: Break goal into tasks, create execution plan
+  Prompt file: prompts/planner.md
+  Prompt length: 2546 chars
+  Next node: code
+
+[DRY RUN] Iteration 11:
+  Node: code
+  Description: Implement next task from plan
+  Prompt file: prompts/coder.md
+  Prompt length: 2177 chars
+  Next node: test
+
+[DRY RUN] Iteration 12:
+  Node: test
+  Description: Run tests, verify coverage
+  Prompt file: prompts/tester.md
+  Prompt length: 1806 chars
+  Next node: review
+
+[DRY RUN] Iteration 13:
+  Node: review
+  Description: Code review for quality and patterns
+  Prompt file: prompts/reviewer.md
+  Prompt length: 1817 chars
+  Next node: plan
+
+[DRY RUN] Iteration 14:
+  Node: plan
+  Description: Break goal into tasks, create execution plan
+  Prompt file: prompts/planner.md
+  Prompt length: 2546 chars
+  Next node: code
+
+[DRY RUN] Iteration 15:
+  Node: code
+  Description: Implement next task from plan
+  Prompt file: prompts/coder.md
+  Prompt length: 2177 chars
+  Next node: test
+
+[DRY RUN] Final status: complete
+[DRY RUN] Total iterations: 15
+=== Demo Showcase scenario completed ===
