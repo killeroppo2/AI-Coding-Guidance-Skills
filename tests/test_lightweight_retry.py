@@ -1,7 +1,7 @@
 """Tests for P0: Lightweight Retry in runner.py Mode 3."""
 
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -207,7 +207,7 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
+            runner.main([
                 "--goal", "test retry",
                 "--ai-command", "echo hi",
                 "--max-iterations", "2",
@@ -327,7 +327,7 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
+            runner.main([
                 "--goal", "test plan node",
                 "--ai-command", "echo hi",
                 "--max-iterations", "2",

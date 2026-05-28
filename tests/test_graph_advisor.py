@@ -1,13 +1,13 @@
 """Tests for kernel/evolution/graph_advisor.py and Reflector integration."""
 
+
 import pytest
 import yaml
-from pathlib import Path
 
 from kernel.evolution.graph_advisor import (
-    GraphAdvisor,
     DESIGN_KEYWORDS,
     STRUCTURAL_CONFIDENCE,
+    GraphAdvisor,
 )
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.graph_executor import GraphExecutor

@@ -1,7 +1,6 @@
 """Evolution metrics for tracking per-node performance over time."""
 
 from collections import deque
-from typing import Any
 
 
 class EvolutionMetrics:
@@ -19,7 +18,9 @@ class EvolutionMetrics:
         self.window_size = window_size
         self._data: dict[str, deque] = {}  # node_id -> deque of records
 
-    def record_iteration(self, node_id: str, success: bool, retries: int = 0, duration: float = 0.0) -> None:
+    def record_iteration(
+        self, node_id: str, success: bool, retries: int = 0, duration: float = 0.0
+    ) -> None:
         """Record an iteration result for a node.
 
         Args:

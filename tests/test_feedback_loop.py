@@ -491,7 +491,7 @@ class TestRunnerCallsFeedbackLoop:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
+            runner.main([
                 "--goal", "test feedback",
                 "--ai-command", "echo hello",
                 "--max-iterations", "1",
@@ -520,7 +520,7 @@ class TestRunnerCallsFeedbackLoop:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
+            runner.main([
                 "--goal", "test failure feedback",
                 "--ai-command", "echo hello",
                 "--max-iterations", "1",

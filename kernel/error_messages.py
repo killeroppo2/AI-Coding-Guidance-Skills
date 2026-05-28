@@ -5,13 +5,15 @@ Maps error types to human-readable messages with what/why/fix structure.
 
 import re
 
-
 # Error message templates with what/why/fix structure
 ERROR_MESSAGES: dict[str, dict[str, str]] = {
     "stuck_node": {
         "what": "The system got stuck on node '{node}'",
         "why": "It visited this node {visits} times without making progress (max: {max_retries})",
-        "fix": "Try: simplify your goal, add relevant skills, or increase max_retries with --max-iterations",
+        "fix": (
+            "Try: simplify your goal, add relevant skills,"
+            " or increase max_retries with --max-iterations"
+        ),
     },
     "command_not_found": {
         "what": "AI command '{cmd}' not found",
@@ -21,7 +23,10 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
     "timeout": {
         "what": "Iteration timed out after {seconds}s on node '{node}'",
         "why": "The AI subprocess took too long to respond",
-        "fix": "Try: increase --timeout value, simplify current task, or check if AI service is responding",
+        "fix": (
+            "Try: increase --timeout value, simplify current task,"
+            " or check if AI service is responding"
+        ),
     },
     "skill_not_found": {
         "what": "Skill '{name}' not found in knowledge store",
@@ -31,7 +36,10 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
     "contract_violation": {
         "what": "AI output did not match expected format on node '{node}'",
         "why": "Missing or invalid TRANSITION/STATUS line in AI response",
-        "fix": "This usually means the AI prompt needs adjustment. Try --retry-strategy continue to retry",
+        "fix": (
+            "This usually means the AI prompt needs adjustment."
+            " Try --retry-strategy continue to retry"
+        ),
     },
     "state_corrupted": {
         "what": "State file could not be parsed",

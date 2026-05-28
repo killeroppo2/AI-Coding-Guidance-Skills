@@ -92,7 +92,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=str,
         choices=["continue", "skip", "backoff"],
         default="continue",
-        help="Retry strategy on failure: continue (retry same), skip (advance to next), backoff (exponential wait)",
+        help=(
+            "Retry strategy on failure: continue (retry same),"
+            " skip (advance to next), backoff (exponential wait)"
+        ),
     )
     parser.add_argument(
         "--execution-mode",

@@ -1,10 +1,8 @@
 """Tests for graceful shutdown and interrupt handling in runner.py."""
 
-import atexit
 import signal
 import subprocess
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest

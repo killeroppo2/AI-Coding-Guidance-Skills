@@ -8,8 +8,8 @@ NO hardcoded colors, fonts, or spacing allowed
 
 import argparse
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent

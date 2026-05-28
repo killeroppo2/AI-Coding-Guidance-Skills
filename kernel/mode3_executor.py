@@ -12,15 +12,14 @@ import sys
 import time
 from typing import Any
 
-from kernel.contracts import OutputContractValidator
 from kernel.context_assembler import ContextAssembler
+from kernel.contracts import OutputContractValidator
 from kernel.error_messages import format_error
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
 from kernel.reporter import Reporter
 from kernel.validators import _validate_workspace_paths
 from memory.state_manager import StateManager
-
 
 # Module-level reference to the active subprocess for signal handler cleanup
 _active_subprocess = None  # type: subprocess.Popen | None

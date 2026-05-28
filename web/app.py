@@ -7,8 +7,8 @@ SSE log streaming, and WebSocket state broadcasts.
 import asyncio
 import json
 import re
-import time
 import threading
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any

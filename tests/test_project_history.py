@@ -1,11 +1,10 @@
 """Tests for the ProjectHistory class."""
 
-import json
 from pathlib import Path
 
 import pytest
 
-from kernel.project_history import ProjectHistory, STOP_WORDS
+from kernel.project_history import ProjectHistory
 
 
 @pytest.fixture

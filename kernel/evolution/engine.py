@@ -12,9 +12,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import yaml
-
-
 # Files that are immutable and cannot be modified by the evolution engine.
 # Stored in normalized form for reliable comparison.
 IMMUTABLE_FILES = frozenset(
@@ -117,7 +114,10 @@ class EvolutionEngine:
                 # Resolve against kernel_dir to detect traversal
                 resolved = (self.kernel_dir / prompt_file).resolve()
                 kernel_resolved = self.kernel_dir.resolve()
-                if not str(resolved).startswith(str(kernel_resolved) + os.sep) and resolved != kernel_resolved:
+                if (
+                    not str(resolved).startswith(str(kernel_resolved) + os.sep)
+                    and resolved != kernel_resolved
+                ):
                     return (False, f"Path traversal detected in prompt_file: {prompt_file}")
                 # Also check if the resolved path matches any immutable file's absolute path
                 for immutable in IMMUTABLE_FILES:
@@ -299,7 +299,13 @@ class EvolutionEngine:
         except (ValueError, KeyError):
             return False
 
-    def revert_if_worse(self, change_id: str, metrics_before: dict, metrics_after: dict, threshold: float = 0.1) -> bool:
+    def revert_if_worse(
+        self,
+        change_id: str,
+        metrics_before: dict,
+        metrics_after: dict,
+        threshold: float = 0.1,
+    ) -> bool:
         """Revert a change if metrics have degraded beyond threshold.
 
         Compares success_rate before and after. If it dropped by more than
@@ -307,7 +313,8 @@ class EvolutionEngine:
 
         Args:
             change_id: The ID of the change to potentially revert.
-            metrics_before: Node metrics dict before the change (from EvolutionMetrics.get_node_metrics).
+            metrics_before: Node metrics dict before the change
+                (from EvolutionMetrics.get_node_metrics).
             metrics_after: Node metrics dict after the change.
             threshold: Maximum acceptable drop in success_rate (default 0.1 = 10%).
 

@@ -1,10 +1,7 @@
 """Tests for ContextAssembler skill truncation and context size estimation."""
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from kernel.context_assembler import ContextAssembler
 

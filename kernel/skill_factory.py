@@ -59,7 +59,11 @@ class SkillFactory:
             return (False, "Skill name cannot contain double hyphens")
 
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", name):
-            return (False, "Skill name must be kebab-case (lowercase letters, digits, and single hyphens)")
+            return (
+                False,
+                "Skill name must be kebab-case"
+                " (lowercase letters, digits, and single hyphens)",
+            )
 
         return (True, "")
 

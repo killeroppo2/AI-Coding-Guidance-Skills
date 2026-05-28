@@ -385,7 +385,6 @@ class TestRunnerContractIntegration:
     @pytest.fixture
     def runner_env(self, tmp_path: Path) -> Path:
         """Set up a complete runner environment in tmp_path."""
-        import runner
 
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
@@ -475,8 +474,9 @@ class TestRunnerContractIntegration:
 
     def test_mode3_valid_output_advances(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 advances when output passes contract validation."""
+        from unittest.mock import MagicMock, patch
+
         import runner
-        from unittest.mock import patch, MagicMock
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -497,8 +497,9 @@ class TestRunnerContractIntegration:
 
     def test_mode3_invalid_output_stays_on_node(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on same node when output fails contract validation."""
+        from unittest.mock import MagicMock, patch
+
         import runner
-        from unittest.mock import patch, MagicMock
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -521,8 +522,9 @@ class TestRunnerContractIntegration:
 
     def test_mode3_invalid_transition_value_stays(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on node when TRANSITION value is invalid for that node."""
+        from unittest.mock import MagicMock, patch
+
         import runner
-        from unittest.mock import patch, MagicMock
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -547,8 +549,9 @@ class TestRunnerContractIntegration:
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
         """Test that contract violations are printed to stderr."""
+        from unittest.mock import MagicMock, patch
+
         import runner
-        from unittest.mock import patch, MagicMock
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -872,7 +875,7 @@ class TestSemanticInference:
         output = "All tests pass successfully.\nSTATUS: success"
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = validator.validate_output(output, "test")
+            validator.validate_output(output, "test")
             assert len(w) >= 1
             warning_messages = [str(warning.message) for warning in w]
             assert any("TRANSITION inferred" in msg for msg in warning_messages)

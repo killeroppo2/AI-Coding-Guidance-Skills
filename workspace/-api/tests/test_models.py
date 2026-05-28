@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
-from app.database import Base, engine, init_db
+from app.database import engine, init_db
 from app.models import User
 
 

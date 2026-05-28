@@ -4,7 +4,6 @@ Detects files modified by the user (not by the kernel) to prevent
 evolution from overwriting user edits and to incorporate external feedback.
 """
 
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 

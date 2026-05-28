@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kernel.workflow_bridge import WorkflowBridge
 from kernel.skill_selector import select_skills_for_phase
+from kernel.workflow_bridge import WorkflowBridge
 
 
 @pytest.fixture

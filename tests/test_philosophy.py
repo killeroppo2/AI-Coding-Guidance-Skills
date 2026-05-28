@@ -1,8 +1,6 @@
 """Tests for kernel/philosophy/principles.py - operational decision functions."""
 
-from pathlib import Path
 
-import pytest
 
 from kernel.philosophy.principles import (
     assess_terrain,
@@ -79,11 +77,6 @@ class TestShouldStopIterating:
 
     def test_empty_issues_list(self) -> None:
         """Reflections with empty issues lists do not trigger."""
-        reflections = [
-            {"issues": []},
-            {"issues": []},
-            {"issues": []},
-        ]
         assert should_stop_iterating({}, []) is False
 
     def test_mixed_errors_below_threshold(self) -> None:

@@ -2,13 +2,12 @@ import os
 import tempfile
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from app.database import Base, get_db
 from app.models import User
+from fastapi.testclient import TestClient
 from main import app
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 REGISTER_URL = "/api/register"
 LOGIN_URL = "/api/login"
@@ -165,8 +164,8 @@ class TestLogin:
         assert len(parts) == 3
 
     def test_login_token_contains_username(self):
-        from jose import jwt
         from app.config import settings
+        from jose import jwt
         response = client.post(
             LOGIN_URL,
             json={"username": "login_test", "password": "correct_pw"},

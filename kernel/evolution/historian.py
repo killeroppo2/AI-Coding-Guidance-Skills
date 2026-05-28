@@ -21,7 +21,10 @@ class EvolutionHistorian:
                          Defaults to history_file.parent / "archive"
         """
         self.history_file = Path(history_file)
-        self.archive_dir = Path(archive_dir) if archive_dir else self.history_file.parent / "archive"
+        self.archive_dir = (
+            Path(archive_dir) if archive_dir
+            else self.history_file.parent / "archive"
+        )
 
     def load_history(self) -> list[dict]:
         """Load all entries from history.jsonl."""
@@ -80,7 +83,11 @@ class EvolutionHistorian:
             details = entry.get("details", {})
             node_id = details.get("node_id", "")
             if not node_id:
-                node_id = details.get("node", {}).get("id", "") if isinstance(details.get("node"), dict) else ""
+                node_id = (
+                    details.get("node", {}).get("id", "")
+                    if isinstance(details.get("node"), dict)
+                    else ""
+                )
             if node_id:
                 node_counter[node_id] += 1
 

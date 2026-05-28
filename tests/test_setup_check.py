@@ -2,7 +2,6 @@
 
 import sys
 
-import pytest
 import yaml
 
 from setup_check import SetupChecker

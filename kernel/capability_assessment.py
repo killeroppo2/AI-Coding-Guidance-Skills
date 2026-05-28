@@ -6,10 +6,8 @@ what it can and cannot do before attempting a goal.
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import yaml
-
 
 # Stop words that are too generic to be skill-matchable
 STOP_WORDS = frozenset({

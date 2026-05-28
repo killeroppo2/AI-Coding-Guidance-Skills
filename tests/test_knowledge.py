@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from knowledge.store import KnowledgeStore
 from knowledge.skill_composer import SkillComposer
+from knowledge.store import KnowledgeStore
 
 
 class TestKnowledgeStructure:

@@ -5,7 +5,6 @@ in Mode 3 (AI subprocess) or --generate-prompt output.
 """
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -84,7 +83,8 @@ class BootstrapGenerator:
             if prompt_file:
                 full_prompt_path = self.kernel_root / "kernel" / prompt_file
                 if full_prompt_path.exists():
-                    sections.append(("CURRENT ROLE PROMPT", full_prompt_path.read_text(encoding="utf-8")))
+                    content = full_prompt_path.read_text(encoding="utf-8")
+                    sections.append(("CURRENT ROLE PROMPT", content))
 
         # 5. Philosophy
         dao_path = self.kernel_root / "kernel" / "philosophy" / "dao.md"
@@ -113,7 +113,9 @@ class BootstrapGenerator:
         lines.append(f"Goal: {state.get('goal', 'No goal set')}")
         lines.append(f"Current Node: {state.get('current_node', 'init')}")
         lines.append(f"Status: {state.get('status', 'idle')}")
-        lines.append(f"Iteration: {state.get('iteration_count', 0)} / {state.get('max_iterations', 30)}")
+        iter_count = state.get('iteration_count', 0)
+        max_iter = state.get('max_iterations', 30)
+        lines.append(f"Iteration: {iter_count} / {max_iter}")
         errors = state.get("errors", [])
         if errors:
             lines.append(f"Last Error: {errors[-1]}")

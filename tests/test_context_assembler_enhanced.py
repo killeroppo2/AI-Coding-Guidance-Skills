@@ -2,10 +2,8 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import yaml
-import pytest
 
 from kernel.context_assembler import ContextAssembler
 
@@ -411,7 +409,7 @@ class TestTokenBudgeting:
         (env / "memory" / "decisions.jsonl").write_text("\n".join(entries) + "\n")
 
         assembler = ContextAssembler(env)
-        graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
+        GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
             "current_node": "init", "goal": "test", "iteration_count": 0,
@@ -518,7 +516,7 @@ class TestTokenBudgeting:
         (env / "memory" / "decisions.jsonl").write_text(entry + "\n")
 
         assembler = ContextAssembler(env)
-        graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
+        GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
             "current_node": "init", "goal": "test", "iteration_count": 0,

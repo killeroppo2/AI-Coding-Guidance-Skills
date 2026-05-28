@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import yaml
-import pytest
 
 from kernel.init import init_runtime_files
 

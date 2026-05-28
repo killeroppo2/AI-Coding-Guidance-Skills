@@ -1,6 +1,5 @@
 """Tests for kernel.complexity_assessor module."""
 
-import pytest
 
 from kernel.complexity_assessor import assess_complexity
 

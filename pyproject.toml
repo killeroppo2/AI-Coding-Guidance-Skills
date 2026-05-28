@@ -27,7 +27,9 @@ target-version = "py311"
 select = ["E", "F", "W", "I"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["E501"]
+"tests/**" = ["E501", "E741"]
+"skills/**" = ["E501"]
+"workspace/**" = ["E501", "E721"]
 
 [tool.mypy]
 python_version = "3.11"

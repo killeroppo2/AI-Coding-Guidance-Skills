@@ -6,7 +6,6 @@ based on analysis of goal, loaded skills, history, and metrics.
 
 from typing import Any
 
-
 # Keywords that suggest UI/design work
 DESIGN_KEYWORDS = frozenset({
     "ui", "ux", "design", "frontend", "interface", "layout",
@@ -36,13 +35,18 @@ class GraphAdvisor:
         self.metrics = evolution_metrics
 
     def suggest_graph_changes(
-        self, goal: str, skills_loaded: list[str], history: list[dict], metrics_summary: dict | None = None
+        self,
+        goal: str,
+        skills_loaded: list[str],
+        history: list[dict],
+        metrics_summary: dict | None = None,
     ) -> list[dict]:
         """Analyze and propose structural graph changes.
 
         Rules:
         1. If goal contains design/UI keywords AND no 'design' node exists -> propose add_node
-        2. If review node consistently passes first time (success_rate > 0.9, sample_count >= 5) -> propose remove_node
+        2. If review node consistently passes first time
+           (success_rate > 0.9, sample_count >= 5) -> propose remove_node
         3. If code node has high avg_retries (> 3) -> propose adding 'design' node before code
 
         Each proposal is a dict with:

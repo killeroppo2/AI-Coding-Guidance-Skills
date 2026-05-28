@@ -17,7 +17,10 @@ from typing import Any
 
 import yaml
 
+import kernel.mode3_executor as _mode3_mod
+from kernel.adapters.ralph_adapter import RalphAdapter
 from kernel.bootstrap import BootstrapGenerator
+from kernel.capability_assessment import CapabilityAssessor
 from kernel.cli import parse_args
 from kernel.complexity_assessor import assess_complexity
 from kernel.context_assembler import ContextAssembler
@@ -28,20 +31,15 @@ from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
-from kernel.mode3_executor import _parse_transition, setup_signal_handlers
-from kernel.philosophy.principles import should_stop_iterating, should_retreat
+from kernel.mode3_executor import _parse_transition
+from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
-from kernel.capability_assessment import CapabilityAssessor
 from kernel.reporter import Reporter
 from kernel.skill_selector import select_skills_for_goal
-from kernel.adapters.ralph_adapter import RalphAdapter
 from kernel.task_manager import TaskManager
 from kernel.validators import _sanitize_project_name, _validate_workspace_paths
 from knowledge.store import KnowledgeStore
 from memory.state_manager import StateManager
-
-import kernel.mode3_executor as _mode3_mod
-
 
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
@@ -294,7 +292,7 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
                 prompt_content = full_prompt_path.read_text(encoding="utf-8")
                 print(f"  Prompt length: {len(prompt_content)} chars")
             else:
-                print(f"  Prompt file: [not found]")
+                print("  Prompt file: [not found]")
 
         if mode3:
             # Check external events at start of execution
@@ -307,7 +305,11 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
                         if event["type"] == "prompt_modified":
                             event_detector.mark_user_owned(state_mgr.state, event["path"])
                     if args.verbose:
-                        print(f"[INFO] Detected {len(external_events)} external change(s)", file=sys.stderr)
+                        print(
+                            f"[INFO] Detected {len(external_events)}"
+                            " external change(s)",
+                            file=sys.stderr,
+                        )
 
             # Mode 3: Track visit BEFORE execution so failures count
             state_mgr.track_node_visit(node["id"])
@@ -325,7 +327,8 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
                     # Philosophy: should_retreat check
                     if should_retreat(stuck_node, visits, max_retries_map.get(stuck_node, 5)):
                         print(
-                            f"[PHILOSOPHY] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a: Retreating from node '{stuck_node}'",
+                            "[PHILOSOPHY] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a:"
+                            f" Retreating from node '{stuck_node}'",
                             file=sys.stderr,
                         )
                     state_mgr.state["status"] = "stuck"
@@ -599,7 +602,8 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
                             pass
                 if should_stop_iterating(state_mgr.state, recent_reflections):
                     print(
-                        "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86: Diminishing returns detected, stopping.",
+                        "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86:"
+                        " Diminishing returns detected, stopping.",
                         file=sys.stderr,
                     )
                     state_mgr.state["status"] = "complete"
@@ -664,7 +668,7 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
             else:
                 state_mgr.state["status"] = "complete"
                 if args.dry_run:
-                    print(f"  Next node: END")
+                    print("  Next node: END")
                     print()
                 break
 

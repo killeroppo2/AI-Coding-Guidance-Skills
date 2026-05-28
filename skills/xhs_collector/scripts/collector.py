@@ -7,12 +7,11 @@
 """
 
 import json
-import os
 import time
-import requests
 from datetime import datetime
 from pathlib import Path
 
+import requests
 
 # ─── 路径配置 ───────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent
@@ -201,8 +200,8 @@ def generate_markdown(keyword, notes_data, date_str):
 
     for i, note in enumerate(notes_data, 1):
         lines.append(f"## 笔记 {i}: {note['title']}\n")
-        lines.append(f"| 指标 | 数据 |")
-        lines.append(f"|------|------|")
+        lines.append("| 指标 | 数据 |")
+        lines.append("|------|------|")
         lines.append(f"| 作者 | {note['author']} |")
         lines.append(f"| 点赞 | {note['liked_count']} |")
         lines.append(f"| 收藏 | {note['collected_count']} |")
@@ -281,7 +280,7 @@ def main():
         items = search_notes(api_token, search_workflow_id, keyword, sort, time_scope)
 
         if not items:
-            print(f"  ⚠️ 未找到笔记，跳过")
+            print("  ⚠️ 未找到笔记，跳过")
             continue
 
         # 限制数量
@@ -336,7 +335,7 @@ def main():
 
                 notes_data.append(detail)
             else:
-                print(f"  ⚠️ 无链接，跳过")
+                print("  ⚠️ 无链接，跳过")
 
             # 请求间隔，避免频率限制
             time.sleep(1)
@@ -346,7 +345,7 @@ def main():
             md_content = generate_markdown(keyword, notes_data, date_str)
             save_markdown(md_content, keyword, date_str)
         else:
-            print(f"  ⚠️ 无有效笔记数据，跳过生成")
+            print("  ⚠️ 无有效笔记数据，跳过生成")
 
         # 关键词间隔
         time.sleep(2)

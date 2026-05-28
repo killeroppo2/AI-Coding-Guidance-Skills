@@ -327,7 +327,7 @@ class TestRetryStrategies:
 
         with patch("subprocess.Popen", return_value=mock_proc):
             with patch("time.sleep", side_effect=mock_sleep):
-                state = runner.main([
+                runner.main([
                     "--goal", "test backoff",
                     "--ai-command", "echo hi",
                     "--max-iterations", "3",
@@ -366,7 +366,7 @@ class TestRetryStrategies:
 
         with patch("subprocess.Popen", return_value=mock_proc):
             with patch("time.sleep", side_effect=mock_sleep):
-                state = runner.main([
+                runner.main([
                     "--goal", "test backoff cap",
                     "--ai-command", "echo hi",
                     "--max-iterations", "8",

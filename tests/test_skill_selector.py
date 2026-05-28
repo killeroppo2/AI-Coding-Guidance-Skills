@@ -1,7 +1,6 @@
 """Tests for kernel/skill_selector.py - skill auto-selection."""
 
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 import yaml
