@@ -86,6 +86,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="The development goal to work toward",
     )
     parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Initialize runtime files and exit",
+    )
+    parser.add_argument(
         "--check",
         action="store_true",
         help="Run setup checks and exit",
@@ -247,6 +252,12 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
         results = checker.run_all_checks()
         exit_code = checker.print_results(results)
         sys.exit(exit_code)
+
+    # Handle --init: create runtime files and exit early
+    if args.init:
+        from kernel.init import init_runtime_files
+        init_runtime_files(KERNEL_ROOT)
+        sys.exit(0)
 
     # Handle --status: print current status and exit early
     if args.status:
