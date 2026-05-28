@@ -127,4 +127,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="auto",
         help="Task complexity level for routing (default: auto-detect from goal)",
     )
+    parser.add_argument(
+        "--migrate",
+        action="store_true",
+        help="Run pending data migrations and exit",
+    )
     return parser.parse_args(argv)

@@ -76,6 +76,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     if args.init:
         from kernel.init import init_runtime_files
         init_runtime_files(KERNEL_ROOT)
+        from kernel.migrations import run_pending_migrations
+        applied = run_pending_migrations(KERNEL_ROOT)
+        if applied:
+            print(f"Applied {len(applied)} migration(s): {', '.join(applied)}")
+        sys.exit(0)
+
+    # Handle --migrate: run pending migrations and exit early
+    if args.migrate:
+        from kernel.migrations import run_pending_migrations
+        applied = run_pending_migrations(KERNEL_ROOT)
+        if applied:
+            print(f"Applied {len(applied)} migration(s): {', '.join(applied)}")
+        else:
+            print("No pending migrations.")
         sys.exit(0)
 
     # Handle --status: print current status and exit early

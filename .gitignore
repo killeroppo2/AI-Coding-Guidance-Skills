@@ -38,6 +38,7 @@ automation/logs/
 
 # 运行时状态（每次运行会变化）
 kernel/state.yaml
+kernel/.migration_version
 kernel/evolution/history.jsonl
 memory/decisions.jsonl
 memory/reflections.jsonl

@@ -38,6 +38,9 @@ pre-commit: ## Run pre-commit hooks on all files
 setup: ## One-command development setup
 	pip install -e ".[dev]" && pre-commit install
 
+migrate: ## Run pending data migrations
+	python runner.py --migrate
+
 clean: ## Remove generated files
 	rm -rf __pycache__ .pytest_cache .coverage .ruff_cache *.egg-info dist build
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
