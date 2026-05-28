@@ -38,6 +38,8 @@ from kernel.reflector import Reflector
 from kernel.reporter import Reporter
 from kernel.skill_selector import select_skills_for_goal
 from kernel.task_manager import TaskManager
+from kernel.lifecycle_guard import LifecycleGuard
+from kernel.security_policy import SecurityPolicy
 from kernel.validators import _sanitize_project_name, _validate_workspace_paths
 from knowledge.store import KnowledgeStore
 from memory.state_manager import StateManager
@@ -308,6 +310,18 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
         atexit.register(_atexit_save)
 
+        # Lifecycle guard: detect orphan process and trigger graceful shutdown
+        def _orphan_shutdown():
+            state_mgr.state["status"] = "interrupted"
+            state_mgr.state.setdefault("errors", []).append(
+                "Parent process died - orphan detected"
+            )
+            state_mgr.save_state()
+            sys.exit(1)
+
+        lifecycle_guard = LifecycleGuard(on_shutdown=_orphan_shutdown)
+        lifecycle_guard.start()
+
     if args.dry_run:
         print(f"[DRY RUN] Goal: {args.goal}")
         print(f"[DRY RUN] Max iterations: {args.max_iterations}")
@@ -573,6 +587,13 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 )
                 for v in ws_violations:
                     logger.warning(f"[WARNING] Workspace boundary: {v}")
+                # Security policy check on written files
+                security_policy = SecurityPolicy(workspace_path)
+                for fpath in contract_result.files_written:
+                    if security_policy.check_path(fpath) == "deny":
+                        logger.warning(
+                            f"[SECURITY] Denied file write: {fpath}"
+                        )
 
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])
@@ -730,6 +751,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Mark as complete if we finished the loop
     if state_mgr.state.get("status") == "running":
         state_mgr.state["status"] = "complete"
+
+    # Stop lifecycle guard if running
+    if mode3:
+        lifecycle_guard.stop()
 
     # Print completion report after Mode 3 execution
     if mode3:
