@@ -60,6 +60,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="AI CLI command for Mode 3 execution (e.g., 'claude --print')",
     )
     parser.add_argument(
+        "--provider",
+        type=str,
+        choices=["cli", "openai", "anthropic"],
+        default="cli",
+        help="AI provider to use (default: cli, uses --ai-command)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Model name for openai/anthropic providers (e.g., gpt-4o, claude-sonnet-4-20250514)",
+    )
+    parser.add_argument(
         "--timeout",
         type=int,
         default=300,
