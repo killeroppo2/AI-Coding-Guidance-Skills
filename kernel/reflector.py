@@ -69,9 +69,7 @@ class Reflector:
             for error in errors:
                 issues.append(f"Error: {error}")
             if result == "failed":
-                issues.append(
-                    f"Node '{iteration_data.get('node', 'unknown')}' returned failure"
-                )
+                issues.append(f"Node '{iteration_data.get('node', 'unknown')}' returned failure")
 
         return {
             "iteration": iteration_data.get("iteration", 0),
@@ -162,14 +160,13 @@ class Reflector:
                 # Categorize each failure and find most common
                 categories = []
                 for i in range(count):
-                    err_subset = errors[i:i + 1] if i < len(errors) else []
+                    err_subset = errors[i : i + 1] if i < len(errors) else []
                     res = results[i] if i < len(results) else ""
                     categories.append(self.categorize_failure(err_subset, res))
 
                 category_counts = Counter(categories)
                 most_common_category = (
-                    category_counts.most_common(1)[0][0]
-                    if categories else "unknown"
+                    category_counts.most_common(1)[0][0] if categories else "unknown"
                 )
 
                 # Calculate confidence score
@@ -184,50 +181,58 @@ class Reflector:
                     consistency_factor = 0.7
                 confidence_score = data_factor * consistency_factor
 
-                proposals.append({
-                    "type": "modify_prompt",
-                    "details": {
-                        "node_id": node,
-                        "prompt_file": f"prompts/{node}.md",
-                    },
-                    "reason": f"Node '{node}' has failed {count} times - prompt may need revision",
-                    "confidence_score": confidence_score,
-                    "failure_category": most_common_category,
-                })
-
-                # Philosophy: suggest simplification for high failure counts
-                if should_simplify(count):
-                    proposals.append({
+                proposals.append(
+                    {
                         "type": "modify_prompt",
                         "details": {
                             "node_id": node,
                             "prompt_file": f"prompts/{node}.md",
                         },
                         "reason": (
-                            f"\u5927\u9053\u81f3\u7b80: consider splitting this task"
-                            f" - node '{node}' has failed {count} times"
+                            f"Node '{node}' has failed {count} times"
+                            " - prompt may need revision"
                         ),
-                        "confidence_score": min(1.0, count / 10) * 0.8,
-                        "failure_category": "complexity",
-                    })
+                        "confidence_score": confidence_score,
+                        "failure_category": most_common_category,
+                    }
+                )
+
+                # Philosophy: suggest simplification for high failure counts
+                if should_simplify(count):
+                    proposals.append(
+                        {
+                            "type": "modify_prompt",
+                            "details": {
+                                "node_id": node,
+                                "prompt_file": f"prompts/{node}.md",
+                            },
+                            "reason": (
+                                f"\u5927\u9053\u81f3\u7b80: consider splitting this task"
+                                f" - node '{node}' has failed {count} times"
+                            ),
+                            "confidence_score": min(1.0, count / 10) * 0.8,
+                            "failure_category": "complexity",
+                        }
+                    )
 
         # Propose rules for consistently successful patterns
         for node, count in success_counts.items():
             if count >= 5:
-                proposals.append({
-                    "type": "add_rule",
-                    "details": {
-                        "name": f"success_pattern_{node}",
-                        "description": f"Node '{node}' succeeds consistently ({count} times)",
-                        "tags": ["learned", "success-pattern"],
-                    },
-                    "reason": (
-                        f"Node '{node}' has succeeded {count} times"
-                        " - pattern worth preserving"
-                    ),
-                    "confidence_score": min(1.0, count / 10),
-                    "failure_category": None,
-                })
+                proposals.append(
+                    {
+                        "type": "add_rule",
+                        "details": {
+                            "name": f"success_pattern_{node}",
+                            "description": f"Node '{node}' succeeds consistently ({count} times)",
+                            "tags": ["learned", "success-pattern"],
+                        },
+                        "reason": (
+                            f"Node '{node}' has succeeded {count} times - pattern worth preserving"
+                        ),
+                        "confidence_score": min(1.0, count / 10),
+                        "failure_category": None,
+                    }
+                )
 
         return proposals
 
@@ -253,13 +258,15 @@ class Reflector:
         # Extract rules from repeated learnings
         for node, learnings in node_learnings.items():
             if len(learnings) >= 3:
-                rules.append({
-                    "name": f"learned_from_{node}",
-                    "description": f"Patterns observed from node '{node}' execution",
-                    "content": "\n".join(set(learnings)),
-                    "tags": ["learned", node],
-                    "source": "reflector",
-                })
+                rules.append(
+                    {
+                        "name": f"learned_from_{node}",
+                        "description": f"Patterns observed from node '{node}' execution",
+                        "content": "\n".join(set(learnings)),
+                        "tags": ["learned", node],
+                        "source": "reflector",
+                    }
+                )
 
         return rules
 

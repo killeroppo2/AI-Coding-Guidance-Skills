@@ -64,10 +64,9 @@ def make_mock_ai_response(node_responses: dict[str, str]):
                     if "NODE PROMPT" in line and "(" in line:
                         node_id = line.split("(")[1].split(")")[0]
                         break
-            response_text = node_responses.get(
-                node_id, "TRANSITION: goal_loaded\nSTATUS: success"
-            )
+            response_text = node_responses.get(node_id, "TRANSITION: goal_loaded\nSTATUS: success")
             return (response_text, "")
+
         proc.communicate.side_effect = mock_communicate
         proc.returncode = 0
         proc.wait.return_value = 0
@@ -114,10 +113,9 @@ def make_failing_mock(
                 return ("", "Simulated failure")
 
             proc.returncode = 0
-            response_text = node_responses.get(
-                node_id, "TRANSITION: goal_loaded\nSTATUS: success"
-            )
+            response_text = node_responses.get(node_id, "TRANSITION: goal_loaded\nSTATUS: success")
             return (response_text, "")
+
         proc.communicate.side_effect = mock_communicate
         proc.returncode = 0
         proc.wait.return_value = 0
@@ -156,10 +154,9 @@ def make_always_failing_mock(fail_node: str, node_responses: dict[str, str]):
                 return ("", "Always fails")
 
             proc.returncode = 0
-            response_text = node_responses.get(
-                node_id, "TRANSITION: goal_loaded\nSTATUS: success"
-            )
+            response_text = node_responses.get(node_id, "TRANSITION: goal_loaded\nSTATUS: success")
             return (response_text, "")
+
         proc.communicate.side_effect = mock_communicate
         proc.returncode = 0
         proc.wait.return_value = 0
@@ -349,11 +346,16 @@ class TestFullCycleHelloWorld:
         monkeypatch.setattr(subprocess, "Popen", mock_fn)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
-        state = runner.main([
-            "--goal", "Create hello.py that prints Hello World",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "10",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Create hello.py that prints Hello World",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "10",
+            ]
+        )
 
         # The system should have completed or be running (having gone through nodes)
         assert state["status"] in ("running", "complete")
@@ -397,6 +399,7 @@ class TestFullCycleHelloWorld:
                     node_id, "TRANSITION: goal_loaded\nSTATUS: success"
                 )
                 return (response_text, "")
+
             proc.communicate.side_effect = mock_communicate
             proc.returncode = 0
             proc.wait.return_value = 0
@@ -405,12 +408,18 @@ class TestFullCycleHelloWorld:
         monkeypatch.setattr(subprocess, "Popen", tracking_mock)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
-        runner.main([
-            "--goal", "Test node traversal",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "10",
-            "--complexity", "high",
-        ])
+        runner.main(
+            [
+                "--goal",
+                "Test node traversal",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "10",
+                "--complexity",
+                "high",
+            ]
+        )
 
         # Verify we visited expected nodes in order for one full cycle
         # The sequence should be: init, plan, code, test, review, reflect
@@ -425,9 +434,7 @@ class TestFullCycleHelloWorld:
 class TestFailureAndRetry:
     """Integration tests for failure recovery and retry behavior."""
 
-    def test_failure_and_retry(
-        self, kernel_env: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_failure_and_retry(self, kernel_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that a failure on a node is retried and eventually succeeds.
 
         Mocks the code node to fail once (returncode 1), then succeed on retry.
@@ -442,17 +449,20 @@ class TestFailureAndRetry:
             "reflect": "TRANSITION: no_evolution_needed\nSTATUS: success",
         }
 
-        mock_fn = make_failing_mock(
-            fail_node="code", fail_count=1, node_responses=node_responses
-        )
+        mock_fn = make_failing_mock(fail_node="code", fail_count=1, node_responses=node_responses)
         monkeypatch.setattr(subprocess, "Popen", mock_fn)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
-        state = runner.main([
-            "--goal", "Test failure and retry",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "10",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Test failure and retry",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "10",
+            ]
+        )
 
         # System should have recorded an error for the failed attempt
         assert len(state.get("errors", [])) > 0 or any(
@@ -464,9 +474,7 @@ class TestFailureAndRetry:
         # or at least completed more than the initial iterations
         assert state["iteration_count"] > 2
 
-    def test_failure_records_error(
-        self, kernel_env: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_failure_records_error(self, kernel_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that a subprocess failure records an error in state."""
         node_responses = {
             "init": "TRANSITION: goal_loaded\nSTATUS: success",
@@ -477,17 +485,20 @@ class TestFailureAndRetry:
             "reflect": "TRANSITION: no_evolution_needed\nSTATUS: success",
         }
 
-        mock_fn = make_failing_mock(
-            fail_node="code", fail_count=2, node_responses=node_responses
-        )
+        mock_fn = make_failing_mock(fail_node="code", fail_count=2, node_responses=node_responses)
         monkeypatch.setattr(subprocess, "Popen", mock_fn)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
-        state = runner.main([
-            "--goal", "Test error recording",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "10",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Test error recording",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "10",
+            ]
+        )
 
         # Errors should mention the code node failure
         errors_text = " ".join(str(e) for e in state.get("errors", []))
@@ -569,17 +580,20 @@ class TestStuckDetectionIntegration:
             "reflect": "TRANSITION: no_evolution_needed\nSTATUS: success",
         }
 
-        mock_fn = make_always_failing_mock(
-            fail_node="code", node_responses=node_responses
-        )
+        mock_fn = make_always_failing_mock(fail_node="code", node_responses=node_responses)
         monkeypatch.setattr(subprocess, "Popen", mock_fn)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
-        state = runner.main([
-            "--goal", "Test stuck detection",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "10",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Test stuck detection",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "10",
+            ]
+        )
 
         # System should be stuck
         assert state["status"] == "stuck"
@@ -604,19 +618,22 @@ class TestStuckDetectionIntegration:
             "reflect": "TRANSITION: no_evolution_needed\nSTATUS: success",
         }
 
-        mock_fn = make_always_failing_mock(
-            fail_node="code", node_responses=node_responses
-        )
+        mock_fn = make_always_failing_mock(fail_node="code", node_responses=node_responses)
         monkeypatch.setattr(subprocess, "Popen", mock_fn)
         monkeypatch.setattr(runner, "KERNEL_ROOT", kernel_env)
 
         # The default kernel_env graph has stuck_handler: reflect on code node
         # with max_retries: 5 - the system will redirect to reflect after 5 failures
-        state = runner.main([
-            "--goal", "Test stuck handler",
-            "--ai-command", "mock-ai",
-            "--max-iterations", "15",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Test stuck handler",
+                "--ai-command",
+                "mock-ai",
+                "--max-iterations",
+                "15",
+            ]
+        )
 
         # With stuck_handler, the system should redirect to reflect rather than
         # immediately going stuck. But since code always fails and plan leads

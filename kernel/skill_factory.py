@@ -61,14 +61,14 @@ class SkillFactory:
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", name):
             return (
                 False,
-                "Skill name must be kebab-case"
-                " (lowercase letters, digits, and single hyphens)",
+                "Skill name must be kebab-case (lowercase letters, digits, and single hyphens)",
             )
 
         return (True, "")
 
-    def create_skill(self, name: str, description: str, content: str,
-                     tags: list[str] | None = None) -> Path:
+    def create_skill(
+        self, name: str, description: str, content: str, tags: list[str] | None = None
+    ) -> Path:
         """Create a new skill with directory, SKILL.md, and index registration.
 
         Args:
@@ -97,9 +97,9 @@ class SkillFactory:
 
         return skill_dir
 
-    def create_skill_from_template(self, name: str, description: str,
-                                   sections: dict[str, str],
-                                   tags: list[str] | None = None) -> Path:
+    def create_skill_from_template(
+        self, name: str, description: str, sections: dict[str, str], tags: list[str] | None = None
+    ) -> Path:
         """Create a skill from named sections.
 
         Builds SKILL.md content from a dict of sections, where each key becomes

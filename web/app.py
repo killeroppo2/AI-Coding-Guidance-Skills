@@ -231,9 +231,9 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
         # Compute overall_health from per_node rates (weighted by count)
         total_weight = sum(node_counts.values())
         if total_weight > 0:
-            overall_health = sum(
-                per_node_success_rates[n] * node_counts[n] for n in node_counts
-            ) / total_weight
+            overall_health = (
+                sum(per_node_success_rates[n] * node_counts[n] for n in node_counts) / total_weight
+            )
         else:
             overall_health = 1.0
 
@@ -271,10 +271,12 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
             window = reflections[i : i + window_size]
             successes = sum(1 for r in window if r.get("success", False))
             rate = successes / len(window) if window else 0.0
-            success_rate_over_time.append({
-                "window": i // window_size,
-                "rate": round(rate, 4),
-            })
+            success_rate_over_time.append(
+                {
+                    "window": i // window_size,
+                    "rate": round(rate, 4),
+                }
+            )
 
         # Node activity counts
         node_counts: dict[str, int] = defaultdict(int)

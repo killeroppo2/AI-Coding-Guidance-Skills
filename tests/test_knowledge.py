@@ -15,16 +15,19 @@ class TestKnowledgeStructure:
     def test_knowledge_package_importable(self) -> None:
         """Test that knowledge package can be imported."""
         import knowledge
+
         assert knowledge is not None
 
     def test_store_importable(self) -> None:
         """Test that knowledge.store can be imported."""
         from knowledge import store
+
         assert store is not None
 
     def test_knowledge_store_class_exists(self) -> None:
         """Test that KnowledgeStore class exists."""
         from knowledge.store import KnowledgeStore
+
         assert KnowledgeStore is not None
 
     def test_knowledge_store_instantiation(self, tmp_knowledge: Path) -> None:
@@ -35,6 +38,7 @@ class TestKnowledgeStructure:
     def test_skill_composer_importable(self) -> None:
         """Test that knowledge.skill_composer can be imported."""
         from knowledge.skill_composer import SkillComposer
+
         assert SkillComposer is not None
 
 
@@ -81,8 +85,12 @@ class TestKnowledgeStoreRules:
     def test_get_rules_with_filter(self, tmp_knowledge: Path) -> None:
         """Test getting rules filtered by tags."""
         ks = KnowledgeStore(str(tmp_knowledge))
-        ks.add_rule({"name": "r1", "tags": ["testing"], "description": "", "content": "", "source": ""})
-        ks.add_rule({"name": "r2", "tags": ["quality"], "description": "", "content": "", "source": ""})
+        ks.add_rule(
+            {"name": "r1", "tags": ["testing"], "description": "", "content": "", "source": ""}
+        )
+        ks.add_rule(
+            {"name": "r2", "tags": ["quality"], "description": "", "content": "", "source": ""}
+        )
         rules = ks.get_rules(filter_tags=["testing"])
         assert len(rules) == 1
         assert rules[0]["name"] == "r1"
@@ -152,8 +160,12 @@ class TestKnowledgeStorePatterns:
     def test_get_patterns_with_filter(self, tmp_knowledge: Path) -> None:
         """Test getting patterns filtered by tags."""
         ks = KnowledgeStore(str(tmp_knowledge))
-        ks.add_pattern({"name": "p1", "tags": ["arch"], "description": "", "content": "", "context": ""})
-        ks.add_pattern({"name": "p2", "tags": ["code"], "description": "", "content": "", "context": ""})
+        ks.add_pattern(
+            {"name": "p1", "tags": ["arch"], "description": "", "content": "", "context": ""}
+        )
+        ks.add_pattern(
+            {"name": "p2", "tags": ["code"], "description": "", "content": "", "context": ""}
+        )
         patterns = ks.get_patterns(filter_tags=["arch"])
         assert len(patterns) == 1
         assert patterns[0]["name"] == "p1"
@@ -166,7 +178,9 @@ class TestKnowledgeStoreRebuildIndex:
         """Test rebuilding the rules index."""
         ks = KnowledgeStore(str(tmp_knowledge))
         # Add a rule
-        ks.add_rule({"name": "rule1", "tags": ["t1"], "description": "D", "content": "C", "source": "s"})
+        ks.add_rule(
+            {"name": "rule1", "tags": ["t1"], "description": "D", "content": "C", "source": "s"}
+        )
         # Clear the index manually
         ks._save_index(ks.rules_dir, {"items": []})
         assert len(ks.get_rules()) == 0
@@ -178,7 +192,9 @@ class TestKnowledgeStoreRebuildIndex:
     def test_rebuild_patterns_index(self, tmp_knowledge: Path) -> None:
         """Test rebuilding the patterns index."""
         ks = KnowledgeStore(str(tmp_knowledge))
-        ks.add_pattern({"name": "pat1", "tags": ["t1"], "description": "D", "content": "C", "context": ""})
+        ks.add_pattern(
+            {"name": "pat1", "tags": ["t1"], "description": "D", "content": "C", "context": ""}
+        )
         ks._save_index(ks.patterns_dir, {"items": []})
         assert len(ks.get_patterns()) == 0
         ks.rebuild_index("patterns")
@@ -588,8 +604,7 @@ class TestSkillPathResolution:
 
         # At least 20 of 29 should resolve
         assert len(resolved) >= 20, (
-            f"Only {len(resolved)}/29 skills resolved. "
-            f"Unresolved: {unresolved}"
+            f"Only {len(resolved)}/29 skills resolved. Unresolved: {unresolved}"
         )
 
     def test_skill_index_has_required_fields(self, kernel_root: Path) -> None:

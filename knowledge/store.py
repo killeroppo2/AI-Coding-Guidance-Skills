@@ -91,16 +91,16 @@ class KnowledgeStore:
         # Update index
         index = self._load_index(self.rules_dir)
         # Remove existing entry with same name if present
-        index["items"] = [
-            item for item in index["items"] if item.get("name") != name
-        ]
-        index["items"].append({
-            "name": name,
-            "path": f"{subdir}/{safe_name}.yaml",
-            "tags": rule.get("tags", []),
-            "description": rule.get("description", ""),
-            "created_at": rule_data["created_at"],
-        })
+        index["items"] = [item for item in index["items"] if item.get("name") != name]
+        index["items"].append(
+            {
+                "name": name,
+                "path": f"{subdir}/{safe_name}.yaml",
+                "tags": rule.get("tags", []),
+                "description": rule.get("description", ""),
+                "created_at": rule_data["created_at"],
+            }
+        )
         self._save_index(self.rules_dir, index)
 
     def get_rules(self, filter_tags: list | None = None) -> list:
@@ -116,13 +116,11 @@ class KnowledgeStore:
         items: list = index.get("items", [])
         if filter_tags is None:
             return items
-        return [
-            item for item in items
-            if any(tag in item.get("tags", []) for tag in filter_tags)
-        ]
+        return [item for item in items if any(tag in item.get("tags", []) for tag in filter_tags)]
 
-    def add_skill(self, name: str, description: str, tags: list | None = None,
-                  path: str | None = None) -> None:
+    def add_skill(
+        self, name: str, description: str, tags: list | None = None, path: str | None = None
+    ) -> None:
         """Register a skill in _index.yaml.
 
         Args:
@@ -138,17 +136,17 @@ class KnowledgeStore:
 
         index = self._load_index(self.skills_dir)
         # Remove existing entry with same name
-        index["items"] = [
-            item for item in index["items"] if item.get("name") != name
-        ]
-        index["items"].append({
-            "name": name,
-            "path": path,
-            "description": description,
-            "tags": tags,
-            "composable_with": [],
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
+        index["items"] = [item for item in index["items"] if item.get("name") != name]
+        index["items"].append(
+            {
+                "name": name,
+                "path": path,
+                "description": description,
+                "tags": tags,
+                "composable_with": [],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         self._save_index(self.skills_dir, index)
 
     def get_skill(self, name: str) -> dict:
@@ -183,10 +181,7 @@ class KnowledgeStore:
         items: list = index.get("items", [])
         if tags is None:
             return items
-        return [
-            item for item in items
-            if any(tag in item.get("tags", []) for tag in tags)
-        ]
+        return [item for item in items if any(tag in item.get("tags", []) for tag in tags)]
 
     def list_core_skills(self) -> list:
         """List only core skills (those defined in core_items).
@@ -226,16 +221,16 @@ class KnowledgeStore:
         # Update index
         index = self._load_index(self.patterns_dir)
         # Remove existing entry with same name
-        index["items"] = [
-            item for item in index["items"] if item.get("name") != name
-        ]
-        index["items"].append({
-            "name": name,
-            "path": f"{safe_name}.yaml",
-            "tags": pattern.get("tags", []),
-            "description": pattern.get("description", ""),
-            "created_at": pattern_data["created_at"],
-        })
+        index["items"] = [item for item in index["items"] if item.get("name") != name]
+        index["items"].append(
+            {
+                "name": name,
+                "path": f"{safe_name}.yaml",
+                "tags": pattern.get("tags", []),
+                "description": pattern.get("description", ""),
+                "created_at": pattern_data["created_at"],
+            }
+        )
         self._save_index(self.patterns_dir, index)
 
     def get_patterns(self, filter_tags: list | None = None) -> list:
@@ -251,10 +246,7 @@ class KnowledgeStore:
         items: list = index.get("items", [])
         if filter_tags is None:
             return items
-        return [
-            item for item in items
-            if any(tag in item.get("tags", []) for tag in filter_tags)
-        ]
+        return [item for item in items if any(tag in item.get("tags", []) for tag in filter_tags)]
 
     def rebuild_index(self, category: str) -> None:
         """Rebuild _index.yaml for given category by scanning the directory.
@@ -273,8 +265,7 @@ class KnowledgeStore:
             category_dir = self.patterns_dir
         else:
             raise ValueError(
-                f"Invalid category: {category}."
-                " Must be one of: rules, skills, patterns"
+                f"Invalid category: {category}. Must be one of: rules, skills, patterns"
             )
 
         items = []
@@ -286,13 +277,15 @@ class KnowledgeStore:
                     for yaml_file in sorted(sub_path.glob("*.yaml")):
                         with open(yaml_file, "r", encoding="utf-8") as f:
                             data = yaml.safe_load(f) or {}
-                        items.append({
-                            "name": data.get("name", yaml_file.stem),
-                            "path": f"{subdir}/{yaml_file.name}",
-                            "tags": data.get("tags", []),
-                            "description": data.get("description", ""),
-                            "created_at": data.get("created_at", ""),
-                        })
+                        items.append(
+                            {
+                                "name": data.get("name", yaml_file.stem),
+                                "path": f"{subdir}/{yaml_file.name}",
+                                "tags": data.get("tags", []),
+                                "description": data.get("description", ""),
+                                "created_at": data.get("created_at", ""),
+                            }
+                        )
         elif category == "skills":
             # Scan for _index entries based on skill directories
             # Skills are registered via add_skill, so just scan index if it exists
@@ -300,14 +293,16 @@ class KnowledgeStore:
             if category_dir.exists():
                 for item_path in sorted(category_dir.iterdir()):
                     if item_path.is_dir() and (item_path / "SKILL.md").exists():
-                        items.append({
-                            "name": item_path.name,
-                            "path": item_path.name,
-                            "description": "",
-                            "tags": [],
-                            "composable_with": [],
-                            "created_at": "",
-                        })
+                        items.append(
+                            {
+                                "name": item_path.name,
+                                "path": item_path.name,
+                                "description": "",
+                                "tags": [],
+                                "composable_with": [],
+                                "created_at": "",
+                            }
+                        )
         elif category == "patterns":
             if category_dir.exists():
                 for yaml_file in sorted(category_dir.glob("*.yaml")):
@@ -315,12 +310,14 @@ class KnowledgeStore:
                         continue
                     with open(yaml_file, "r", encoding="utf-8") as f:
                         data = yaml.safe_load(f) or {}
-                    items.append({
-                        "name": data.get("name", yaml_file.stem),
-                        "path": yaml_file.name,
-                        "tags": data.get("tags", []),
-                        "description": data.get("description", ""),
-                        "created_at": data.get("created_at", ""),
-                    })
+                    items.append(
+                        {
+                            "name": data.get("name", yaml_file.stem),
+                            "path": yaml_file.name,
+                            "tags": data.get("tags", []),
+                            "description": data.get("description", ""),
+                            "created_at": data.get("created_at", ""),
+                        }
+                    )
 
         self._save_index(category_dir, {"items": items})

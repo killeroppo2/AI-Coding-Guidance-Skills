@@ -33,9 +33,7 @@ class TestM001InitialSchema:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"current_node": "init"}), encoding="utf-8")
         migration = M001InitialSchema()
         assert migration.check(tmp_path) is True
 
@@ -135,9 +133,7 @@ class TestM002AddProviderFields:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"provider": "cli", "model": None}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"provider": "cli", "model": None}), encoding="utf-8")
         migration = M002AddProviderFields()
         assert migration.check(tmp_path) is False
 
@@ -146,9 +142,7 @@ class TestM002AddProviderFields:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"current_node": "init"}), encoding="utf-8")
         migration = M002AddProviderFields()
         migration.up(tmp_path)
 
@@ -179,9 +173,7 @@ class TestM002AddProviderFields:
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
         state_path.write_text(
-            yaml.safe_dump(
-                {"current_node": "init", "provider": "cli", "model": None}
-            ),
+            yaml.safe_dump({"current_node": "init", "provider": "cli", "model": None}),
             encoding="utf-8",
         )
         migration = M002AddProviderFields()
@@ -231,9 +223,7 @@ class TestRunner:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"current_node": "init"}), encoding="utf-8")
 
         applied = run_pending_migrations(tmp_path)
 
@@ -271,9 +261,7 @@ class TestRunner:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"current_node": "init"}), encoding="utf-8")
         set_current_version(tmp_path, "0.2.0")
 
         applied = run_pending_migrations(tmp_path)
@@ -287,9 +275,7 @@ class TestRunner:
         kernel_dir = tmp_path / "kernel"
         kernel_dir.mkdir()
         state_path = kernel_dir / "state.yaml"
-        state_path.write_text(
-            yaml.safe_dump({"current_node": "init"}), encoding="utf-8"
-        )
+        state_path.write_text(yaml.safe_dump({"current_node": "init"}), encoding="utf-8")
 
         # Patch M001's up() to raise an error
         def bad_up(self: object, kernel_root: Path) -> None:

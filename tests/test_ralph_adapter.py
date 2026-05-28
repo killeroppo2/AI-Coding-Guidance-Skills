@@ -107,16 +107,12 @@ class TestExportToPrdJson:
         result = adapter.export_to_prd_json(sample_tasks, "Build a REST API")
         assert result["branchName"] == "ralph/build-a-rest-api"
 
-    def test_export_branch_name_special_chars(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_branch_name_special_chars(self, adapter: RalphAdapter) -> None:
         """Test that special characters are removed from branchName."""
         result = adapter.export_to_prd_json([], "Hello! World? (Test) #123")
         assert result["branchName"] == "ralph/hello-world-test-123"
 
-    def test_export_branch_name_underscores(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_branch_name_underscores(self, adapter: RalphAdapter) -> None:
         """Test that underscores become hyphens in branchName."""
         result = adapter.export_to_prd_json([], "my_cool_project")
         assert result["branchName"] == "ralph/my-cool-project"
@@ -144,24 +140,18 @@ class TestExportToPrdJson:
         ids = [s["id"] for s in result["userStories"]]
         assert ids == ["US-001", "US-002", "US-003"]
 
-    def test_export_maps_title(
-        self, adapter: RalphAdapter, sample_tasks: list[dict]
-    ) -> None:
+    def test_export_maps_title(self, adapter: RalphAdapter, sample_tasks: list[dict]) -> None:
         """Test that task titles are mapped to story titles."""
         result = adapter.export_to_prd_json(sample_tasks, "goal")
         assert result["userStories"][0]["title"] == "Set up database schema"
         assert result["userStories"][1]["title"] == "Implement API endpoints"
 
-    def test_export_maps_description(
-        self, adapter: RalphAdapter, sample_tasks: list[dict]
-    ) -> None:
+    def test_export_maps_description(self, adapter: RalphAdapter, sample_tasks: list[dict]) -> None:
         """Test that task descriptions are mapped to story descriptions."""
         result = adapter.export_to_prd_json(sample_tasks, "goal")
         assert result["userStories"][0]["description"] == "Create the initial database tables"
 
-    def test_export_generates_description_when_missing(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_generates_description_when_missing(self, adapter: RalphAdapter) -> None:
         """Test that a default description is generated when task has none."""
         tasks = [{"id": "T-001", "title": "Fix the bug", "status": "pending"}]
         result = adapter.export_to_prd_json(tasks, "goal")
@@ -189,13 +179,19 @@ class TestExportToPrdJson:
     ) -> None:
         """Test that each story has all required Ralph prd.json keys."""
         result = adapter.export_to_prd_json(sample_tasks, "goal")
-        required_keys = {"id", "title", "description", "acceptanceCriteria", "priority", "passes", "notes"}
+        required_keys = {
+            "id",
+            "title",
+            "description",
+            "acceptanceCriteria",
+            "priority",
+            "passes",
+            "notes",
+        }
         for story in result["userStories"]:
             assert set(story.keys()) == required_keys
 
-    def test_export_notes_empty(
-        self, adapter: RalphAdapter, sample_tasks: list[dict]
-    ) -> None:
+    def test_export_notes_empty(self, adapter: RalphAdapter, sample_tasks: list[dict]) -> None:
         """Test that notes field is always empty string on export."""
         result = adapter.export_to_prd_json(sample_tasks, "goal")
         for story in result["userStories"]:
@@ -208,9 +204,7 @@ class TestExportToPrdJson:
         assert result["description"] == "Build something"
         assert result["branchName"] == "ralph/build-something"
 
-    def test_export_acceptance_criteria_default(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_acceptance_criteria_default(self, adapter: RalphAdapter) -> None:
         """Test that default acceptance criteria are generated."""
         tasks = [{"id": "T-001", "title": "Do thing", "status": "pending"}]
         result = adapter.export_to_prd_json(tasks, "goal")
@@ -218,32 +212,32 @@ class TestExportToPrdJson:
         assert "Typecheck passes" in criteria
         assert len(criteria) >= 1
 
-    def test_export_acceptance_criteria_preserved(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_acceptance_criteria_preserved(self, adapter: RalphAdapter) -> None:
         """Test that existing acceptance criteria are preserved."""
-        tasks = [{
-            "id": "T-001",
-            "title": "Do thing",
-            "status": "pending",
-            "acceptance_criteria": ["Tests pass", "Docs updated"],
-        }]
+        tasks = [
+            {
+                "id": "T-001",
+                "title": "Do thing",
+                "status": "pending",
+                "acceptance_criteria": ["Tests pass", "Docs updated"],
+            }
+        ]
         result = adapter.export_to_prd_json(tasks, "goal")
         criteria = result["userStories"][0]["acceptanceCriteria"]
         assert "Tests pass" in criteria
         assert "Docs updated" in criteria
         assert "Typecheck passes" in criteria
 
-    def test_export_acceptance_criteria_no_duplicate_typecheck(
-        self, adapter: RalphAdapter
-    ) -> None:
+    def test_export_acceptance_criteria_no_duplicate_typecheck(self, adapter: RalphAdapter) -> None:
         """Test that Typecheck passes is not duplicated if already present."""
-        tasks = [{
-            "id": "T-001",
-            "title": "Do thing",
-            "status": "pending",
-            "acceptance_criteria": ["Typecheck passes", "Tests pass"],
-        }]
+        tasks = [
+            {
+                "id": "T-001",
+                "title": "Do thing",
+                "status": "pending",
+                "acceptance_criteria": ["Typecheck passes", "Tests pass"],
+            }
+        ]
         result = adapter.export_to_prd_json(tasks, "goal")
         criteria = result["userStories"][0]["acceptanceCriteria"]
         assert criteria.count("Typecheck passes") == 1
@@ -259,47 +253,38 @@ class TestImportFromPrdJson:
         tasks = adapter.import_from_prd_json(sample_prd)
         assert len(tasks) == 3
 
-    def test_import_task_ids_sequential(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_task_ids_sequential(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that imported tasks have sequential T-001 IDs."""
         tasks = adapter.import_from_prd_json(sample_prd)
         ids = [t["id"] for t in tasks]
         assert ids == ["T-001", "T-002", "T-003"]
 
-    def test_import_maps_title(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_maps_title(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that story titles are mapped to task titles."""
         tasks = adapter.import_from_prd_json(sample_prd)
         assert tasks[0]["title"] == "Add status field to tasks table"
         assert tasks[1]["title"] == "Display status badge on task cards"
 
-    def test_import_maps_description(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_maps_description(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that story descriptions are mapped to task descriptions."""
         tasks = adapter.import_from_prd_json(sample_prd)
-        assert tasks[0]["description"] == "As a developer, I need to store task status in the database."
+        assert (
+            tasks[0]["description"]
+            == "As a developer, I need to store task status in the database."
+        )
 
-    def test_import_status_from_passes_true(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_status_from_passes_true(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that passes=True maps to status=done."""
         tasks = adapter.import_from_prd_json(sample_prd)
         assert tasks[0]["status"] == "done"
 
-    def test_import_status_from_passes_false(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_status_from_passes_false(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that passes=False maps to status=pending."""
         tasks = adapter.import_from_prd_json(sample_prd)
         assert tasks[1]["status"] == "pending"
         assert tasks[2]["status"] == "pending"
 
-    def test_import_dependency_chain(
-        self, adapter: RalphAdapter, sample_prd: dict
-    ) -> None:
+    def test_import_dependency_chain(self, adapter: RalphAdapter, sample_prd: dict) -> None:
         """Test that dependency chain is created based on priority ordering."""
         tasks = adapter.import_from_prd_json(sample_prd)
         assert tasks[0]["dependencies"] == []  # priority 1, no deps
@@ -308,7 +293,12 @@ class TestImportFromPrdJson:
 
     def test_import_empty_user_stories(self, adapter: RalphAdapter) -> None:
         """Test import with empty userStories list."""
-        prd = {"project": "Test", "branchName": "ralph/test", "description": "Test", "userStories": []}
+        prd = {
+            "project": "Test",
+            "branchName": "ralph/test",
+            "description": "Test",
+            "userStories": [],
+        }
         tasks = adapter.import_from_prd_json(prd)
         assert tasks == []
 
@@ -321,30 +311,20 @@ class TestImportFromPrdJson:
     def test_import_handles_missing_title(self, adapter: RalphAdapter) -> None:
         """Test import when story title is missing."""
         prd = {
-            "userStories": [
-                {"id": "US-001", "priority": 1, "passes": False, "description": "desc"}
-            ]
+            "userStories": [{"id": "US-001", "priority": 1, "passes": False, "description": "desc"}]
         }
         tasks = adapter.import_from_prd_json(prd)
         assert tasks[0]["title"] == ""
 
     def test_import_handles_missing_description(self, adapter: RalphAdapter) -> None:
         """Test import when story description is missing."""
-        prd = {
-            "userStories": [
-                {"id": "US-001", "title": "Test", "priority": 1, "passes": False}
-            ]
-        }
+        prd = {"userStories": [{"id": "US-001", "title": "Test", "priority": 1, "passes": False}]}
         tasks = adapter.import_from_prd_json(prd)
         assert tasks[0]["description"] == ""
 
     def test_import_handles_missing_passes(self, adapter: RalphAdapter) -> None:
         """Test import when passes field is missing defaults to pending."""
-        prd = {
-            "userStories": [
-                {"id": "US-001", "title": "Test", "priority": 1}
-            ]
-        }
+        prd = {"userStories": [{"id": "US-001", "title": "Test", "priority": 1}]}
         tasks = adapter.import_from_prd_json(prd)
         assert tasks[0]["status"] == "pending"
 
@@ -454,9 +434,7 @@ class TestEdgeCases:
     def test_import_single_story_no_dependencies(self, adapter: RalphAdapter) -> None:
         """Test that a single story with priority 1 has no dependencies."""
         prd = {
-            "userStories": [
-                {"id": "US-001", "title": "Only one", "priority": 1, "passes": False}
-            ]
+            "userStories": [{"id": "US-001", "title": "Only one", "priority": 1, "passes": False}]
         }
         tasks = adapter.import_from_prd_json(prd)
         assert tasks[0]["dependencies"] == []

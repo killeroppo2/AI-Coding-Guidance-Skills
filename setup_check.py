@@ -42,6 +42,7 @@ class SetupChecker:
         """
         try:
             import yaml
+
             version = getattr(yaml, "__version__", "unknown")
             return (True, f"pyyaml {version} installed")
         except ImportError:
@@ -81,6 +82,7 @@ class SetupChecker:
             return (False, "kernel/graph.yaml not found")
         try:
             import yaml
+
             with open(graph_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             if not isinstance(data, dict):
@@ -103,6 +105,7 @@ class SetupChecker:
             return (False, "skills/_index.yaml not found")
         try:
             import yaml
+
             with open(index_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             if not isinstance(data, dict):

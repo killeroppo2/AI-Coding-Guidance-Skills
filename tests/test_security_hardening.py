@@ -151,9 +151,7 @@ class TestValidateWorkspacePathsAdversarial:
 
     def test_relative_path_traversal(self) -> None:
         """Relative path traversal is detected."""
-        violations = _validate_workspace_paths(
-            ["../../../etc/passwd"], "/workspace/project"
-        )
+        violations = _validate_workspace_paths(["../../../etc/passwd"], "/workspace/project")
         assert len(violations) == 1
         assert "outside workspace" in violations[0]
 
@@ -173,16 +171,12 @@ class TestValidateWorkspacePathsAdversarial:
 
     def test_absolute_path_outside(self) -> None:
         """Absolute paths outside workspace are detected."""
-        violations = _validate_workspace_paths(
-            ["/etc/passwd"], "/workspace/project"
-        )
+        violations = _validate_workspace_paths(["/etc/passwd"], "/workspace/project")
         assert len(violations) == 1
 
     def test_absolute_path_etc_shadow(self) -> None:
         """Sensitive system files are blocked."""
-        violations = _validate_workspace_paths(
-            ["/etc/shadow"], "/workspace/project"
-        )
+        violations = _validate_workspace_paths(["/etc/shadow"], "/workspace/project")
         assert len(violations) == 1
 
     def test_path_with_null_in_name(self) -> None:
@@ -211,16 +205,12 @@ class TestValidateWorkspacePathsAdversarial:
 
     def test_workspace_path_itself(self) -> None:
         """The workspace path itself is valid."""
-        violations = _validate_workspace_paths(
-            ["/workspace/project"], "/workspace/project"
-        )
+        violations = _validate_workspace_paths(["/workspace/project"], "/workspace/project")
         assert violations == []
 
     def test_empty_workspace_skips_check(self) -> None:
         """Empty workspace path means no check is performed."""
-        violations = _validate_workspace_paths(
-            ["../../../anything"], ""
-        )
+        violations = _validate_workspace_paths(["../../../anything"], "")
         assert violations == []
 
     def test_multiple_violations(self) -> None:
@@ -370,6 +360,4 @@ class TestYamlSafetyAudit:
                         if "safe_load" not in line:
                             violations.append(f"{fpath}:{i}: {line.strip()}")
 
-        assert violations == [], (
-            "Found unsafe yaml loader usage:\n" + "\n".join(violations)
-        )
+        assert violations == [], "Found unsafe yaml loader usage:\n" + "\n".join(violations)

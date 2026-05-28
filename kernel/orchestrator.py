@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Handle --check: run setup checks and exit early
     if args.check:
         from setup_check import SetupChecker
+
         checker = SetupChecker(str(KERNEL_ROOT))
         results = checker.run_all_checks()
         exit_code = checker.print_results(results)
@@ -90,8 +91,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Handle --init: create runtime files and exit early
     if args.init:
         from kernel.init import init_runtime_files
+
         init_runtime_files(KERNEL_ROOT)
         from kernel.migrations import run_pending_migrations
+
         applied = run_pending_migrations(KERNEL_ROOT)
         if applied:
             print(f"Applied {len(applied)} migration(s): {', '.join(applied)}")
@@ -100,6 +103,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Handle --migrate: run pending migrations and exit early
     if args.migrate:
         from kernel.migrations import run_pending_migrations
+
         applied = run_pending_migrations(KERNEL_ROOT)
         if applied:
             print(f"Applied {len(applied)} migration(s): {', '.join(applied)}")
@@ -126,7 +130,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     if not args.goal:
         print(
             "error: the following arguments are required: --goal\n"
-            "usage: runner --goal \"<your development goal>\" [--dry-run] [--max-iterations N]\n"
+            'usage: runner --goal "<your development goal>" [--dry-run] [--max-iterations N]\n'
             "       runner --init | --check | --status",
             file=sys.stderr,
         )
@@ -230,17 +234,17 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     # Low complexity: skip init/plan, jump straight to code
     if complexity == "low" and not args.dry_run and not args.generate_prompt:
         tasks_file = Path(memory_dir) / "tasks.yaml"
-        if not tasks_file.exists() or not yaml.safe_load(
-            tasks_file.read_text(encoding="utf-8")
-        ):
+        if not tasks_file.exists() or not yaml.safe_load(tasks_file.read_text(encoding="utf-8")):
             task_data = {
-                "tasks": [{
-                    "id": "T-001",
-                    "title": state_mgr.state.get("goal", ""),
-                    "status": "pending",
-                    "description": state_mgr.state.get("goal", ""),
-                    "complexity": "low",
-                }]
+                "tasks": [
+                    {
+                        "id": "T-001",
+                        "title": state_mgr.state.get("goal", ""),
+                        "status": "pending",
+                        "description": state_mgr.state.get("goal", ""),
+                        "complexity": "low",
+                    }
+                ]
             }
             with open(tasks_file, "w", encoding="utf-8") as f:
                 yaml.safe_dump(task_data, f)
@@ -258,6 +262,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
     # Register signal and atexit handlers for graceful shutdown in Mode 3
     if mode3:
+
         def _shutdown_handler(signum, frame):
             if _mode3_mod._active_subprocess is not None:
                 try:
@@ -269,9 +274,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     except Exception:
                         pass
             state_mgr.state["status"] = "interrupted"
-            state_mgr.state.setdefault("errors", []).append(
-                "Execution interrupted by signal"
-            )
+            state_mgr.state.setdefault("errors", []).append("Execution interrupted by signal")
             state_mgr.save_state()
             sys.exit(130)
 
@@ -293,25 +296,18 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
     if mode3:
         assembler = ContextAssembler(KERNEL_ROOT)
-        validator = OutputContractValidator(
-            str(KERNEL_ROOT / "kernel" / "graph.yaml")
-        )
+        validator = OutputContractValidator(str(KERNEL_ROOT / "kernel" / "graph.yaml"))
         reflector = Reflector(memory_dir, knowledge)
-        evolution_engine = EvolutionEngine(
-            str(KERNEL_ROOT / "kernel"), graph
-        )
+        evolution_engine = EvolutionEngine(str(KERNEL_ROOT / "kernel"), graph)
         evolution_metrics = EvolutionMetrics()
-        feedback_loop = FeedbackLoop(
-            memory_dir, reflector, evolution_engine, evolution_metrics
-        )
+        feedback_loop = FeedbackLoop(memory_dir, reflector, evolution_engine, evolution_metrics)
         event_detector = EventDetector(KERNEL_ROOT)
         retry_lightweight = False
         _last_was_lightweight = False
 
     # Build max_retries_map from graph nodes
     max_retries_map = {
-        node["id"]: node.get("max_retries", 10)
-        for node in graph.graph.get("nodes", [])
+        node["id"]: node.get("max_retries", 10) for node in graph.graph.get("nodes", [])
     }
 
     for i in range(args.max_iterations):
@@ -354,10 +350,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         if event["type"] == "prompt_modified":
                             event_detector.mark_user_owned(state_mgr.state, event["path"])
                     if args.verbose:
-                        logger.debug(
-                            f"[INFO] Detected {len(external_events)}"
-                            " external change(s)"
-                        )
+                        logger.debug(f"[INFO] Detected {len(external_events)} external change(s)")
 
             # Mode 3: Track visit BEFORE execution so failures count
             state_mgr.track_node_visit(node["id"])
@@ -388,8 +381,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     reporter = Reporter()
                     logger.error(
                         reporter.report_stuck(
-                            state_mgr.state, stuck_node,
-                            state_mgr.state.get("errors", [])
+                            state_mgr.state, stuck_node, state_mgr.state.get("errors", [])
                         )
                     )
                     logger.error(
@@ -426,9 +418,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 _last_was_lightweight = True
             else:
                 # Try incremental context for same-node repeats
-                context_prompt = assembler.assemble_incremental(
-                    state, node, graph, knowledge
-                )
+                context_prompt = assembler.assemble_incremental(state, node, graph, knowledge)
                 if not context_prompt:
                     # Full context needed
                     context_prompt = assembler.assemble(state, node, graph, knowledge)
@@ -443,9 +433,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 )
                 _mode3_mod._active_subprocess = proc
                 try:
-                    stdout, stderr = proc.communicate(
-                        input=context_prompt, timeout=args.timeout
-                    )
+                    stdout, stderr = proc.communicate(input=context_prompt, timeout=args.timeout)
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     stdout, stderr = proc.communicate()
@@ -534,18 +522,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             contract_result = validator.validate_output(ai_output, node["id"])
             if not contract_result.valid:
                 for violation in contract_result.violations:
-                    logger.warning(
-                        f"[CONTRACT VIOLATION] {violation}"
-                    )
+                    logger.warning(f"[CONTRACT VIOLATION] {violation}")
                 state_mgr.state.setdefault("errors", []).append(
-                    f"Contract violations on node {node['id']}: "
-                    f"{contract_result.violations}"
+                    f"Contract violations on node {node['id']}: {contract_result.violations}"
                 )
                 state_mgr.trim_errors()
                 # Check if violations are about missing format lines
                 has_format_violation = any(
-                    "Missing required TRANSITION" in v
-                    or "Missing required STATUS" in v
+                    "Missing required TRANSITION" in v or "Missing required STATUS" in v
                     for v in contract_result.violations
                 )
                 if has_format_violation and not _last_was_lightweight:
@@ -562,9 +546,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     contract_result.files_written, workspace_path
                 )
                 for v in ws_violations:
-                    logger.warning(
-                        f"[WARNING] Workspace boundary: {v}"
-                    )
+                    logger.warning(f"[WARNING] Workspace boundary: {v}")
 
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])
@@ -628,9 +610,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         progress_history.append(tasks_done_count)
                         # Cap at 20 entries to prevent unbounded growth
                         if len(progress_history) > MAX_PROGRESS_HISTORY_ENTRIES:
-                            state_mgr.state["progress_history"] = (
-                                progress_history[-MAX_PROGRESS_HISTORY_ENTRIES:]
-                            )
+                            state_mgr.state["progress_history"] = progress_history[
+                                -MAX_PROGRESS_HISTORY_ENTRIES:
+                            ]
 
                 # Philosophy check: should_stop_iterating
                 reflections_path = Path(memory_dir) / "reflections.jsonl"

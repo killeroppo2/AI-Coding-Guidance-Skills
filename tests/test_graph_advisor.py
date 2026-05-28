@@ -1,6 +1,5 @@
 """Tests for kernel/evolution/graph_advisor.py and Reflector integration."""
 
-
 import pytest
 import yaml
 
@@ -194,7 +193,11 @@ class TestDesignNodeForUIGoal:
                 skills_loaded=[],
                 history=[],
             )
-            add_proposals = [p for p in proposals if p["type"] == "add_node" and "UI/design" in p.get("reason", "")]
+            add_proposals = [
+                p
+                for p in proposals
+                if p["type"] == "add_node" and "UI/design" in p.get("reason", "")
+            ]
             assert len(add_proposals) == 1, f"Keyword '{keyword}' did not trigger proposal"
 
 
@@ -459,9 +462,7 @@ class TestReflectorIntegration:
     def test_reflector_no_advisor_returns_empty(self, tmp_memory):
         """Reflector without graph_advisor returns empty list."""
         reflector = Reflector(str(tmp_memory), knowledge_store=None)
-        result = reflector.suggest_graph_evolution(
-            goal="Build UI", skills_loaded=[], history=[]
-        )
+        result = reflector.suggest_graph_evolution(goal="Build UI", skills_loaded=[], history=[])
         assert result == []
 
     def test_reflector_with_advisor_delegates(self, tmp_memory, tmp_graph):

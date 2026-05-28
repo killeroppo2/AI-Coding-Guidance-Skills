@@ -31,11 +31,13 @@ class EvolutionMetrics:
         """
         if node_id not in self._data:
             self._data[node_id] = deque(maxlen=self.window_size)
-        self._data[node_id].append({
-            "success": success,
-            "retries": retries,
-            "duration": duration,
-        })
+        self._data[node_id].append(
+            {
+                "success": success,
+                "retries": retries,
+                "duration": duration,
+            }
+        )
 
     def get_node_metrics(self, node_id: str) -> dict:
         """Get aggregated metrics for a node.

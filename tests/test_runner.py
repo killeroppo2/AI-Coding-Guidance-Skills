@@ -219,13 +219,18 @@ class TestParseArgsExtended:
 
     def test_all_new_args_together(self) -> None:
         """Test parsing all new arguments together."""
-        args = runner.parse_args([
-            "--goal", "test",
-            "--ai-command", "claude --print",
-            "--timeout", "120",
-            "--resume",
-            "--generate-prompt",
-        ])
+        args = runner.parse_args(
+            [
+                "--goal",
+                "test",
+                "--ai-command",
+                "claude --print",
+                "--timeout",
+                "120",
+                "--resume",
+                "--generate-prompt",
+            ]
+        )
         assert args.ai_command == "claude --print"
         assert args.timeout == 120
         assert args.resume is True
@@ -305,7 +310,9 @@ class TestMode3:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         # knowledge dir
         knowledge_dir = tmp_path / "knowledge"
@@ -331,12 +338,18 @@ class TestMode3:
         mock_proc.returncode = 0
 
         with patch("subprocess.Popen", return_value=mock_proc) as mock_popen:
-            state = runner.main([
-                "--goal", "test mode3",
-                "--ai-command", "echo hello",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test mode3",
+                    "--ai-command",
+                    "echo hello",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         mock_popen.assert_called_once()
         # After init with TRANSITION: goal_loaded, should advance to "plan"
@@ -356,12 +369,18 @@ class TestMode3:
         mock_proc.returncode = 0
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test fallback",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test fallback",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Contract validation fails (missing TRANSITION), stays on same node
         assert state["current_node"] == "init"
@@ -380,12 +399,18 @@ class TestMode3:
         mock_proc.returncode = 0
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test unmatched",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test unmatched",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Contract validation fails (invalid transition for init), stays on same node
         assert state["current_node"] == "init"
@@ -406,17 +431,25 @@ class TestMode3:
             if call_count[0] % 2 == 1:
                 raise timeout_exc
             return ("", "")
+
         mock_proc.communicate.side_effect = _communicate_side_effect
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test timeout",
-                "--ai-command", "echo hi",
-                "--timeout", "5",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test timeout",
+                    "--ai-command",
+                    "echo hi",
+                    "--timeout",
+                    "5",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Should stay on same node and record error
         assert state["current_node"] == "init"
@@ -429,14 +462,21 @@ class TestMode3:
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
         with patch("subprocess.Popen", side_effect=FileNotFoundError()):
-            state = runner.main([
-                "--goal", "test cmd not found",
-                "--ai-command", "nonexistent_command --flag",
-                "--max-iterations", "3",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test cmd not found",
+                    "--ai-command",
+                    "nonexistent_command --flag",
+                    "--max-iterations",
+                    "3",
+                ]
+            )
 
         assert state["status"] == "error"
-        assert any("not found" in e.lower() or "Command not found" in e for e in state.get("errors", []))
+        assert any(
+            "not found" in e.lower() or "Command not found" in e for e in state.get("errors", [])
+        )
         captured = capsys.readouterr()
         assert "nonexistent_command" in captured.err
 
@@ -464,11 +504,16 @@ class TestMode3:
             return proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
-                "--goal", "test terminal",
-                "--ai-command", "echo hi",
-                "--max-iterations", "10",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test terminal",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "10",
+                ]
+            )
 
         # Should reach "code" node which has no transitions -> complete
         assert state["status"] == "complete"
@@ -489,24 +534,33 @@ class TestMode3:
             def mock_communicate(input=None, timeout=None):
                 captured_input.append(input or "")
                 return ("STATUS: success\nTRANSITION: goal_loaded", "")
+
             proc.communicate.side_effect = mock_communicate
             proc.returncode = 0
             return proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            runner.main([
-                "--goal", "context test",
-                "--ai-command", "claude --print",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "context test",
+                    "--ai-command",
+                    "claude --print",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         assert len(captured_input) == 1
         assert "=== BOOT SEQUENCE ===" in captured_input[0]
         assert "=== CURRENT STATE ===" in captured_input[0]
         assert "=== NODE PROMPT (init) ===" in captured_input[0]
 
-    def test_mode3_no_ai_command_falls_back_to_scaffolding(self, runner_env: Path, monkeypatch) -> None:
+    def test_mode3_no_ai_command_falls_back_to_scaffolding(
+        self, runner_env: Path, monkeypatch
+    ) -> None:
         """Test that no --ai-command and no --dry-run falls back to Mode 1 scaffolding."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
         state = runner.main(["--goal", "test fallback mode", "--max-iterations", "1"])
@@ -572,7 +626,9 @@ class TestGeneratePrompt:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -594,7 +650,9 @@ class TestGeneratePrompt:
         assert "=== PHILOSOPHY: DAO ===" in captured.out
         assert "=== PHILOSOPHY: STRATEGY ===" in captured.out
 
-    def test_generate_prompt_exits_without_running_loop(self, runner_env: Path, monkeypatch) -> None:
+    def test_generate_prompt_exits_without_running_loop(
+        self, runner_env: Path, monkeypatch
+    ) -> None:
         """Test --generate-prompt does not run the main loop."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
         state = runner.main(["--goal", "test prompt", "--generate-prompt"])
@@ -693,9 +751,13 @@ class TestResume:
         memory_dir.mkdir()
         (memory_dir / "decisions.jsonl").touch()
         (memory_dir / "reflections.jsonl").touch()
-        (memory_dir / "current_goal.md").write_text("# Current Goal\n\nexisting goal from previous run\n")
+        (memory_dir / "current_goal.md").write_text(
+            "# Current Goal\n\nexisting goal from previous run\n"
+        )
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 3, "tasks_total": 0, "tasks_done": 0, "status": "in_progress"}, f)
+            yaml.safe_dump(
+                {"iteration": 3, "tasks_total": 0, "tasks_done": 0, "status": "in_progress"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -709,22 +771,30 @@ class TestResume:
     def test_resume_preserves_existing_goal(self, runner_env: Path, monkeypatch) -> None:
         """Test --resume does not overwrite existing goal."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "new goal that should be ignored",
-            "--resume",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "new goal that should be ignored",
+                "--resume",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["goal"] == "existing goal from previous run"
 
     def test_no_resume_overwrites_goal(self, runner_env: Path, monkeypatch) -> None:
         """Test without --resume, goal is overwritten."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "new goal",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "new goal",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["goal"] == "new goal"
 
 
@@ -816,7 +886,9 @@ class TestStuckDetection:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -892,7 +964,9 @@ class TestStuckDetection:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -906,20 +980,28 @@ class TestStuckDetection:
     def test_runner_detects_stuck_and_stops(self, stuck_env: Path, monkeypatch) -> None:
         """Test runner stops with 'stuck' status when max_retries exceeded."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", stuck_env)
-        state = runner.main([
-            "--goal", "test stuck detection",
-            "--max-iterations", "20",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "test stuck detection",
+                "--max-iterations",
+                "20",
+            ]
+        )
         assert state["status"] == "stuck"
         assert any("exceeded max_retries" in e for e in state.get("errors", []))
 
     def test_runner_stuck_handler_redirect(self, stuck_handler_env: Path, monkeypatch) -> None:
         """Test runner redirects to stuck_handler node when max_retries exceeded."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", stuck_handler_env)
-        state = runner.main([
-            "--goal", "test stuck handler",
-            "--max-iterations", "20",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "test stuck handler",
+                "--max-iterations",
+                "20",
+            ]
+        )
         # Should redirect to reflect and then complete (reflect has no transitions)
         assert state["current_node"] == "reflect"
         assert state["status"] == "complete"
@@ -927,11 +1009,15 @@ class TestStuckDetection:
     def test_runner_stuck_in_dry_run(self, stuck_env: Path, monkeypatch, capsys) -> None:
         """Test dry-run prints stuck message when max_retries exceeded."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", stuck_env)
-        state = runner.main([
-            "--goal", "test stuck dry run",
-            "--max-iterations", "20",
-            "--dry-run",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "test stuck dry run",
+                "--max-iterations",
+                "20",
+                "--dry-run",
+            ]
+        )
         captured = capsys.readouterr()
         assert "STUCK" in captured.out
         assert "exceeded max_retries" in captured.out
@@ -1007,7 +1093,9 @@ class TestReviewFixes:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -1036,56 +1124,81 @@ class TestReviewFixes:
             return proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            runner.main([
-                "--goal", "test shlex",
-                "--ai-command", 'claude --print --model "claude-3"',
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test shlex",
+                    "--ai-command",
+                    'claude --print --model "claude-3"',
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         assert len(captured_args) == 1
         # shlex.split should produce: ['claude', '--print', '--model', 'claude-3']
         assert captured_args[0] == ["claude", "--print", "--model", "claude-3"]
 
-    def test_fallback_produces_warning_no_transition(self, runner_env: Path, monkeypatch, capsys) -> None:
+    def test_fallback_produces_warning_no_transition(
+        self, runner_env: Path, monkeypatch, capsys
+    ) -> None:
         """Test that missing TRANSITION line triggers contract violation."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
         mock_proc = MagicMock()
-        mock_proc.communicate.return_value = ("Some output without any transition info\nSTATUS: success", "")
+        mock_proc.communicate.return_value = (
+            "Some output without any transition info\nSTATUS: success",
+            "",
+        )
         mock_proc.returncode = 0
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test fallback warning",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test fallback warning",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         captured = capsys.readouterr()
         assert "[CONTRACT VIOLATION] Missing required TRANSITION line" in captured.err
         # Contract violation stays on same node and records error
         assert any("Contract violations" in str(e) for e in state.get("errors", []))
 
-    def test_fallback_produces_warning_unmatched_condition(self, runner_env: Path, monkeypatch, capsys) -> None:
+    def test_fallback_produces_warning_unmatched_condition(
+        self, runner_env: Path, monkeypatch, capsys
+    ) -> None:
         """Test that invalid transition condition triggers contract violation."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
         mock_proc = MagicMock()
-        mock_proc.communicate.return_value = ("STATUS: success\nTRANSITION: nonexistent_condition", "")
+        mock_proc.communicate.return_value = (
+            "STATUS: success\nTRANSITION: nonexistent_condition",
+            "",
+        )
         mock_proc.returncode = 0
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main([
-                "--goal", "test unmatched warning",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test unmatched warning",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         captured = capsys.readouterr()
         assert "[CONTRACT VIOLATION]" in captured.err
@@ -1111,18 +1224,24 @@ class TestReviewFixes:
         with open(state_file, "w") as f:
             yaml.safe_dump(state_data, f)
 
-        state = runner.main([
-            "--goal", "resume goal",
-            "--resume",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "resume goal",
+                "--resume",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
 
         # node_visits should have been reset at the start of resume
         # Only new visits from this session should be counted
         # Since we ran 1 iteration starting from "plan", we should see
         # only 1 visit to whatever the next node was
-        assert "init" not in state.get("node_visits", {}) or state["node_visits"].get("init", 0) == 0
+        assert (
+            "init" not in state.get("node_visits", {}) or state["node_visits"].get("init", 0) == 0
+        )
         # Previous stale counts of 3 and 4 should not persist
         assert state.get("node_visits", {}).get("plan", 0) < 4
 
@@ -1138,12 +1257,18 @@ class TestReviewFixes:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test returncode",
-                "--ai-command", "claude --print",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test returncode",
+                    "--ai-command",
+                    "claude --print",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         captured = capsys.readouterr()
         # Should log error to stderr
@@ -1190,11 +1315,16 @@ class TestReviewFixes:
             return proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
-                "--goal", "test progress history",
-                "--ai-command", "echo hi",
-                "--max-iterations", "5",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test progress history",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "5",
+                ]
+            )
 
         # progress_history should contain entries (1 task done per iteration)
         assert "progress_history" in state
@@ -1244,16 +1374,23 @@ class TestReviewFixes:
             return proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
-                "--goal", "test cap",
-                "--ai-command", "echo hi",
-                "--max-iterations", "5",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test cap",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "5",
+                ]
+            )
 
         # progress_history should not exceed 20 entries
         assert len(state.get("progress_history", [])) <= 20
 
-    def test_assessment_skipped_on_resume_with_existing_file(self, runner_env: Path, monkeypatch) -> None:
+    def test_assessment_skipped_on_resume_with_existing_file(
+        self, runner_env: Path, monkeypatch
+    ) -> None:
         """Test that capability assessment is skipped on --resume when assessment.yaml exists."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -1277,11 +1414,15 @@ class TestReviewFixes:
         with open(state_file, "w") as f:
             yaml.safe_dump(state_data, f)
 
-        runner.main([
-            "--goal", "previous goal",
-            "--resume",
-            "--max-iterations", "1",
-        ])
+        runner.main(
+            [
+                "--goal",
+                "previous goal",
+                "--resume",
+                "--max-iterations",
+                "1",
+            ]
+        )
 
         # The existing assessment.yaml should NOT have been overwritten
         with open(memory_dir / "assessment.yaml") as f:
@@ -1300,10 +1441,14 @@ class TestReviewFixes:
         if assessment_path.exists():
             assessment_path.unlink()
 
-        runner.main([
-            "--goal", "test fresh assessment",
-            "--max-iterations", "1",
-        ])
+        runner.main(
+            [
+                "--goal",
+                "test fresh assessment",
+                "--max-iterations",
+                "1",
+            ]
+        )
 
         # assessment.yaml should have been created
         assert assessment_path.exists()
@@ -1357,4 +1502,3 @@ class TestMaxIterationsValidation:
         """Test that --max-iterations 1 is accepted."""
         state = runner.main(["--goal", "test", "--max-iterations", "1", "--dry-run"])
         assert state["max_iterations"] == 1
-

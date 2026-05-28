@@ -159,7 +159,11 @@ class TestPathTraversalInModifyPrompt:
         }
         valid, reason = engine.validate_change(change)
         assert valid is False
-        assert "protected file" in reason.lower() or "traversal" in reason.lower() or "Cannot modify" in reason
+        assert (
+            "protected file" in reason.lower()
+            or "traversal" in reason.lower()
+            or "Cannot modify" in reason
+        )
 
     def test_reject_traversal_escaping_kernel(self, evolution_env) -> None:
         """../../etc/passwd style paths should be rejected (escapes kernel dir)."""

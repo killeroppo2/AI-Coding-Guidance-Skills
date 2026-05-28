@@ -9,6 +9,7 @@ use as the primary signal for determining which node response to generate.
 
 Usage: echo "prompt text" | python tests/e2e/mock_ai_server.py
 """
+
 import os
 import sys
 
@@ -22,7 +23,7 @@ def _detect_node(prompt: str) -> str:
     for line in prompt.splitlines():
         stripped = line.strip()
         if stripped.startswith("Current Node:"):
-            node_id = stripped[len("Current Node:"):].strip()
+            node_id = stripped[len("Current Node:") :].strip()
             return node_id
 
     # Fallback: keyword matching

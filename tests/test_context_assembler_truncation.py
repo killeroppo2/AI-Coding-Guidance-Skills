@@ -54,12 +54,10 @@ class TestTruncateSkillContent:
         # Create content where the intro+first section is still too long
         content = (
             "# Title\n"
-            "\n"
-            + "A" * 500 + "\n"
+            "\n" + "A" * 500 + "\n"
             "\n"
             "## First Section\n"
-            "\n"
-            + "B" * 500 + "\n"
+            "\n" + "B" * 500 + "\n"
             "\n"
             "## Second Section\n"
             "\n"
@@ -86,13 +84,7 @@ class TestTruncateSkillContent:
     def test_single_heading_hard_truncates(self, tmp_path: Path) -> None:
         """Content with only one ## heading gets hard-truncated."""
         assembler = ContextAssembler(tmp_path)
-        content = (
-            "# Title\n"
-            "\n"
-            "## Only Section\n"
-            "\n"
-            + "X" * 500 + "\n"
-        )
+        content = "# Title\n\n## Only Section\n\n" + "X" * 500 + "\n"
         result = assembler._truncate_skill_content(content, 50)
         assert result.endswith("\n...[TRUNCATED]")
 

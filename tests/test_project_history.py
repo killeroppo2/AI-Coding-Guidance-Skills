@@ -50,14 +50,16 @@ class TestRecordProject:
     def test_multiple_records_append(self, history_setup) -> None:
         history, _ = history_setup
         for i in range(3):
-            history.record_project({
-                "goal": f"project {i}",
-                "skills_used": [],
-                "iterations_needed": i,
-                "outcome": "success",
-                "timestamp": f"2025-01-0{i+1}T00:00:00Z",
-                "nodes_visited": [],
-            })
+            history.record_project(
+                {
+                    "goal": f"project {i}",
+                    "skills_used": [],
+                    "iterations_needed": i,
+                    "outcome": "success",
+                    "timestamp": f"2025-01-0{i + 1}T00:00:00Z",
+                    "nodes_visited": [],
+                }
+            )
         loaded = history._load_history()
         assert len(loaded) == 3
 
@@ -67,22 +69,26 @@ class TestSimilaritySearch:
 
     def test_finds_matching_project(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "build react web application",
-            "skills_used": ["prototype"],
-            "iterations_needed": 3,
-            "outcome": "success",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": ["init", "code"],
-        })
-        history.record_project({
-            "goal": "write python script",
-            "skills_used": ["tdd"],
-            "iterations_needed": 2,
-            "outcome": "success",
-            "timestamp": "2025-01-02T00:00:00Z",
-            "nodes_visited": ["init", "code"],
-        })
+        history.record_project(
+            {
+                "goal": "build react web application",
+                "skills_used": ["prototype"],
+                "iterations_needed": 3,
+                "outcome": "success",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": ["init", "code"],
+            }
+        )
+        history.record_project(
+            {
+                "goal": "write python script",
+                "skills_used": ["tdd"],
+                "iterations_needed": 2,
+                "outcome": "success",
+                "timestamp": "2025-01-02T00:00:00Z",
+                "nodes_visited": ["init", "code"],
+            }
+        )
         results = history.get_similar_past_projects("build react app")
         assert len(results) >= 1
         assert results[0]["goal"] == "build react web application"
@@ -95,27 +101,31 @@ class TestSimilaritySearch:
     def test_top_k_limits_results(self, history_setup) -> None:
         history, _ = history_setup
         for i in range(10):
-            history.record_project({
-                "goal": f"build web project number {i}",
-                "skills_used": [],
-                "iterations_needed": 1,
-                "outcome": "success",
-                "timestamp": "2025-01-01T00:00:00Z",
-                "nodes_visited": [],
-            })
+            history.record_project(
+                {
+                    "goal": f"build web project number {i}",
+                    "skills_used": [],
+                    "iterations_needed": 1,
+                    "outcome": "success",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "nodes_visited": [],
+                }
+            )
         results = history.get_similar_past_projects("build web project", top_k=2)
         assert len(results) == 2
 
     def test_returns_empty_for_no_overlap(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "build react web application",
-            "skills_used": [],
-            "iterations_needed": 3,
-            "outcome": "success",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": [],
-        })
+        history.record_project(
+            {
+                "goal": "build react web application",
+                "skills_used": [],
+                "iterations_needed": 3,
+                "outcome": "success",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
         results = history.get_similar_past_projects("deploy kubernetes cluster")
         assert results == []
 
@@ -125,58 +135,68 @@ class TestRecommendedSkills:
 
     def test_recommends_from_successful_projects(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "build web dashboard",
-            "skills_used": ["prototype", "ui-styling"],
-            "iterations_needed": 4,
-            "outcome": "success",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": [],
-        })
+        history.record_project(
+            {
+                "goal": "build web dashboard",
+                "skills_used": ["prototype", "ui-styling"],
+                "iterations_needed": 4,
+                "outcome": "success",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
         recommended = history.get_recommended_skills("build web app dashboard")
         assert "prototype" in recommended
         assert "ui-styling" in recommended
 
     def test_excludes_failed_projects(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "build web dashboard",
-            "skills_used": ["bad-skill"],
-            "iterations_needed": 10,
-            "outcome": "failed",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": [],
-        })
-        history.record_project({
-            "goal": "build web dashboard v2",
-            "skills_used": ["good-skill"],
-            "iterations_needed": 3,
-            "outcome": "success",
-            "timestamp": "2025-01-02T00:00:00Z",
-            "nodes_visited": [],
-        })
+        history.record_project(
+            {
+                "goal": "build web dashboard",
+                "skills_used": ["bad-skill"],
+                "iterations_needed": 10,
+                "outcome": "failed",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
+        history.record_project(
+            {
+                "goal": "build web dashboard v2",
+                "skills_used": ["good-skill"],
+                "iterations_needed": 3,
+                "outcome": "success",
+                "timestamp": "2025-01-02T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
         recommended = history.get_recommended_skills("build web dashboard")
         assert "bad-skill" not in recommended
         assert "good-skill" in recommended
 
     def test_deduplicates_skills(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "build web app",
-            "skills_used": ["tdd", "prototype"],
-            "iterations_needed": 3,
-            "outcome": "success",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": [],
-        })
-        history.record_project({
-            "goal": "create web application",
-            "skills_used": ["tdd", "ui-styling"],
-            "iterations_needed": 4,
-            "outcome": "success",
-            "timestamp": "2025-01-02T00:00:00Z",
-            "nodes_visited": [],
-        })
+        history.record_project(
+            {
+                "goal": "build web app",
+                "skills_used": ["tdd", "prototype"],
+                "iterations_needed": 3,
+                "outcome": "success",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
+        history.record_project(
+            {
+                "goal": "create web application",
+                "skills_used": ["tdd", "ui-styling"],
+                "iterations_needed": 4,
+                "outcome": "success",
+                "timestamp": "2025-01-02T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
         recommended = history.get_recommended_skills("build web app")
         # tdd should only appear once
         assert recommended.count("tdd") == 1
@@ -187,22 +207,26 @@ class TestStats:
 
     def test_stats_with_multiple_projects(self, history_setup) -> None:
         history, _ = history_setup
-        history.record_project({
-            "goal": "project 1",
-            "skills_used": ["tdd"],
-            "iterations_needed": 5,
-            "outcome": "success",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "nodes_visited": [],
-        })
-        history.record_project({
-            "goal": "project 2",
-            "skills_used": ["tdd", "prototype"],
-            "iterations_needed": 10,
-            "outcome": "failed",
-            "timestamp": "2025-01-02T00:00:00Z",
-            "nodes_visited": [],
-        })
+        history.record_project(
+            {
+                "goal": "project 1",
+                "skills_used": ["tdd"],
+                "iterations_needed": 5,
+                "outcome": "success",
+                "timestamp": "2025-01-01T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
+        history.record_project(
+            {
+                "goal": "project 2",
+                "skills_used": ["tdd", "prototype"],
+                "iterations_needed": 10,
+                "outcome": "failed",
+                "timestamp": "2025-01-02T00:00:00Z",
+                "nodes_visited": [],
+            }
+        )
         stats = history.get_stats()
         assert stats["total_projects"] == 2
         assert stats["success_rate"] == pytest.approx(0.5)

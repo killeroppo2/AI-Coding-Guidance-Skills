@@ -21,8 +21,13 @@ def skill_index_path(tmp_path: Path) -> str:
             "execution_phase": ["ralph", "tdd", "prototype"],
             "quality_phase": ["diagnose", "improve-codebase-architecture"],
             "design_phase": [
-                "ui-ux-pro-max", "ui-styling", "design-system",
-                "design", "brand", "banner-design", "slides",
+                "ui-ux-pro-max",
+                "ui-styling",
+                "design-system",
+                "design",
+                "brand",
+                "banner-design",
+                "slides",
             ],
             "lifecycle_phase": ["handoff", "triage", "zoom-out"],
         },
@@ -204,7 +209,9 @@ class TestGetRecommendedPhase:
         assert bridge.get_recommended_phase("fix the login bug", {}) == "execution_phase"
 
     def test_default_requirements(self, bridge):
-        assert bridge.get_recommended_phase("user authentication system", {}) == "requirements_phase"
+        assert (
+            bridge.get_recommended_phase("user authentication system", {}) == "requirements_phase"
+        )
 
     def test_empty_goal(self, bridge):
         assert bridge.get_recommended_phase("", {}) == "idea_phase"

@@ -22,8 +22,7 @@ class EvolutionHistorian:
         """
         self.history_file = Path(history_file)
         self.archive_dir = (
-            Path(archive_dir) if archive_dir
-            else self.history_file.parent / "archive"
+            Path(archive_dir) if archive_dir else self.history_file.parent / "archive"
         )
 
     def load_history(self) -> list[dict]:
@@ -205,7 +204,6 @@ class EvolutionHistorian:
 
         recent = entries[-window:]
         applied_count = sum(
-            1 for e in recent
-            if e.get("status") == "applied" and e.get("type") != "rollback"
+            1 for e in recent if e.get("status") == "applied" and e.get("type") != "rollback"
         )
         return applied_count / window

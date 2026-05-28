@@ -94,9 +94,7 @@ class TestRunCycle:
         assert result["reflection"]["node"] == "code"
         assert result["reflection"]["success"] is True
 
-    def test_run_cycle_with_high_confidence_proposal_applies_change(
-        self, feedback_setup
-    ) -> None:
+    def test_run_cycle_with_high_confidence_proposal_applies_change(self, feedback_setup) -> None:
         """Test that proposals with high confidence are auto-applied."""
         loop, memory_dir, kernel_dir, engine, _ = feedback_setup
 
@@ -128,9 +126,7 @@ class TestRunCycle:
         # Verify reflection was stored
         assert result["reflection"]["node"] == "code"
 
-    def test_run_cycle_with_low_confidence_proposal_skips(
-        self, feedback_setup
-    ) -> None:
+    def test_run_cycle_with_low_confidence_proposal_skips(self, feedback_setup) -> None:
         """Test that proposals with low confidence are skipped."""
         loop, memory_dir, _, engine, _ = feedback_setup
 
@@ -477,9 +473,7 @@ class TestRunnerCallsFeedbackLoop:
 
         return tmp_path
 
-    def test_runner_calls_feedback_loop_on_success(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_runner_calls_feedback_loop_on_success(self, runner_env: Path, monkeypatch) -> None:
         """Test that Mode 3 runner calls feedback loop after successful transition."""
         import runner
 
@@ -491,12 +485,18 @@ class TestRunnerCallsFeedbackLoop:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main([
-                "--goal", "test feedback",
-                "--ai-command", "echo hello",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test feedback",
+                    "--ai-command",
+                    "echo hello",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Verify feedback loop ran by checking reflections.jsonl
         reflections_path = runner_env / "memory" / "reflections.jsonl"
@@ -506,9 +506,7 @@ class TestRunnerCallsFeedbackLoop:
         assert entry["node"] == "init"
         assert entry["success"] is True
 
-    def test_runner_calls_feedback_loop_on_failure(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_runner_calls_feedback_loop_on_failure(self, runner_env: Path, monkeypatch) -> None:
         """Test that Mode 3 runner calls feedback loop on AI command failure."""
         import runner
 
@@ -520,11 +518,16 @@ class TestRunnerCallsFeedbackLoop:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main([
-                "--goal", "test failure feedback",
-                "--ai-command", "echo hello",
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test failure feedback",
+                    "--ai-command",
+                    "echo hello",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # Verify feedback loop ran with failure data
         reflections_path = runner_env / "memory" / "reflections.jsonl"
@@ -538,9 +541,7 @@ class TestRunnerCallsFeedbackLoop:
 class TestContextAssemblerIncludesHistoryAndReflections:
     """Tests for context_assembler including evolution history and reflections."""
 
-    def test_context_assembler_includes_history_and_reflections(
-        self, tmp_path: Path
-    ) -> None:
+    def test_context_assembler_includes_history_and_reflections(self, tmp_path: Path) -> None:
         """Test that assembled context includes evolution history and reflections."""
         from kernel.context_assembler import ContextAssembler
 
@@ -632,9 +633,7 @@ class TestContextAssemblerIncludesHistoryAndReflections:
         assert "=== RECENT REFLECTIONS ===" in result
         assert "Learned to handle errors" in result
 
-    def test_context_assembler_no_history_no_reflections(
-        self, tmp_path: Path
-    ) -> None:
+    def test_context_assembler_no_history_no_reflections(self, tmp_path: Path) -> None:
         """Test that assembler works when no history or reflections exist."""
         from kernel.context_assembler import ContextAssembler
 
@@ -717,9 +716,7 @@ class TestSkillAccumulatorIntegration:
         assert call_args["goal"] == "Build a calculator"
         assert call_args["skills_used"] == ["python-api"]
 
-    def test_skill_accumulator_not_called_without_project_complete(
-        self, feedback_setup
-    ) -> None:
+    def test_skill_accumulator_not_called_without_project_complete(self, feedback_setup) -> None:
         """Test that skill_accumulator is NOT called for normal iterations."""
         loop, memory_dir, _, _, _ = feedback_setup
 
@@ -737,9 +734,7 @@ class TestSkillAccumulatorIntegration:
 
         mock_accumulator.analyze_completion.assert_not_called()
 
-    def test_feedback_loop_works_without_skill_accumulator(
-        self, feedback_setup
-    ) -> None:
+    def test_feedback_loop_works_without_skill_accumulator(self, feedback_setup) -> None:
         """Test that FeedbackLoop works fine when no skill_accumulator is provided."""
         loop, _, _, _, _ = feedback_setup
         assert loop.skill_accumulator is None

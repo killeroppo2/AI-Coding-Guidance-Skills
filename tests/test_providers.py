@@ -142,9 +142,7 @@ class TestFactoryProviderCreation:
         """Factory for 'anthropic' creates AnthropicProvider when package available."""
         import kernel.providers.anthropic_provider as ant_mod
 
-        mock_anthropic = type(
-            "MockAnthropic", (), {"AsyncAnthropic": lambda *a, **kw: None}
-        )()
+        mock_anthropic = type("MockAnthropic", (), {"AsyncAnthropic": lambda *a, **kw: None})()
         with patch.object(ant_mod, "anthropic", mock_anthropic):
             provider = factory_create_provider("anthropic", api_key="test-key")
             assert provider.model == "claude-sonnet-4-20250514"
@@ -173,9 +171,7 @@ class TestAnthropicProviderValidation:
         import kernel.providers.anthropic_provider as ant_mod
 
         # Mock the anthropic module so ImportError check passes
-        mock_anthropic = type(
-            "MockAnthropic", (), {"AsyncAnthropic": lambda *a, **kw: None}
-        )()
+        mock_anthropic = type("MockAnthropic", (), {"AsyncAnthropic": lambda *a, **kw: None})()
         with patch.object(ant_mod, "anthropic", mock_anthropic):
             with patch.dict("os.environ", {}, clear=True):
                 with pytest.raises(ValueError, match="API key is required"):

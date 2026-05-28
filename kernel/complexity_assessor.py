@@ -1,6 +1,5 @@
 """Task complexity assessment for routing optimization."""
 
-
 _LOW_KEYWORDS = [
     "hello world",
     "single file",

@@ -1,6 +1,5 @@
 """Tests for kernel.complexity_assessor module."""
 
-
 from kernel.complexity_assessor import assess_complexity
 
 
@@ -67,9 +66,7 @@ class TestAssessComplexityHigh:
 
     def test_distributed_microservice(self) -> None:
         """Test that distributed microservice goal is high."""
-        assert assess_complexity(
-            "Build a distributed microservice architecture"
-        ) == "high"
+        assert assess_complexity("Build a distributed microservice architecture") == "high"
 
     def test_architecture_keyword(self) -> None:
         """Test that 'architecture' keyword triggers high."""

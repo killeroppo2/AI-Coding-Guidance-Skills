@@ -21,6 +21,7 @@ class TestTaskManagerInit:
     def test_importable(self) -> None:
         """Test that kernel.task_manager can be imported."""
         from kernel import task_manager
+
         assert task_manager is not None
 
 
@@ -131,10 +132,12 @@ class TestAddTask:
     def test_add_task_auto_id_with_gap(self, tmp_path: Path) -> None:
         """Test auto-id generation with gaps in existing ids."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "done"},
-            {"id": "T-005", "status": "pending"},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "done"},
+                {"id": "T-005", "status": "pending"},
+            ]
+        )
         tm.add_task({"title": "After gap", "status": "pending"})
         tasks = tm.load_tasks()
         assert tasks[2]["id"] == "T-006"
@@ -153,10 +156,12 @@ class TestGetNextTask:
     def test_get_next_task_simple(self, tmp_path: Path) -> None:
         """Test getting the next pending task with no dependencies."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
+            ]
+        )
         result = tm.get_next_task()
         assert result is not None
         assert result["id"] == "T-001"
@@ -164,10 +169,12 @@ class TestGetNextTask:
     def test_get_next_task_skips_done(self, tmp_path: Path) -> None:
         """Test that done tasks are skipped."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
+            ]
+        )
         result = tm.get_next_task()
         assert result is not None
         assert result["id"] == "T-002"
@@ -175,10 +182,12 @@ class TestGetNextTask:
     def test_get_next_task_respects_dependencies(self, tmp_path: Path) -> None:
         """Test that tasks with unmet dependencies are skipped."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
+            ]
+        )
         result = tm.get_next_task()
         assert result is not None
         assert result["id"] == "T-001"
@@ -186,10 +195,12 @@ class TestGetNextTask:
     def test_get_next_task_deps_met(self, tmp_path: Path) -> None:
         """Test that tasks with all deps done are returned."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
+            ]
+        )
         result = tm.get_next_task()
         assert result is not None
         assert result["id"] == "T-002"
@@ -197,10 +208,12 @@ class TestGetNextTask:
     def test_get_next_task_all_blocked(self, tmp_path: Path) -> None:
         """Test returns None when no task is eligible."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending", "dependencies": ["T-002"]},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending", "dependencies": ["T-002"]},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": ["T-001"]},
+            ]
+        )
         result = tm.get_next_task()
         assert result is None
 
@@ -213,19 +226,23 @@ class TestGetNextTask:
     def test_get_next_task_all_done(self, tmp_path: Path) -> None:
         """Test returns None when all tasks are done."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "done", "dependencies": []},
+            ]
+        )
         result = tm.get_next_task()
         assert result is None
 
     def test_get_next_task_skips_in_progress(self, tmp_path: Path) -> None:
         """Test that in_progress tasks are not returned as next."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "in_progress", "dependencies": []},
-            {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "in_progress", "dependencies": []},
+                {"id": "T-002", "title": "Second", "status": "pending", "dependencies": []},
+            ]
+        )
         result = tm.get_next_task()
         assert result is not None
         assert result["id"] == "T-002"
@@ -237,9 +254,11 @@ class TestMarkStatus:
     def test_mark_in_progress(self, tmp_path: Path) -> None:
         """Test marking a task as in_progress."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
+            ]
+        )
         tm.mark_in_progress("T-001")
         task = tm.get_task("T-001")
         assert task["status"] == "in_progress"
@@ -247,9 +266,11 @@ class TestMarkStatus:
     def test_mark_done(self, tmp_path: Path) -> None:
         """Test marking a task as done."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "in_progress", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "in_progress", "dependencies": []},
+            ]
+        )
         tm.mark_done("T-001")
         task = tm.get_task("T-001")
         assert task["status"] == "done"
@@ -257,9 +278,11 @@ class TestMarkStatus:
     def test_mark_blocked(self, tmp_path: Path) -> None:
         """Test marking a task as blocked with reason."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending", "dependencies": []},
+            ]
+        )
         tm.mark_blocked("T-001", "Missing API key")
         task = tm.get_task("T-001")
         assert task["status"] == "blocked"
@@ -293,10 +316,12 @@ class TestGetTask:
     def test_get_task_found(self, tmp_path: Path) -> None:
         """Test getting an existing task."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "title": "First", "status": "pending"},
-            {"id": "T-002", "title": "Second", "status": "done"},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "title": "First", "status": "pending"},
+                {"id": "T-002", "title": "Second", "status": "done"},
+            ]
+        )
         task = tm.get_task("T-002")
         assert task["title"] == "Second"
         assert task["status"] == "done"
@@ -328,11 +353,13 @@ class TestGetProgress:
     def test_get_progress_all_pending(self, tmp_path: Path) -> None:
         """Test progress with all tasks pending."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending"},
-            {"id": "T-002", "status": "pending"},
-            {"id": "T-003", "status": "pending"},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending"},
+                {"id": "T-002", "status": "pending"},
+                {"id": "T-003", "status": "pending"},
+            ]
+        )
         total, done = tm.get_progress()
         assert total == 3
         assert done == 0
@@ -340,12 +367,14 @@ class TestGetProgress:
     def test_get_progress_some_done(self, tmp_path: Path) -> None:
         """Test progress with mix of statuses."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "done"},
-            {"id": "T-002", "status": "in_progress"},
-            {"id": "T-003", "status": "pending"},
-            {"id": "T-004", "status": "done"},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "done"},
+                {"id": "T-002", "status": "in_progress"},
+                {"id": "T-003", "status": "pending"},
+                {"id": "T-004", "status": "done"},
+            ]
+        )
         total, done = tm.get_progress()
         assert total == 4
         assert done == 2
@@ -353,10 +382,12 @@ class TestGetProgress:
     def test_get_progress_all_done(self, tmp_path: Path) -> None:
         """Test progress when all tasks are done."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "done"},
-            {"id": "T-002", "status": "done"},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "done"},
+                {"id": "T-002", "status": "done"},
+            ]
+        )
         total, done = tm.get_progress()
         assert total == 2
         assert done == 2
@@ -368,20 +399,24 @@ class TestValidateDependencies:
     def test_validate_no_issues(self, tmp_path: Path) -> None:
         """Test validation with valid dependencies."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending", "dependencies": []},
-            {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
-            {"id": "T-003", "status": "pending", "dependencies": ["T-001", "T-002"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending", "dependencies": []},
+                {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
+                {"id": "T-003", "status": "pending", "dependencies": ["T-001", "T-002"]},
+            ]
+        )
         issues = tm.validate_dependencies()
         assert issues == []
 
     def test_validate_missing_dependency(self, tmp_path: Path) -> None:
         """Test validation catches missing dependency references."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending", "dependencies": ["T-999"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending", "dependencies": ["T-999"]},
+            ]
+        )
         issues = tm.validate_dependencies()
         assert len(issues) == 1
         assert "non-existent task T-999" in issues[0]
@@ -389,10 +424,12 @@ class TestValidateDependencies:
     def test_validate_circular_dependency(self, tmp_path: Path) -> None:
         """Test validation catches circular dependencies."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending", "dependencies": ["T-002"]},
-            {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending", "dependencies": ["T-002"]},
+                {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
+            ]
+        )
         issues = tm.validate_dependencies()
         assert len(issues) >= 1
         assert any("Circular dependency" in issue for issue in issues)
@@ -400,9 +437,11 @@ class TestValidateDependencies:
     def test_validate_self_dependency(self, tmp_path: Path) -> None:
         """Test validation catches self-referencing dependency."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending", "dependencies": ["T-001"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending", "dependencies": ["T-001"]},
+            ]
+        )
         issues = tm.validate_dependencies()
         assert len(issues) >= 1
         assert any("Circular dependency" in issue for issue in issues)
@@ -416,11 +455,13 @@ class TestValidateDependencies:
     def test_validate_three_node_cycle(self, tmp_path: Path) -> None:
         """Test validation catches a three-node cycle."""
         tm = TaskManager(str(tmp_path))
-        tm.save_tasks([
-            {"id": "T-001", "status": "pending", "dependencies": ["T-003"]},
-            {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
-            {"id": "T-003", "status": "pending", "dependencies": ["T-002"]},
-        ])
+        tm.save_tasks(
+            [
+                {"id": "T-001", "status": "pending", "dependencies": ["T-003"]},
+                {"id": "T-002", "status": "pending", "dependencies": ["T-001"]},
+                {"id": "T-003", "status": "pending", "dependencies": ["T-002"]},
+            ]
+        )
         issues = tm.validate_dependencies()
         assert len(issues) >= 1
         assert any("Circular dependency" in issue for issue in issues)
@@ -435,17 +476,17 @@ class TestStateManagerIntegration:
         expected = tmp_memory / "tasks.yaml"
         assert sm.get_tasks_path() == expected
 
-    def test_task_manager_uses_state_manager_path(
-        self, tmp_state: Path, tmp_memory: Path
-    ) -> None:
+    def test_task_manager_uses_state_manager_path(self, tmp_state: Path, tmp_memory: Path) -> None:
         """Test that TaskManager works with StateManager's tasks path."""
         sm = StateManager(str(tmp_state), str(tmp_memory))
         tm = TaskManager(str(sm.memory_dir))
-        tm.add_task({
-            "title": "Integration test",
-            "status": "pending",
-            "dependencies": [],
-        })
+        tm.add_task(
+            {
+                "title": "Integration test",
+                "status": "pending",
+                "dependencies": [],
+            }
+        )
         assert sm.get_tasks_path().exists()
         tasks = tm.load_tasks()
         assert len(tasks) == 1

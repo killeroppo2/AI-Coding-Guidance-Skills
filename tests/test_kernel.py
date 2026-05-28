@@ -17,31 +17,37 @@ class TestKernelStructure:
     def test_kernel_package_importable(self) -> None:
         """Test that kernel package can be imported."""
         import kernel
+
         assert kernel is not None
 
     def test_evolution_package_importable(self) -> None:
         """Test that kernel.evolution package can be imported."""
         from kernel.evolution import engine
+
         assert engine is not None
 
     def test_evolution_engine_class_exists(self) -> None:
         """Test that EvolutionEngine class exists."""
         from kernel.evolution.engine import EvolutionEngine
+
         assert EvolutionEngine is not None
 
     def test_graph_executor_importable(self) -> None:
         """Test that kernel.graph_executor can be imported."""
         from kernel.graph_executor import GraphExecutor
+
         assert GraphExecutor is not None
 
     def test_reflector_importable(self) -> None:
         """Test that kernel.reflector can be imported."""
         from kernel.reflector import Reflector
+
         assert Reflector is not None
 
     def test_immutable_files_defined(self) -> None:
         """Test that IMMUTABLE_FILES is defined correctly."""
         from kernel.evolution.engine import IMMUTABLE_FILES
+
         assert "kernel/BOOT.md" in IMMUTABLE_FILES
         assert "kernel/constitution.md" in IMMUTABLE_FILES
         assert "runner.py" in IMMUTABLE_FILES
@@ -147,7 +153,14 @@ class TestKernelFiles:
 
     def test_all_prompt_files_exist(self, kernel_root: Path) -> None:
         """Test that all prompt files exist."""
-        prompts = ["orchestrator.md", "planner.md", "coder.md", "tester.md", "reviewer.md", "reflector.md"]
+        prompts = [
+            "orchestrator.md",
+            "planner.md",
+            "coder.md",
+            "tester.md",
+            "reviewer.md",
+            "reflector.md",
+        ]
         for prompt in prompts:
             path = kernel_root / "kernel" / "prompts" / prompt
             assert path.exists(), f"Missing prompt: {prompt}"
@@ -214,9 +227,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== BOOT SEQUENCE ===" in result
@@ -227,9 +246,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "Build API", "iteration_count": 5,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "task1", "phase": "coding"}}
+        state = {
+            "current_node": "init",
+            "goal": "Build API",
+            "iteration_count": 5,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "task1", "phase": "coding"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== CURRENT STATE ===" in result
@@ -243,9 +268,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== NODE PROMPT (init) ===" in result
@@ -256,9 +287,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "reflect", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "reflect",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_node("reflect")
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== PHILOSOPHY: DAO ===" in result
@@ -272,9 +309,15 @@ class TestContextAssembler:
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
         knowledge.add_skill("test-skill", "A test skill for testing")
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": ["test-skill"], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": ["test-skill"], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== LOADED SKILLS ===" in result
@@ -285,9 +328,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": ["nonexistent"], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": ["nonexistent"], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== LOADED SKILLS ===" in result
@@ -299,9 +348,15 @@ class TestContextAssembler:
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
         # Use "plan" node which has prompts/planner.md that doesn't exist
-        state = {"current_node": "plan", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "plan",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== NODE PROMPT (plan) ===" in result
@@ -312,10 +367,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "test", "iteration_count": 2,
-                 "max_iterations": 30, "status": "running",
-                 "errors": ["timeout on node plan"],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 2,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": ["timeout on node plan"],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "Errors:" in result
@@ -326,9 +386,15 @@ class TestContextAssembler:
         assembler = ContextAssembler(assembler_env)
         graph = GraphExecutor(str(assembler_env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(assembler_env / "knowledge"))
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": [], "current_task": "", "phase": "startup"}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
+        }
         node = graph.get_current_node(state)
         result = assembler.assemble(state, node, graph, knowledge)
         assert "=== LOADED SKILLS ===" not in result
@@ -336,6 +402,7 @@ class TestContextAssembler:
     def test_context_assembler_importable(self) -> None:
         """Test that context_assembler module can be imported."""
         from kernel.context_assembler import ContextAssembler
+
         assert ContextAssembler is not None
 
     def test_load_current_task_malformed_yaml(self, tmp_path: Path) -> None:
@@ -343,9 +410,7 @@ class TestContextAssembler:
         from kernel.context_assembler import ContextAssembler
 
         (tmp_path / "memory").mkdir(parents=True)
-        (tmp_path / "memory" / "tasks.yaml").write_text(
-            "not: valid: yaml: {{", encoding="utf-8"
-        )
+        (tmp_path / "memory" / "tasks.yaml").write_text("not: valid: yaml: {{", encoding="utf-8")
 
         assembler = ContextAssembler(tmp_path)
         result = assembler._load_current_task()

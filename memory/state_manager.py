@@ -79,9 +79,7 @@ class StateManager:
     def save_state(self) -> None:
         """Write current state to state.yaml using atomic write."""
         self.state["last_updated"] = datetime.now(timezone.utc).isoformat()
-        yaml_content = yaml.safe_dump(
-            self.state, default_flow_style=False, allow_unicode=True
-        )
+        yaml_content = yaml.safe_dump(self.state, default_flow_style=False, allow_unicode=True)
         atomic_write(self.state_path, yaml_content)
 
     def _get_lock_path(self) -> Path:
@@ -196,14 +194,10 @@ class StateManager:
             "tasks_total": tasks_total,
             "tasks_done": tasks_done,
             "status": (
-                "complete"
-                if tasks_done >= tasks_total and tasks_total > 0
-                else "in_progress"
+                "complete" if tasks_done >= tasks_total and tasks_total > 0 else "in_progress"
             ),
         }
-        yaml_content = yaml.safe_dump(
-            progress, default_flow_style=False, allow_unicode=True
-        )
+        yaml_content = yaml.safe_dump(progress, default_flow_style=False, allow_unicode=True)
         atomic_write(progress_path, yaml_content)
 
     def set_goal(self, goal: str) -> None:
@@ -250,9 +244,7 @@ class StateManager:
             ValueError: If mode is not 'kernel' or 'ralph'.
         """
         if mode not in ("kernel", "ralph"):
-            raise ValueError(
-                f"Invalid execution_mode '{mode}': must be 'kernel' or 'ralph'"
-            )
+            raise ValueError(f"Invalid execution_mode '{mode}': must be 'kernel' or 'ralph'")
         self.state["execution_mode"] = mode
 
     def get_workspace(self) -> Path:
@@ -335,7 +327,7 @@ class StateManager:
         """
         node_visits = self.state.get("node_visits", {})
         for node_id, visits in node_visits.items():
-            max_allowed = max_retries_map.get(node_id, float('inf'))
+            max_allowed = max_retries_map.get(node_id, float("inf"))
             if visits > max_allowed:
                 return (True, node_id, visits)
         return (False, None, 0)
@@ -363,10 +355,12 @@ class StateManager:
             self.memory_dir.mkdir(parents=True, exist_ok=True)
             with open(history_path, "a", encoding="utf-8") as f:
                 for error in archived:
-                    entry = json.dumps({
-                        "error": error,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    })
+                    entry = json.dumps(
+                        {
+                            "error": error,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
                     f.write(entry + "\n")
 
     def clear_errors(self) -> None:

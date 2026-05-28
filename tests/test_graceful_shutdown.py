@@ -49,9 +49,7 @@ class TestSignalHandler:
         # Simulate the shutdown handler closure from runner.py
         def _shutdown_handler(signum, frame):
             state_mgr.state["status"] = "interrupted"
-            state_mgr.state.setdefault("errors", []).append(
-                "Execution interrupted by signal"
-            )
+            state_mgr.state.setdefault("errors", []).append("Execution interrupted by signal")
             state_mgr.save_state()
             sys.exit(130)
 
@@ -68,11 +66,10 @@ class TestSignalHandler:
         state_mgr.state["status"] = "running"
 
         with patch.object(state_mgr, "save_state") as mock_save:
+
             def _shutdown_handler(signum, frame):
                 state_mgr.state["status"] = "interrupted"
-                state_mgr.state.setdefault("errors", []).append(
-                    "Execution interrupted by signal"
-                )
+                state_mgr.state.setdefault("errors", []).append("Execution interrupted by signal")
                 mock_save()
                 sys.exit(130)
 
@@ -119,19 +116,26 @@ class TestSignalHandler:
             yaml.safe_dump(graph_data, f)
 
         # Mock subprocess.Popen to avoid actually calling a command
-        with patch("subprocess.Popen") as mock_popen, \
-             patch("runner.KERNEL_ROOT", tmp_path), \
-             patch("atexit.register"):
+        with (
+            patch("subprocess.Popen") as mock_popen,
+            patch("runner.KERNEL_ROOT", tmp_path),
+            patch("atexit.register"),
+        ):
             mock_proc = MagicMock()
             mock_proc.communicate.return_value = ("TRANSITION: done", "")
             mock_proc.returncode = 0
             mock_proc.kill.return_value = None
             mock_popen.return_value = mock_proc
-            runner.main([
-                "--goal", "test",
-                "--ai-command", "echo test",
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test",
+                    "--ai-command",
+                    "echo test",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # Check that signal.signal was called for SIGINT and SIGTERM
         signal_calls = [call[0][0] for call in mock_signal.call_args_list]
@@ -227,18 +231,22 @@ class TestAtexitHandler:
         with open(graph_file, "w") as f:
             yaml.safe_dump(graph_data, f)
 
-        with patch("subprocess.Popen") as mock_popen, \
-             patch("runner.KERNEL_ROOT", tmp_path):
+        with patch("subprocess.Popen") as mock_popen, patch("runner.KERNEL_ROOT", tmp_path):
             mock_proc = MagicMock()
             mock_proc.communicate.return_value = ("TRANSITION: done", "")
             mock_proc.returncode = 0
             mock_proc.kill.return_value = None
             mock_popen.return_value = mock_proc
-            runner.main([
-                "--goal", "test",
-                "--ai-command", "echo test",
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test",
+                    "--ai-command",
+                    "echo test",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         mock_atexit.assert_called_once()
 
@@ -306,12 +314,16 @@ class TestResumeFromInterrupted:
             yaml.safe_dump(graph_data, f)
 
         with patch("runner.KERNEL_ROOT", tmp_path):
-            result = runner.main([
-                "--goal", "Build an API",
-                "--resume",
-                "--dry-run",
-                "--max-iterations", "1",
-            ])
+            result = runner.main(
+                [
+                    "--goal",
+                    "Build an API",
+                    "--resume",
+                    "--dry-run",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # After resume, status should have been reset from interrupted,
         # then changed to complete (graph ends after one iteration in dry-run)
@@ -370,12 +382,16 @@ class TestResumeFromInterrupted:
             yaml.safe_dump(graph_data, f)
 
         with patch("runner.KERNEL_ROOT", tmp_path):
-            result = runner.main([
-                "--goal", "Build an API",
-                "--resume",
-                "--dry-run",
-                "--max-iterations", "1",
-            ])
+            result = runner.main(
+                [
+                    "--goal",
+                    "Build an API",
+                    "--resume",
+                    "--dry-run",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # Should complete normally (status was already running)
         assert result["status"] == "complete"
@@ -427,30 +443,39 @@ class TestTimeoutHandling:
             yaml.safe_dump(graph_data, f)
 
         timeout_exc = subprocess.TimeoutExpired(
-            cmd="echo test", timeout=10,
-            output="partial output here", stderr="error output here"
+            cmd="echo test", timeout=10, output="partial output here", stderr="error output here"
         )
 
         mock_proc = MagicMock()
         mock_proc.communicate.side_effect = timeout_exc
         mock_proc.kill.return_value = None
+
         # After kill, second communicate returns partial output
         def _communicate_after_kill(*args, **kwargs):
             if mock_proc.communicate.call_count > 1:
                 return ("partial output here", "error output here")
             raise timeout_exc
+
         mock_proc.communicate.side_effect = _communicate_after_kill
 
-        with patch("subprocess.Popen", return_value=mock_proc), \
-             patch("runner.KERNEL_ROOT", tmp_path), \
-             patch("signal.signal"), \
-             patch("atexit.register"):
-            result = runner.main([
-                "--goal", "test",
-                "--ai-command", "echo test",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+        with (
+            patch("subprocess.Popen", return_value=mock_proc),
+            patch("runner.KERNEL_ROOT", tmp_path),
+            patch("signal.signal"),
+            patch("atexit.register"),
+        ):
+            result = runner.main(
+                [
+                    "--goal",
+                    "test",
+                    "--ai-command",
+                    "echo test",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Check that timeout errors contain context
         errors = result.get("errors", [])
@@ -504,32 +529,40 @@ class TestTimeoutHandling:
             yaml.safe_dump(graph_data, f)
 
         # TimeoutExpired with no stdout/stderr
-        timeout_exc = subprocess.TimeoutExpired(
-            cmd="echo test", timeout=10
-        )
+        timeout_exc = subprocess.TimeoutExpired(cmd="echo test", timeout=10)
 
         mock_proc = MagicMock()
         mock_proc.communicate.side_effect = timeout_exc
         mock_proc.kill.return_value = None
         # After kill, second communicate returns empty
         call_count = [0]
+
         def _communicate_no_output(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] % 2 == 1:
                 raise timeout_exc
             return ("", "")
+
         mock_proc.communicate.side_effect = _communicate_no_output
 
-        with patch("subprocess.Popen", return_value=mock_proc), \
-             patch("runner.KERNEL_ROOT", tmp_path), \
-             patch("signal.signal"), \
-             patch("atexit.register"):
-            result = runner.main([
-                "--goal", "test",
-                "--ai-command", "echo test",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+        with (
+            patch("subprocess.Popen", return_value=mock_proc),
+            patch("runner.KERNEL_ROOT", tmp_path),
+            patch("signal.signal"),
+            patch("atexit.register"),
+        ):
+            result = runner.main(
+                [
+                    "--goal",
+                    "test",
+                    "--ai-command",
+                    "echo test",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         errors = result.get("errors", [])
         timeout_errors = [e for e in errors if "Timeout after" in e]

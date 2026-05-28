@@ -65,11 +65,15 @@ class TestLoadRecentDecisions:
 
         entries = []
         for i in range(10):
-            entries.append(json.dumps({
-                "timestamp": f"2025-01-{i+1:02d}T00:00:00",
-                "type": f"type_{i}",
-                "summary": f"Decision {i}",
-            }))
+            entries.append(
+                json.dumps(
+                    {
+                        "timestamp": f"2025-01-{i + 1:02d}T00:00:00",
+                        "type": f"type_{i}",
+                        "summary": f"Decision {i}",
+                    }
+                )
+            )
         (memory_dir / "decisions.jsonl").write_text("\n".join(entries) + "\n")
 
         assembler = ContextAssembler(tmp_path)
@@ -103,11 +107,13 @@ class TestLoadRecentDecisions:
         memory_dir = tmp_path / "memory"
         memory_dir.mkdir()
 
-        entry = json.dumps({
-            "timestamp": "2025-01-15T10:30:00",
-            "type": "architecture",
-            "summary": "Chose microservices",
-        })
+        entry = json.dumps(
+            {
+                "timestamp": "2025-01-15T10:30:00",
+                "type": "architecture",
+                "summary": "Chose microservices",
+            }
+        )
         (memory_dir / "decisions.jsonl").write_text(entry + "\n")
 
         assembler = ContextAssembler(tmp_path)
@@ -274,8 +280,12 @@ class TestAssembleIncludesNewSections:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_current_node(state)
@@ -295,8 +305,12 @@ class TestAssembleIncludesNewSections:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "plan", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "plan",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_node("plan")
@@ -318,8 +332,12 @@ class TestAssembleIncludesNewSections:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "code", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "code",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "workspace_path": str(workspace),
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
@@ -334,19 +352,25 @@ class TestAssembleIncludesNewSections:
         from knowledge.store import KnowledgeStore
 
         env = _make_assembler_env(tmp_path)
-        entry = json.dumps({
-            "timestamp": "2025-01-15T10:00:00",
-            "type": "design",
-            "summary": "Use REST API",
-        })
+        entry = json.dumps(
+            {
+                "timestamp": "2025-01-15T10:00:00",
+                "type": "design",
+                "summary": "Use REST API",
+            }
+        )
         (env / "memory" / "decisions.jsonl").write_text(entry + "\n")
 
         assembler = ContextAssembler(env)
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "reflect", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "reflect",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_node("reflect")
@@ -368,8 +392,12 @@ class TestAssembleIncludesNewSections:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_current_node(state)
@@ -401,19 +429,27 @@ class TestTokenBudgeting:
         # Create large decisions to push over budget
         entries = []
         for i in range(5):
-            entries.append(json.dumps({
-                "timestamp": f"2025-01-{i+1:02d}T00:00:00",
-                "type": "big_decision",
-                "summary": "X" * 200,
-            }))
+            entries.append(
+                json.dumps(
+                    {
+                        "timestamp": f"2025-01-{i + 1:02d}T00:00:00",
+                        "type": "big_decision",
+                        "summary": "X" * 200,
+                    }
+                )
+            )
         (env / "memory" / "decisions.jsonl").write_text("\n".join(entries) + "\n")
 
         assembler = ContextAssembler(env)
         GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         # Use node without id for backward compat (all sections included)
@@ -458,11 +494,15 @@ class TestTokenBudgeting:
 
         entries = []
         for i in range(5):
-            entries.append(json.dumps({
-                "timestamp": f"2025-01-{i+1:02d}T00:00:00",
-                "type": "decision",
-                "summary": "Y" * 100,
-            }))
+            entries.append(
+                json.dumps(
+                    {
+                        "timestamp": f"2025-01-{i + 1:02d}T00:00:00",
+                        "type": "decision",
+                        "summary": "Y" * 100,
+                    }
+                )
+            )
         (env / "memory" / "decisions.jsonl").write_text("\n".join(entries) + "\n")
 
         # Create workspace files
@@ -475,8 +515,12 @@ class TestTokenBudgeting:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "workspace_path": str(workspace),
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
@@ -508,19 +552,25 @@ class TestTokenBudgeting:
 
         (env / "memory" / "plan.md").write_text("Simple plan")
 
-        entry = json.dumps({
-            "timestamp": "2025-01-01T00:00:00",
-            "type": "test",
-            "summary": "Test decision",
-        })
+        entry = json.dumps(
+            {
+                "timestamp": "2025-01-01T00:00:00",
+                "type": "test",
+                "summary": "Test decision",
+            }
+        )
         (env / "memory" / "decisions.jsonl").write_text(entry + "\n")
 
         assembler = ContextAssembler(env)
         GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         # Use node without id for backward compat (all sections included)

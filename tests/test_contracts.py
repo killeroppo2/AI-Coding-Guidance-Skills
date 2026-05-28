@@ -334,7 +334,9 @@ class TestTransitionValidation:
         result = validator.validate_output(output, "reflect")
         assert result.valid is True
 
-    def test_unknown_node_skips_transition_validation(self, validator: OutputContractValidator) -> None:
+    def test_unknown_node_skips_transition_validation(
+        self, validator: OutputContractValidator
+    ) -> None:
         """Test that unknown node ID does not cause transition validation failure."""
         output = "STATUS: success\nTRANSITION: anything\n"
         result = validator.validate_output(output, "unknown_node")
@@ -481,17 +483,26 @@ class TestRunnerContractIntegration:
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
         mock_proc = MagicMock()
-        mock_proc.communicate.return_value = ("Done.\nSTATUS: success\nTRANSITION: goal_loaded\n", "")
+        mock_proc.communicate.return_value = (
+            "Done.\nSTATUS: success\nTRANSITION: goal_loaded\n",
+            "",
+        )
         mock_proc.returncode = 0
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test contract valid",
-                "--ai-command", "echo hello",
-                "--max-iterations", "1",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test contract valid",
+                    "--ai-command",
+                    "echo hello",
+                    "--max-iterations",
+                    "1",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         assert state["current_node"] == "plan"
 
@@ -510,11 +521,16 @@ class TestRunnerContractIntegration:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test contract invalid",
-                "--ai-command", "echo hi",
-                "--max-iterations", "2",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test contract invalid",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "2",
+                ]
+            )
 
         # Should stay on init since contract validation failed
         assert state["current_node"] == "init"
@@ -530,17 +546,26 @@ class TestRunnerContractIntegration:
 
         # plan_ready is not valid for init node
         mock_proc = MagicMock()
-        mock_proc.communicate.return_value = ("Done.\nSTATUS: success\nTRANSITION: plan_ready\n", "")
+        mock_proc.communicate.return_value = (
+            "Done.\nSTATUS: success\nTRANSITION: plan_ready\n",
+            "",
+        )
         mock_proc.returncode = 0
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test bad transition",
-                "--ai-command", "echo hi",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test bad transition",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         assert state["current_node"] == "init"
         assert any("Contract violations" in str(e) for e in state.get("errors", []))
@@ -561,11 +586,16 @@ class TestRunnerContractIntegration:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main([
-                "--goal", "test violation logging",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test violation logging",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         captured = capsys.readouterr()
         assert "[CONTRACT VIOLATION]" in captured.err
@@ -619,9 +649,15 @@ class TestContextAssemblerContract:
         graph = GraphExecutor(str(kernel_dir / "graph.yaml"))
         knowledge = KnowledgeStore(str(knowledge_dir))
 
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": []}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": []},
+        }
         node = {"id": "init"}
 
         result = assembler.assemble(state, node, graph, knowledge)
@@ -670,9 +706,15 @@ class TestContextAssemblerContract:
         graph = GraphExecutor(str(kernel_dir / "graph.yaml"))
         knowledge = KnowledgeStore(str(knowledge_dir))
 
-        state = {"current_node": "init", "goal": "test", "iteration_count": 0,
-                 "max_iterations": 30, "status": "running", "errors": [],
-                 "context": {"skills_loaded": []}}
+        state = {
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
+            "context": {"skills_loaded": []},
+        }
         node = {"id": "init"}
 
         result = assembler.assemble(state, node, graph, knowledge)
@@ -772,7 +814,9 @@ class TestTransitionCodeBlock:
         result = validator.validate_output(output, "plan")
         assert result.transition == "plan_ready"
 
-    def test_transition_in_code_block_with_language(self, validator: OutputContractValidator) -> None:
+    def test_transition_in_code_block_with_language(
+        self, validator: OutputContractValidator
+    ) -> None:
         """Test parsing TRANSITION inside a ```text code block."""
         output = "Output:\n```text\nTRANSITION: plan_ready\nSTATUS: success\n```"
         result = validator.validate_output(output, "plan")
@@ -1161,9 +1205,7 @@ class TestValidOutputForEachNode:
             ("reflect", "no_evolution_needed"),
         ],
     )
-    def test_valid_output_passes(
-        self, contract_graph: Path, node_id: str, transition: str
-    ) -> None:
+    def test_valid_output_passes(self, contract_graph: Path, node_id: str, transition: str) -> None:
         """Test that a valid TRANSITION + STATUS output passes for each node."""
         validator = OutputContractValidator(contract_graph)
         output = f"TRANSITION: {transition}\nSTATUS: success"

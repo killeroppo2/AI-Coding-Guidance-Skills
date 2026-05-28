@@ -2,6 +2,7 @@
 
 This is the main entry point for the kernel. It delegates to kernel.orchestrator.
 """
+
 from pathlib import Path
 from typing import Any
 
@@ -12,8 +13,14 @@ from kernel.validators import _sanitize_project_name, _validate_workspace_paths
 
 KERNEL_ROOT = Path(__file__).parent
 
-__all__ = ["main", "parse_args", "KERNEL_ROOT",
-           "_parse_transition", "_sanitize_project_name", "_validate_workspace_paths"]
+__all__ = [
+    "main",
+    "parse_args",
+    "KERNEL_ROOT",
+    "_parse_transition",
+    "_sanitize_project_name",
+    "_validate_workspace_paths",
+]
 
 
 def main(argv: list[str] | None = None) -> dict[str, Any]:

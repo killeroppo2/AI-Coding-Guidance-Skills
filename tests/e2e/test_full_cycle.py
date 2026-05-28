@@ -3,6 +3,7 @@
 This test proves the kernel can complete a full goal with real subprocess
 invocations, real file I/O, and real state transitions.
 """
+
 import json
 import sys
 from pathlib import Path
@@ -27,24 +28,12 @@ def e2e_env(tmp_path: Path):
     prompts_dir.mkdir()
 
     # Create minimal prompt files
-    (prompts_dir / "orchestrator.md").write_text(
-        "You are the orchestrator. Initialize the goal."
-    )
-    (prompts_dir / "planner.md").write_text(
-        "You are the planner. Create a plan."
-    )
-    (prompts_dir / "coder.md").write_text(
-        "You are the coder. Write code."
-    )
-    (prompts_dir / "tester.md").write_text(
-        "You are the tester. Run tests."
-    )
-    (prompts_dir / "reviewer.md").write_text(
-        "You are the reviewer. Review code."
-    )
-    (prompts_dir / "reflector.md").write_text(
-        "You are the reflector. Reflect on the iteration."
-    )
+    (prompts_dir / "orchestrator.md").write_text("You are the orchestrator. Initialize the goal.")
+    (prompts_dir / "planner.md").write_text("You are the planner. Create a plan.")
+    (prompts_dir / "coder.md").write_text("You are the coder. Write code.")
+    (prompts_dir / "tester.md").write_text("You are the tester. Run tests.")
+    (prompts_dir / "reviewer.md").write_text("You are the reviewer. Review code.")
+    (prompts_dir / "reflector.md").write_text("You are the reflector. Reflect on the iteration.")
 
     # BOOT.md and constitution
     (kernel_dir / "BOOT.md").write_text("# Boot\nBoot content for E2E test.")
@@ -136,9 +125,7 @@ def e2e_env(tmp_path: Path):
     (memory_dir / "current_goal.md").touch()
     (memory_dir / "plan.md").touch()
     with open(memory_dir / "progress.yaml", "w") as f:
-        yaml.safe_dump(
-            {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
-        )
+        yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
 
     # Knowledge directory
     knowledge_dir = tmp_path / "knowledge"
@@ -169,16 +156,19 @@ class TestFullCycle:
         ai_command = f"{sys.executable} {mock_server}"
 
         with patch.object(runner, "KERNEL_ROOT", e2e_env):
-            state = runner.main([
-                "--goal", "Create a calculator",
-                "--ai-command", ai_command,
-                "--max-iterations", "8",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "Create a calculator",
+                    "--ai-command",
+                    ai_command,
+                    "--max-iterations",
+                    "8",
+                ]
+            )
 
         # Verify state advanced
-        assert state["iteration_count"] > 0, (
-            "Iteration count should be > 0 after running"
-        )
+        assert state["iteration_count"] > 0, "Iteration count should be > 0 after running"
 
         # Verify we moved past the init node
         assert state["current_node"] != "init" or state["iteration_count"] > 1, (
@@ -193,11 +183,16 @@ class TestFullCycle:
         ai_command = f"{sys.executable} {mock_server}"
 
         with patch.object(runner, "KERNEL_ROOT", e2e_env):
-            runner.main([
-                "--goal", "Create a calculator",
-                "--ai-command", ai_command,
-                "--max-iterations", "5",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "Create a calculator",
+                    "--ai-command",
+                    ai_command,
+                    "--max-iterations",
+                    "5",
+                ]
+            )
 
         # Check reflections.jsonl was populated
         reflections_path = e2e_env / "memory" / "reflections.jsonl"
@@ -220,19 +215,22 @@ class TestFullCycle:
         ai_command = f"{sys.executable} {mock_server}"
 
         with patch.object(runner, "KERNEL_ROOT", e2e_env):
-            state = runner.main([
-                "--goal", "Create a calculator",
-                "--ai-command", ai_command,
-                "--max-iterations", "6",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "Create a calculator",
+                    "--ai-command",
+                    ai_command,
+                    "--max-iterations",
+                    "6",
+                ]
+            )
 
         # The mock AI server outputs TRANSITION lines that the runner parses
         # After init, it should transition to plan (TRANSITION: goal_loaded)
         # After plan, it should transition to code (TRANSITION: plan_ready)
         # This proves real state transitions are happening
-        assert state["iteration_count"] >= 2, (
-            "Should have at least 2 iterations for transitions"
-        )
+        assert state["iteration_count"] >= 2, "Should have at least 2 iterations for transitions"
 
     def test_mock_ai_server_outputs_transitions(self, e2e_env: Path) -> None:
         """Verify mock AI server produces correct TRANSITION lines."""

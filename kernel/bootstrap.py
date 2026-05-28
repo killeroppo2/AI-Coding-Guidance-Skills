@@ -24,8 +24,12 @@ class BootstrapGenerator:
         """
         self.kernel_root = kernel_root
 
-    def generate(self, state_path: str | None = None, graph_path: str | None = None,
-                 knowledge_dir: str | None = None) -> str:
+    def generate(
+        self,
+        state_path: str | None = None,
+        graph_path: str | None = None,
+        knowledge_dir: str | None = None,
+    ) -> str:
         """Generate the full consolidated prompt.
 
         Reads all kernel components and assembles them into one string.
@@ -113,8 +117,8 @@ class BootstrapGenerator:
         lines.append(f"Goal: {state.get('goal', 'No goal set')}")
         lines.append(f"Current Node: {state.get('current_node', 'init')}")
         lines.append(f"Status: {state.get('status', 'idle')}")
-        iter_count = state.get('iteration_count', 0)
-        max_iter = state.get('max_iterations', 30)
+        iter_count = state.get("iteration_count", 0)
+        max_iter = state.get("max_iterations", 30)
         lines.append(f"Iteration: {iter_count} / {max_iter}")
         errors = state.get("errors", [])
         if errors:

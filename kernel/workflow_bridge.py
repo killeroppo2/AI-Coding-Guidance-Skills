@@ -115,25 +115,41 @@ class WorkflowBridge:
 
         # Specific/actionable goals (check before design to avoid false positives)
         action_markers = [
-            "implement", "build", "create", "add", "fix", "write",
-            "code", "develop", "make", "refactor",
+            "implement",
+            "build",
+            "create",
+            "add",
+            "fix",
+            "write",
+            "code",
+            "develop",
+            "make",
+            "refactor",
         ]
         if any(marker in goal_words for marker in action_markers):
             return "execution_phase"
 
         # Design/UI related (use word-level matching to avoid substring false positives)
         design_markers = [
-            "ui", "ux", "design", "style", "layout", "brand",
-            "banner", "logo", "icon", "color", "font", "slide",
+            "ui",
+            "ux",
+            "design",
+            "style",
+            "layout",
+            "brand",
+            "banner",
+            "logo",
+            "icon",
+            "color",
+            "font",
+            "slide",
         ]
         if any(marker in goal_words for marker in design_markers):
             return "design_phase"
 
         return "requirements_phase"
 
-    def record_phase_transition(
-        self, state: dict, from_phase: str, to_phase: str
-    ) -> dict:
+    def record_phase_transition(self, state: dict, from_phase: str, to_phase: str) -> dict:
         """Record a phase transition in state['phase_transitions'] list.
 
         Args:
@@ -146,8 +162,10 @@ class WorkflowBridge:
         """
         if "phase_transitions" not in state:
             state["phase_transitions"] = []
-        state["phase_transitions"].append({
-            "from": from_phase,
-            "to": to_phase,
-        })
+        state["phase_transitions"].append(
+            {
+                "from": from_phase,
+                "to": to_phase,
+            }
+        )
         return state

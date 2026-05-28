@@ -69,9 +69,7 @@ class TestAssembleIncremental:
 
         return assembler, graph_executor, knowledge_store
 
-    def test_incremental_returns_empty_on_first_call(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_returns_empty_on_first_call(self, assembler_env: tuple) -> None:
         """Test assemble_incremental returns empty on first call (no prior success)."""
         assembler, graph, knowledge = assembler_env
         state = {"goal": "test", "current_node": "code", "iteration_count": 1}
@@ -80,9 +78,7 @@ class TestAssembleIncremental:
         result = assembler.assemble_incremental(state, node, graph, knowledge)
         assert result == ""
 
-    def test_incremental_returns_content_after_mark_success(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_returns_content_after_mark_success(self, assembler_env: tuple) -> None:
         """Test assemble_incremental returns non-empty after mark_iteration_success."""
         assembler, graph, knowledge = assembler_env
         state = {
@@ -104,9 +100,7 @@ class TestAssembleIncremental:
         result = assembler.assemble_incremental(state, node, graph, knowledge)
         assert result != ""
 
-    def test_incremental_returns_empty_when_node_changes(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_returns_empty_when_node_changes(self, assembler_env: tuple) -> None:
         """Test assemble_incremental returns empty when node changes."""
         assembler, graph, knowledge = assembler_env
         state = {
@@ -127,9 +121,7 @@ class TestAssembleIncremental:
         result = assembler.assemble_incremental(state, node, graph, knowledge)
         assert result == ""
 
-    def test_incremental_contains_required_sections(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_contains_required_sections(self, assembler_env: tuple) -> None:
         """Test incremental output includes the required sections."""
         assembler, graph, knowledge = assembler_env
         state = {
@@ -152,9 +144,7 @@ class TestAssembleIncremental:
         assert "=== NODE PROMPT (code) ===" in result
         assert "=== OUTPUT FORMAT CONTRACT ===" in result
 
-    def test_incremental_does_not_contain_full_sections(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_does_not_contain_full_sections(self, assembler_env: tuple) -> None:
         """Test incremental output does NOT include boot, philosophy, or evolution."""
         assembler, graph, knowledge = assembler_env
         state = {
@@ -196,16 +186,12 @@ class TestAssembleIncremental:
 
         # Get incremental context
         assembler.mark_iteration_success("init")
-        incremental_context = assembler.assemble_incremental(
-            state, node, graph, knowledge
-        )
+        incremental_context = assembler.assemble_incremental(state, node, graph, knowledge)
 
         assert len(incremental_context) > 0
         assert len(incremental_context) < len(full_context)
 
-    def test_incremental_includes_current_task(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_incremental_includes_current_task(self, assembler_env: tuple) -> None:
         """Test incremental output includes current task info."""
         assembler, graph, knowledge = assembler_env
         state = {
@@ -279,9 +265,7 @@ class TestMarkIterationFailure:
         assembler.mark_iteration_failure()
         assert assembler._last_node_id == "code"
 
-    def test_failure_after_success_forces_full_context(
-        self, assembler_env: tuple
-    ) -> None:
+    def test_failure_after_success_forces_full_context(self, assembler_env: tuple) -> None:
         """Test that after mark_iteration_failure, assemble_incremental returns empty."""
         assembler, graph, knowledge = assembler_env
         state = {

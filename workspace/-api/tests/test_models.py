@@ -25,6 +25,7 @@ def test_user_model_constraints():
 def test_database_table_creation():
     """Verify database creates tables correctly."""
     from sqlalchemy import inspect
+
     init_db()
     inspector = inspect(engine)
     tables = inspector.get_table_names()
@@ -35,6 +36,7 @@ def test_database_table_creation():
 def test_user_created_at_default():
     """Verify created_at column has a default value configured."""
     from sqlalchemy import inspect
+
     col = inspect(User).c.created_at
     assert col.default is not None
 
@@ -42,10 +44,12 @@ def test_user_created_at_default():
 def test_get_db_yields_session():
     """Verify get_db yields a working database session."""
     from app.database import get_db
+
     gen = get_db()
     db = next(gen)
     assert db is not None
     from sqlalchemy.orm import Session
+
     assert isinstance(db, Session)
     try:
         next(gen)

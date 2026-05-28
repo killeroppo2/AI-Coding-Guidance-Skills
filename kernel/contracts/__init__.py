@@ -210,9 +210,7 @@ class OutputContractValidator:
         if not status:
             violations.append("Missing required STATUS line")
         elif status not in ("success", "failure"):
-            violations.append(
-                f"Invalid STATUS '{status}'. Must be 'success' or 'failure'"
-            )
+            violations.append(f"Invalid STATUS '{status}'. Must be 'success' or 'failure'")
 
         valid = len(violations) == 0
 
@@ -310,17 +308,13 @@ class OutputContractValidator:
             if match:
                 raw = match.group(1).strip()
                 if raw:
-                    files.extend(
-                        f.strip() for f in raw.split(",") if f.strip()
-                    )
+                    files.extend(f.strip() for f in raw.split(",") if f.strip())
 
         if not files:
             # Try extracting from code blocks
             result = self._extract_from_code_blocks(output, "FILES_WRITTEN")
             if result is not None:
-                files.extend(
-                    f.strip() for f in result.split(",") if f.strip()
-                )
+                files.extend(f.strip() for f in result.split(",") if f.strip())
 
         return files
 

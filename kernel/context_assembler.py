@@ -55,8 +55,7 @@ class ContextAssembler:
         self._last_iteration_count: int = 0
         self._last_successful: bool = False
 
-    def _should_include(self, section_key: str, node_id: str | None,
-                        tier_rules: dict) -> bool:
+    def _should_include(self, section_key: str, node_id: str | None, tier_rules: dict) -> bool:
         """Check if a section should be included for the given node.
 
         Args:
@@ -74,8 +73,14 @@ class ContextAssembler:
             return True
         return node_id in allowed
 
-    def assemble(self, state: dict, node: dict, graph_executor: Any,
-                 knowledge_store: Any, token_budget: int = DEFAULT_TOKEN_BUDGET) -> str:
+    def assemble(
+        self,
+        state: dict,
+        node: dict,
+        graph_executor: Any,
+        knowledge_store: Any,
+        token_budget: int = DEFAULT_TOKEN_BUDGET,
+    ) -> str:
         """Assemble full context from BOOT.md + state + node prompt + philosophy + skills.
 
         Returns a single formatted string suitable for piping to an AI.
@@ -178,30 +183,23 @@ class ContextAssembler:
         contract_path = self.kernel_root / "kernel" / "contracts" / "output_format.md"
         contract_content = self._read_file(contract_path)
         if not contract_content.startswith("(file not found"):
-            sections.append(
-                f"=== OUTPUT FORMAT CONTRACT ===\n\n{contract_content}"
-            )
+            sections.append(f"=== OUTPUT FORMAT CONTRACT ===\n\n{contract_content}")
 
         # 10. Evolution history
         if self._should_include("evolution_history", node_id, tier_rules):
             evolution_history = self._load_evolution_history(count=5)
             if evolution_history:
-                sections.append(
-                    f"=== EVOLUTION HISTORY ===\n\n{evolution_history}"
-                )
+                sections.append(f"=== EVOLUTION HISTORY ===\n\n{evolution_history}")
 
         # 11. Recent reflections
         if self._should_include("recent_reflections", node_id, tier_rules):
             recent_reflections = self._load_recent_reflections(count=3)
             if recent_reflections:
-                sections.append(
-                    f"=== RECENT REFLECTIONS ===\n\n{recent_reflections}"
-                )
+                sections.append(f"=== RECENT REFLECTIONS ===\n\n{recent_reflections}")
 
         # Apply token budgeting: trimmable sections in removal order
         # (least important first: decisions, workspace, plan, progress)
-        trimmable = [decisions_section, workspace_section,
-                     plan_section, progress_section]
+        trimmable = [decisions_section, workspace_section, plan_section, progress_section]
 
         # Start with all trimmable sections included
         active_trimmable = [s for s in trimmable if s]
@@ -238,8 +236,9 @@ class ContextAssembler:
 
         return full_text
 
-    def assemble_incremental(self, state: dict, node: dict, graph_executor: Any,
-                             knowledge_store: Any) -> str:
+    def assemble_incremental(
+        self, state: dict, node: dict, graph_executor: Any, knowledge_store: Any
+    ) -> str:
         """Assemble a reduced incremental context for repeated same-node execution.
 
         Used when the same node is executing consecutively after a successful
@@ -330,8 +329,7 @@ class ContextAssembler:
             tasks_total = data.get("tasks_total", 0)
             status = data.get("status", "unknown")
             return (
-                f"Iteration: {iteration}, Tasks: "
-                f"{tasks_done}/{tasks_total} done, Status: {status}"
+                f"Iteration: {iteration}, Tasks: {tasks_done}/{tasks_total} done, Status: {status}"
             )
         except (yaml.YAMLError, OSError):
             return ""
@@ -373,8 +371,7 @@ class ContextAssembler:
             lines.append(f"- [{timestamp}] {decision_type}: {summary}")
         return "\n".join(lines)
 
-    def _load_workspace_manifest(self, workspace_path: str,
-                                 max_entries: int = 100) -> str:
+    def _load_workspace_manifest(self, workspace_path: str, max_entries: int = 100) -> str:
         """List files in the workspace directory recursively.
 
         Args:
@@ -576,7 +573,7 @@ class ContextAssembler:
 
         if len(heading_positions) >= 2:
             # Keep everything before the second ## heading
-            summary = "\n".join(lines[:heading_positions[1]])
+            summary = "\n".join(lines[: heading_positions[1]])
             if len(summary) <= max_chars:
                 return summary + "\n\n[TRUNCATED - see individual skill files for full content]"
 

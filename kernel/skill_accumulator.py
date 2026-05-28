@@ -48,15 +48,17 @@ class SkillAccumulator:
         for pattern in patterns:
             if pattern["frequency"] >= 3:
                 skill_name = self._pattern_to_skill_name(pattern["name"])
-                proposed_skills.append({
-                    "name": skill_name,
-                    "description": (
-                        f"Auto-generated from {pattern['pattern_type']}"
-                        f" pattern: {pattern['name']}"
-                    ),
-                    "content": pattern["content"],
-                    "tags": ["auto-generated", pattern["pattern_type"]],
-                })
+                proposed_skills.append(
+                    {
+                        "name": skill_name,
+                        "description": (
+                            f"Auto-generated from {pattern['pattern_type']}"
+                            f" pattern: {pattern['name']}"
+                        ),
+                        "content": pattern["content"],
+                        "tags": ["auto-generated", pattern["pattern_type"]],
+                    }
+                )
 
         return proposed_skills
 
@@ -89,13 +91,15 @@ class SkillAccumulator:
 
         for node, count in node_successes.items():
             if count >= 3:
-                patterns.append({
-                    "name": f"{node}-workflow",
-                    "frequency": count,
-                    "pattern_type": "workflow",
-                    "content": f"Node '{node}' succeeds consistently ({count} times). "
-                               f"This workflow pattern is reliable.",
-                })
+                patterns.append(
+                    {
+                        "name": f"{node}-workflow",
+                        "frequency": count,
+                        "pattern_type": "workflow",
+                        "content": f"Node '{node}' succeeds consistently ({count} times). "
+                        f"This workflow pattern is reliable.",
+                    }
+                )
 
         # Detect resolution patterns: same error resolved 3+ times
         error_resolutions: dict[str, int] = {}
@@ -108,13 +112,15 @@ class SkillAccumulator:
 
         for error_key, count in error_resolutions.items():
             if count >= 3:
-                patterns.append({
-                    "name": f"resolve-{error_key.split(':')[0]}",
-                    "frequency": count,
-                    "pattern_type": "resolution",
-                    "content": f"Error pattern '{error_key}' resolved {count} times. "
-                               f"Known resolution approach available.",
-                })
+                patterns.append(
+                    {
+                        "name": f"resolve-{error_key.split(':')[0]}",
+                        "frequency": count,
+                        "pattern_type": "resolution",
+                        "content": f"Error pattern '{error_key}' resolved {count} times. "
+                        f"Known resolution approach available.",
+                    }
+                )
 
         return patterns
 
@@ -210,6 +216,7 @@ class SkillAccumulator:
             Kebab-case skill name.
         """
         import re
+
         # Replace non-alphanumeric with hyphens, lowercase
         name = re.sub(r"[^a-z0-9]+", "-", pattern_name.lower())
         # Remove leading/trailing hyphens

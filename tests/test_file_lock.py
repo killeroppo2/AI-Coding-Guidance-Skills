@@ -319,6 +319,7 @@ class TestStateBoundsAndAtomicWrites:
         sm = StateManager(str(state_path), str(memory_dir))
         # Simulate adding entries the way orchestrator does
         from kernel.orchestrator import MAX_PROGRESS_HISTORY_ENTRIES
+
         for i in range(50):
             progress_history = sm.state.setdefault("progress_history", [])
             progress_history.append(i)

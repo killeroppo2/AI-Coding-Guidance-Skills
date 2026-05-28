@@ -21,21 +21,16 @@ def _sanitize_project_name(goal: str) -> str:
     name = "".join(c for c in goal if c >= " " and c not in ("\x7f",) and ord(c) > 0x1F)
     # Also strip Unicode direction override and other format characters
     name = "".join(
-        c for c in name
-        if not (
-            0x200B <= ord(c) <= 0x200F
-            or 0x202A <= ord(c) <= 0x202E
-            or ord(c) == 0xFEFF
-        )
+        c
+        for c in name
+        if not (0x200B <= ord(c) <= 0x200F or 0x202A <= ord(c) <= 0x202E or ord(c) == 0xFEFF)
     )
     name = name.lower().replace(" ", "-")
     name = re.sub(r"[^a-z0-9-]", "", name)
     return name[:50]
 
 
-def _validate_workspace_paths(
-    files_written: list[str], workspace_path: str
-) -> list[str]:
+def _validate_workspace_paths(files_written: list[str], workspace_path: str) -> list[str]:
     """Validate that all file paths are within the workspace boundary.
 
     Args:
@@ -52,9 +47,9 @@ def _validate_workspace_paths(
     normalized_workspace = os.path.normpath(os.path.abspath(workspace_path))
     for file_path in files_written:
         normalized_file = os.path.normpath(os.path.abspath(file_path))
-        if not normalized_file.startswith(normalized_workspace + os.sep) and \
-                normalized_file != normalized_workspace:
-            violations.append(
-                f"Path '{file_path}' is outside workspace '{workspace_path}'"
-            )
+        if (
+            not normalized_file.startswith(normalized_workspace + os.sep)
+            and normalized_file != normalized_workspace
+        ):
+            violations.append(f"Path '{file_path}' is outside workspace '{workspace_path}'")
     return violations

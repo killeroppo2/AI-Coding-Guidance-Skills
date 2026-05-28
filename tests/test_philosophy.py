@@ -1,7 +1,5 @@
 """Tests for kernel/philosophy/principles.py - operational decision functions."""
 
-
-
 from kernel.philosophy.principles import (
     assess_terrain,
     should_retreat,
@@ -154,7 +152,11 @@ class TestAssessTerrain:
     def test_full_coverage(self) -> None:
         """All goal keywords matched by skills."""
         skills = [
-            {"name": "web-skill", "tags": ["rest", "api", "server"], "description": "REST APIs server"},
+            {
+                "name": "web-skill",
+                "tags": ["rest", "api", "server"],
+                "description": "REST APIs server",
+            },
         ]
         result = assess_terrain("rest api server", skills)
         assert result["coverage_score"] == 1.0

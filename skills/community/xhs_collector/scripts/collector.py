@@ -171,11 +171,13 @@ def parse_note_detail(detail_data):
             comments_data = json.loads(parts[1])
             comments_list = comments_data.get("comments", [])
             for c in comments_list:
-                result["comments"].append({
-                    "content": c.get("content", ""),
-                    "like_count": c.get("like_count", "0"),
-                    "nickname": c.get("user_info", {}).get("nickname", "匿名"),
-                })
+                result["comments"].append(
+                    {
+                        "content": c.get("content", ""),
+                        "like_count": c.get("like_count", "0"),
+                        "nickname": c.get("user_info", {}).get("nickname", "匿名"),
+                    }
+                )
 
     except (json.JSONDecodeError, IndexError, KeyError) as e:
         print(f"  [警告] 解析详情失败: {e}")
@@ -298,9 +300,7 @@ def main():
 
             if note_url:
                 # 调用工作流②提取详情
-                detail_raw = extract_note_detail(
-                    api_token, detail_workflow_id, note_url, cookie
-                )
+                detail_raw = extract_note_detail(api_token, detail_workflow_id, note_url, cookie)
 
                 if detail_raw:
                     detail = parse_note_detail(detail_raw)

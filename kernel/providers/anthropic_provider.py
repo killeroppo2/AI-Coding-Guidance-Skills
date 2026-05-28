@@ -14,9 +14,7 @@ from kernel.providers.base import AIProvider, ProviderResponse
 class AnthropicProvider(AIProvider):
     """AI provider using the Anthropic API."""
 
-    def __init__(
-        self, model: str = "claude-sonnet-4-20250514", api_key: str | None = None
-    ) -> None:
+    def __init__(self, model: str = "claude-sonnet-4-20250514", api_key: str | None = None) -> None:
         """Initialize the Anthropic provider.
 
         Args:

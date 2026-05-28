@@ -112,11 +112,14 @@ def classify_error(raw_error: str) -> tuple[str, dict]:
         re.IGNORECASE,
     )
     if stuck_match:
-        return ("stuck_node", {
-            "node": stuck_match.group(1),
-            "visits": stuck_match.group(2),
-            "max_retries": stuck_match.group(3),
-        })
+        return (
+            "stuck_node",
+            {
+                "node": stuck_match.group(1),
+                "visits": stuck_match.group(2),
+                "max_retries": stuck_match.group(3),
+            },
+        )
 
     # Check for contract violations
     if "contract violation" in raw_error.lower():

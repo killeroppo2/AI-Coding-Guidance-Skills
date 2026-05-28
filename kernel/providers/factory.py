@@ -30,6 +30,5 @@ def create_provider(provider_type: str, **kwargs) -> AIProvider:
         return AnthropicProvider(**kwargs)
     else:
         raise ValueError(
-            f"Unknown provider type: {provider_type!r}. "
-            f"Must be one of: cli, openai, anthropic"
+            f"Unknown provider type: {provider_type!r}. Must be one of: cli, openai, anthropic"
         )

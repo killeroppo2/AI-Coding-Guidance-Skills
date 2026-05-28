@@ -116,9 +116,7 @@ class TestClassifyError:
         assert kwargs["max_retries"] == "5"
 
     def test_classify_contract_violation(self):
-        error_type, kwargs = classify_error(
-            "Contract violation on node plan: missing TRANSITION"
-        )
+        error_type, kwargs = classify_error("Contract violation on node plan: missing TRANSITION")
         assert error_type == "contract_violation"
         assert kwargs["node"] == "unknown"
 

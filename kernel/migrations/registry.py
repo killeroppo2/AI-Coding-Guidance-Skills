@@ -17,8 +17,4 @@ def get_pending_migrations(current_version: str) -> list[type[Migration]]:
         List of migration classes that still need to be applied.
     """
     current_tuple = tuple(int(x) for x in current_version.split("."))
-    return [
-        m
-        for m in MIGRATIONS
-        if tuple(int(x) for x in m.version.split(".")) > current_tuple
-    ]
+    return [m for m in MIGRATIONS if tuple(int(x) for x in m.version.split(".")) > current_tuple]

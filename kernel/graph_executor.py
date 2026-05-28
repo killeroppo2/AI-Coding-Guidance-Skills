@@ -111,9 +111,7 @@ class GraphExecutor:
             if transition.get("condition") == condition:
                 next_id: str = transition["to"]
                 return next_id
-        raise ValueError(
-            f"No transition from '{current_node_id}' with condition '{condition}'"
-        )
+        raise ValueError(f"No transition from '{current_node_id}' with condition '{condition}'")
 
     def get_available_transitions(self, node_id: str) -> list:
         """Return list of transitions from a node.
@@ -152,9 +150,7 @@ class GraphExecutor:
             for transition in node.get("transitions", []):
                 target = transition.get("to")
                 if target not in node_ids:
-                    issues.append(
-                        f"Node '{node['id']}' has transition to unknown node '{target}'"
-                    )
+                    issues.append(f"Node '{node['id']}' has transition to unknown node '{target}'")
 
         # Check for orphan nodes (unreachable)
         reachable = set()
@@ -185,10 +181,7 @@ class GraphExecutor:
             issues.append(loop_warning)
 
         # Loop warnings do not make the graph invalid
-        hard_errors = [
-            i for i in issues
-            if not i.startswith("Warning:")
-        ]
+        hard_errors = [i for i in issues if not i.startswith("Warning:")]
         return (len(hard_errors) == 0, issues)
 
     def _detect_first_transition_loop(self, start: str, node_ids: set) -> str | None:
@@ -275,14 +268,11 @@ class GraphExecutor:
             for transition in node.get("transitions", []):
                 if transition.get("to") == node_id:
                     raise ValueError(
-                        f"Cannot remove '{node_id}': node '{node['id']}' "
-                        f"has a transition to it"
+                        f"Cannot remove '{node_id}': node '{node['id']}' has a transition to it"
                     )
 
         # Remove the node
-        self.graph["nodes"] = [
-            n for n in self.graph["nodes"] if n["id"] != node_id
-        ]
+        self.graph["nodes"] = [n for n in self.graph["nodes"] if n["id"] != node_id]
 
     def save_graph(self) -> None:
         """Write current graph back to YAML file."""

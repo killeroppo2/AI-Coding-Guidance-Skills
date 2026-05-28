@@ -57,10 +57,7 @@ def run_pending_migrations(kernel_root: Path) -> list[str]:
             try:
                 migration.up(kernel_root)
             except Exception as exc:
-                print(
-                    f"Migration {migration.version} "
-                    f"({migration.description}) failed: {exc}"
-                )
+                print(f"Migration {migration.version} ({migration.description}) failed: {exc}")
                 raise
             applied.append(migration.version)
         set_current_version(kernel_root, migration.version)

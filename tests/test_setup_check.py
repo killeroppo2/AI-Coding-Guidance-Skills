@@ -42,6 +42,7 @@ class TestCheckPyyamlInstalled:
         checker = SetupChecker()
         _, message = checker.check_pyyaml_installed()
         import yaml as _yaml
+
         assert _yaml.__version__ in message
 
 

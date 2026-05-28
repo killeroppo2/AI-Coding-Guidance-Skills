@@ -75,9 +75,7 @@ class TestLightweightRetry:
         (kernel_dir / "BOOT.md").write_text("# Boot\nBoot content.")
         (kernel_dir / "philosophy").mkdir()
         (kernel_dir / "philosophy" / "dao.md").write_text("# Dao\nDao content.")
-        (kernel_dir / "philosophy" / "strategy.md").write_text(
-            "# Strategy\nStrategy content."
-        )
+        (kernel_dir / "philosophy" / "strategy.md").write_text("# Strategy\nStrategy content.")
 
         # contracts dir with output_format.md
         (kernel_dir / "contracts").mkdir()
@@ -111,9 +109,7 @@ class TestLightweightRetry:
 
         return tmp_path
 
-    def test_lightweight_prompt_built_correctly(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_lightweight_prompt_built_correctly(self, runner_env: Path, monkeypatch) -> None:
         """Test that the lightweight prompt contains correct node_id and transitions."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -150,12 +146,18 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
-                "--goal", "test lightweight",
-                "--ai-command", "echo hello",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test lightweight",
+                    "--ai-command",
+                    "echo hello",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Should have 2 calls
         assert call_count[0] == 2
@@ -207,12 +209,18 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            runner.main([
-                "--goal", "test retry",
-                "--ai-command", "echo hi",
-                "--max-iterations", "2",
-                "--complexity", "high",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test retry",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "2",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         assert call_count[0] == 2
         # First prompt should be full context (has BOOT SEQUENCE or similar)
@@ -220,9 +228,7 @@ class TestLightweightRetry:
         # Second prompt should be lightweight
         assert "missing required format lines" in prompts_received[1]
 
-    def test_lightweight_retry_fails_then_full_context(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_lightweight_retry_fails_then_full_context(self, runner_env: Path, monkeypatch) -> None:
         """Test that if lightweight retry also fails, third attempt uses full context."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -265,12 +271,18 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            state = runner.main([
-                "--goal", "test fallback",
-                "--ai-command", "echo hi",
-                "--max-iterations", "3",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test fallback",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "3",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         assert call_count[0] == 3
         # First: full context
@@ -327,13 +339,19 @@ class TestLightweightRetry:
             return mock_proc
 
         with patch("subprocess.Popen", side_effect=mock_popen):
-            runner.main([
-                "--goal", "test plan node",
-                "--ai-command", "echo hi",
-                "--max-iterations", "2",
-                "--resume",
-                "--complexity", "high",
-            ])
+            runner.main(
+                [
+                    "--goal",
+                    "test plan node",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "2",
+                    "--resume",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Lightweight prompt for plan node should show plan_ready, plan_needs_revision
         assert len(prompts_received) >= 2

@@ -352,7 +352,9 @@ class TestRunnerStatusFlag:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 5, "tasks_total": 2, "tasks_done": 1, "status": "in_progress"}, f)
+            yaml.safe_dump(
+                {"iteration": 5, "tasks_total": 2, "tasks_done": 1, "status": "in_progress"}, f
+            )
 
         # Create tasks.yaml
         tasks_data = {

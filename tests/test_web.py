@@ -45,12 +45,19 @@ def kernel_dir(tmp_path: Path) -> Path:
     memory_dir.mkdir()
 
     # memory/tasks.yaml
-    tasks_data = {"tasks": [{"name": "Design API", "status": "done"}, {"name": "Write tests", "status": "pending"}]}
+    tasks_data = {
+        "tasks": [
+            {"name": "Design API", "status": "done"},
+            {"name": "Write tests", "status": "pending"},
+        ]
+    }
     with open(memory_dir / "tasks.yaml", "w") as f:
         yaml.safe_dump(tasks_data, f)
 
     # memory/reflections.jsonl
-    reflections = [{"insight": f"reflection {i}", "timestamp": f"2025-01-01T0{i}:00:00Z"} for i in range(5)]
+    reflections = [
+        {"insight": f"reflection {i}", "timestamp": f"2025-01-01T0{i}:00:00Z"} for i in range(5)
+    ]
     with open(memory_dir / "reflections.jsonl", "w") as f:
         for r in reflections:
             f.write(json.dumps(r) + "\n")
@@ -58,7 +65,9 @@ def kernel_dir(tmp_path: Path) -> Path:
     # skills/_index.yaml
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
-    skills_data = {"items": [{"name": "python-api", "description": "Build Python APIs", "tags": ["python"]}]}
+    skills_data = {
+        "items": [{"name": "python-api", "description": "Build Python APIs", "tags": ["python"]}]
+    }
     with open(skills_dir / "_index.yaml", "w") as f:
         yaml.safe_dump(skills_data, f)
 
@@ -388,6 +397,7 @@ class TestAppCreation:
     def test_module_level_app_exists(self):
         """The module-level app instance exists."""
         from web.app import app as module_app
+
         assert module_app is not None
 
 
@@ -595,16 +605,19 @@ class TestPathValidation:
 
     def test_validate_path_within_root(self, tmp_path: Path):
         from web.app import _validate_path
+
         child = tmp_path / "kernel" / "state.yaml"
         assert _validate_path(child, tmp_path) is True
 
     def test_validate_path_escape_rejected(self, tmp_path: Path):
         from web.app import _validate_path
+
         escape = tmp_path / ".." / ".." / "etc" / "passwd"
         assert _validate_path(escape, tmp_path) is False
 
     def test_validate_path_root_itself(self, tmp_path: Path):
         from web.app import _validate_path
+
         assert _validate_path(tmp_path, tmp_path) is True
 
 

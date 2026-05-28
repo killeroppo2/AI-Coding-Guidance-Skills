@@ -33,14 +33,26 @@ class TestSelectSkillsForGoal:
     def test_coding_goal_selects_coding_skills(self) -> None:
         """Test that a coding goal selects execution/coding-related skills."""
         skills = [
-            {"name": "ralph", "tags": ["execution", "autonomous", "coding"],
-             "description": "Autonomous coding agent"},
-            {"name": "tdd", "tags": ["testing", "tdd", "quality"],
-             "description": "Test-driven development"},
-            {"name": "ui-ux-pro-max", "tags": ["design", "ui", "ux", "frontend"],
-             "description": "UI/UX design intelligence"},
-            {"name": "prd", "tags": ["planning", "requirements", "documentation"],
-             "description": "Generate Product Requirements Documents"},
+            {
+                "name": "ralph",
+                "tags": ["execution", "autonomous", "coding"],
+                "description": "Autonomous coding agent",
+            },
+            {
+                "name": "tdd",
+                "tags": ["testing", "tdd", "quality"],
+                "description": "Test-driven development",
+            },
+            {
+                "name": "ui-ux-pro-max",
+                "tags": ["design", "ui", "ux", "frontend"],
+                "description": "UI/UX design intelligence",
+            },
+            {
+                "name": "prd",
+                "tags": ["planning", "requirements", "documentation"],
+                "description": "Generate Product Requirements Documents",
+            },
         ]
         result = select_skills_for_goal("coding execution autonomous testing", skills)
         assert "ralph" in result
@@ -49,14 +61,26 @@ class TestSelectSkillsForGoal:
     def test_design_goal_selects_design_skills(self) -> None:
         """Test that a design goal selects design-related skills."""
         skills = [
-            {"name": "ui-ux-pro-max", "tags": ["design", "ui", "ux", "frontend"],
-             "description": "UI/UX design intelligence"},
-            {"name": "brand", "tags": ["brand", "identity", "guidelines"],
-             "description": "Brand identity management"},
-            {"name": "tdd", "tags": ["testing", "tdd", "quality"],
-             "description": "Test-driven development"},
-            {"name": "design", "tags": ["design", "logo", "icons", "branding"],
-             "description": "Comprehensive design skill"},
+            {
+                "name": "ui-ux-pro-max",
+                "tags": ["design", "ui", "ux", "frontend"],
+                "description": "UI/UX design intelligence",
+            },
+            {
+                "name": "brand",
+                "tags": ["brand", "identity", "guidelines"],
+                "description": "Brand identity management",
+            },
+            {
+                "name": "tdd",
+                "tags": ["testing", "tdd", "quality"],
+                "description": "Test-driven development",
+            },
+            {
+                "name": "design",
+                "tags": ["design", "logo", "icons", "branding"],
+                "description": "Comprehensive design skill",
+            },
         ]
         result = select_skills_for_goal("design UI frontend", skills)
         assert "ui-ux-pro-max" in result
@@ -74,10 +98,12 @@ class TestSelectSkillsForGoal:
     def test_scores_weight_tags_higher(self) -> None:
         """Test that tag matches score higher than description-only matches."""
         skills = [
-            {"name": "tag-match", "tags": ["testing"],
-             "description": "Something unrelated"},
-            {"name": "desc-match", "tags": ["unrelated"],
-             "description": "This is about testing things"},
+            {"name": "tag-match", "tags": ["testing"], "description": "Something unrelated"},
+            {
+                "name": "desc-match",
+                "tags": ["unrelated"],
+                "description": "This is about testing things",
+            },
         ]
         result = select_skills_for_goal("testing", skills)
         # tag-match has tag score 3, desc-match has desc score 1
@@ -86,8 +112,7 @@ class TestSelectSkillsForGoal:
     def test_no_matches_returns_empty(self) -> None:
         """Test that completely unrelated goal returns empty list."""
         skills = [
-            {"name": "tdd", "tags": ["testing", "tdd"],
-             "description": "Test-driven development"},
+            {"name": "tdd", "tags": ["testing", "tdd"], "description": "Test-driven development"},
         ]
         result = select_skills_for_goal("quantum physics calculations", skills)
         assert result == []
@@ -95,10 +120,8 @@ class TestSelectSkillsForGoal:
     def test_skills_with_score_zero_excluded(self) -> None:
         """Test that skills with zero score are excluded from results."""
         skills = [
-            {"name": "relevant", "tags": ["api"],
-             "description": "Build API services"},
-            {"name": "irrelevant", "tags": ["design"],
-             "description": "UI design patterns"},
+            {"name": "relevant", "tags": ["api"], "description": "Build API services"},
+            {"name": "irrelevant", "tags": ["design"], "description": "UI design patterns"},
         ]
         result = select_skills_for_goal("api", skills)
         assert "relevant" in result
@@ -108,8 +131,7 @@ class TestSelectSkillsForGoal:
         """Test that skills without tags field are handled gracefully."""
         skills = [
             {"name": "no-tags", "description": "A skill without tags"},
-            {"name": "has-tags", "tags": ["coding"],
-             "description": "A skill with tags"},
+            {"name": "has-tags", "tags": ["coding"], "description": "A skill with tags"},
         ]
         result = select_skills_for_goal("coding", skills)
         assert "has-tags" in result
@@ -118,8 +140,7 @@ class TestSelectSkillsForGoal:
         """Test that skills without description field are handled gracefully."""
         skills = [
             {"name": "no-desc", "tags": ["coding"]},
-            {"name": "has-desc", "tags": ["design"],
-             "description": "Design stuff"},
+            {"name": "has-desc", "tags": ["design"], "description": "Design stuff"},
         ]
         result = select_skills_for_goal("coding", skills)
         assert "no-desc" in result
@@ -184,7 +205,9 @@ class TestRunnerSkillAutoSelection:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -198,12 +221,27 @@ class TestRunnerSkillAutoSelection:
         # Add some skills to the index
         skills_index = {
             "items": [
-                {"name": "tdd", "path": "tdd", "tags": ["testing", "tdd", "quality"],
-                 "description": "Test-driven development", "composable_with": []},
-                {"name": "ralph", "path": "ralph", "tags": ["execution", "autonomous", "coding"],
-                 "description": "Autonomous coding agent", "composable_with": []},
-                {"name": "ui-ux-pro-max", "path": "ui-ux-pro-max", "tags": ["design", "ui", "ux"],
-                 "description": "UI/UX design intelligence", "composable_with": []},
+                {
+                    "name": "tdd",
+                    "path": "tdd",
+                    "tags": ["testing", "tdd", "quality"],
+                    "description": "Test-driven development",
+                    "composable_with": [],
+                },
+                {
+                    "name": "ralph",
+                    "path": "ralph",
+                    "tags": ["execution", "autonomous", "coding"],
+                    "description": "Autonomous coding agent",
+                    "composable_with": [],
+                },
+                {
+                    "name": "ui-ux-pro-max",
+                    "path": "ui-ux-pro-max",
+                    "tags": ["design", "ui", "ux"],
+                    "description": "UI/UX design intelligence",
+                    "composable_with": [],
+                },
             ]
         }
         with open(skills_dir / "_index.yaml", "w") as f:
@@ -219,46 +257,64 @@ class TestRunnerSkillAutoSelection:
     def test_runner_auto_selects_skills(self, runner_env: Path, monkeypatch) -> None:
         """Test that runner auto-selects skills based on goal and stores in state."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "testing tdd quality",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "testing tdd quality",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         skills_loaded = state.get("context", {}).get("skills_loaded", [])
         assert "tdd" in skills_loaded
 
     def test_runner_skills_flag_override(self, runner_env: Path, monkeypatch) -> None:
         """Test that --skills flag overrides auto-selection."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "testing tdd quality",
-            "--skills", "ralph,ui-ux-pro-max",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "testing tdd quality",
+                "--skills",
+                "ralph,ui-ux-pro-max",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         skills_loaded = state.get("context", {}).get("skills_loaded", [])
         assert skills_loaded == ["ralph", "ui-ux-pro-max"]
 
     def test_runner_skills_flag_empty_string(self, runner_env: Path, monkeypatch) -> None:
         """Test that --skills with empty value results in empty list."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "testing",
-            "--skills", "",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "testing",
+                "--skills",
+                "",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         skills_loaded = state.get("context", {}).get("skills_loaded", [])
         assert skills_loaded == []
 
     def test_runner_no_matching_skills(self, runner_env: Path, monkeypatch) -> None:
         """Test that unrelated goal gets empty skills list."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "quantum physics simulation",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "quantum physics simulation",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         skills_loaded = state.get("context", {}).get("skills_loaded", [])
         assert skills_loaded == []
 
@@ -289,9 +345,13 @@ class TestContextAssemblerLoadsContent:
         # Register skill in index
         index_data = {
             "items": [
-                {"name": "test-skill", "path": "test-skill",
-                 "description": "A test skill", "tags": ["test"],
-                 "composable_with": []},
+                {
+                    "name": "test-skill",
+                    "path": "test-skill",
+                    "description": "A test skill",
+                    "tags": ["test"],
+                    "composable_with": [],
+                },
             ]
         }
         with open(skills_dir / "_index.yaml", "w") as f:
@@ -325,9 +385,13 @@ class TestContextAssemblerLoadsContent:
         # Register skill in index but no SKILL.md exists
         index_data = {
             "items": [
-                {"name": "missing-skill", "path": "missing-skill",
-                 "description": "A skill with no SKILL.md", "tags": [],
-                 "composable_with": []},
+                {
+                    "name": "missing-skill",
+                    "path": "missing-skill",
+                    "description": "A skill with no SKILL.md",
+                    "tags": [],
+                    "composable_with": [],
+                },
             ]
         }
         with open(skills_dir / "_index.yaml", "w") as f:
@@ -395,10 +459,18 @@ class TestCoreSkillPriorityBoost:
     def test_core_skill_boosted_over_community(self) -> None:
         """Test that core skills get a 1.5x score boost over community skills."""
         skills = [
-            {"name": "core-skill", "tags": ["testing"], "path": "core-skill",
-             "description": "A core testing skill"},
-            {"name": "community-skill", "tags": ["testing"], "path": "community/community-skill",
-             "description": "A community testing skill"},
+            {
+                "name": "core-skill",
+                "tags": ["testing"],
+                "path": "core-skill",
+                "description": "A core testing skill",
+            },
+            {
+                "name": "community-skill",
+                "tags": ["testing"],
+                "path": "community/community-skill",
+                "description": "A community testing skill",
+            },
         ]
         result = select_skills_for_goal("testing", skills)
         # Both match on tag "testing" (score 3), but core gets 1.5x boost (4)
@@ -408,11 +480,18 @@ class TestCoreSkillPriorityBoost:
     def test_community_skill_can_still_win_with_higher_base(self) -> None:
         """Test that community skill can outrank core if base score is much higher."""
         skills = [
-            {"name": "core-skill", "tags": ["testing"], "path": "core-skill",
-             "description": "Unrelated description"},
-            {"name": "community-skill", "tags": ["testing", "quality", "tdd"],
-             "path": "community/community-skill",
-             "description": "testing quality tdd development"},
+            {
+                "name": "core-skill",
+                "tags": ["testing"],
+                "path": "core-skill",
+                "description": "Unrelated description",
+            },
+            {
+                "name": "community-skill",
+                "tags": ["testing", "quality", "tdd"],
+                "path": "community/community-skill",
+                "description": "testing quality tdd development",
+            },
         ]
         # core-skill: tag match "testing" = 3, boosted to 4
         # community-skill: tag matches "testing", "quality", "tdd" = 9, plus desc matches
@@ -422,8 +501,12 @@ class TestCoreSkillPriorityBoost:
     def test_core_boost_not_applied_when_score_zero(self) -> None:
         """Test that core boost is not applied to skills with zero score."""
         skills = [
-            {"name": "core-skill", "tags": ["design"], "path": "core-skill",
-             "description": "A design skill"},
+            {
+                "name": "core-skill",
+                "tags": ["design"],
+                "path": "core-skill",
+                "description": "A design skill",
+            },
         ]
         result = select_skills_for_goal("quantum physics", skills)
         assert result == []
@@ -435,10 +518,8 @@ class TestSkillSelectorEdgeCases:
     def test_stop_words_only_goal(self) -> None:
         """Test that a goal with only common stop words returns empty list."""
         skills = [
-            {"name": "tdd", "tags": ["testing", "tdd"],
-             "description": "Test-driven development"},
-            {"name": "api", "tags": ["api", "rest"],
-             "description": "Build REST API services"},
+            {"name": "tdd", "tags": ["testing", "tdd"], "description": "Test-driven development"},
+            {"name": "api", "tags": ["api", "rest"], "description": "Build REST API services"},
         ]
         result = select_skills_for_goal("the a an", skills)
         assert result == []
@@ -446,8 +527,7 @@ class TestSkillSelectorEdgeCases:
     def test_very_long_goal(self) -> None:
         """Test that a very long goal (10000+ chars) still works."""
         skills = [
-            {"name": "api", "tags": ["api", "rest"],
-             "description": "Build REST API services"},
+            {"name": "api", "tags": ["api", "rest"], "description": "Build REST API services"},
         ]
         long_goal = "Build a REST API " * 600  # ~10200 chars
         result = select_skills_for_goal(long_goal, skills)
@@ -456,12 +536,9 @@ class TestSkillSelectorEdgeCases:
     def test_unicode_goal(self) -> None:
         """Test that unicode characters in goal are handled."""
         skills = [
-            {"name": "api", "tags": ["api", "rest"],
-             "description": "Build REST API services"},
+            {"name": "api", "tags": ["api", "rest"], "description": "Build REST API services"},
         ]
-        result = select_skills_for_goal(
-            "Build a REST API for Chinese characters", skills
-        )
+        result = select_skills_for_goal("Build a REST API for Chinese characters", skills)
         assert "api" in result
 
     def test_none_goal_returns_empty(self) -> None:

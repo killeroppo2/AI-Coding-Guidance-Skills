@@ -158,11 +158,16 @@ class TestLowComplexityRouting:
     def test_low_complexity_sets_code_node(self, runner_env: Path, monkeypatch) -> None:
         """Test that low complexity sets current_node to 'code'."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "hello world",
-            "--complexity", "low",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "hello world",
+                "--complexity",
+                "low",
+                "--max-iterations",
+                "1",
+            ]
+        )
         # Low complexity starts at "code" node, then advances to "test"
         # (Mode 1 scaffolding takes first transition from code)
         assert state["complexity"] == "low"
@@ -172,11 +177,16 @@ class TestLowComplexityRouting:
     def test_low_complexity_creates_tasks_file(self, runner_env: Path, monkeypatch) -> None:
         """Test that low complexity creates tasks.yaml if missing."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        runner.main([
-            "--goal", "fix the bug",
-            "--complexity", "low",
-            "--max-iterations", "1",
-        ])
+        runner.main(
+            [
+                "--goal",
+                "fix the bug",
+                "--complexity",
+                "low",
+                "--max-iterations",
+                "1",
+            ]
+        )
         tasks_file = runner_env / "memory" / "tasks.yaml"
         assert tasks_file.exists()
         data = yaml.safe_load(tasks_file.read_text())
@@ -184,9 +194,7 @@ class TestLowComplexityRouting:
         assert data["tasks"][0]["title"] == "fix the bug"
         assert data["tasks"][0]["complexity"] == "low"
 
-    def test_low_complexity_does_not_overwrite_tasks(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_low_complexity_does_not_overwrite_tasks(self, runner_env: Path, monkeypatch) -> None:
         """Test that low complexity does not overwrite existing tasks.yaml."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
         tasks_file = runner_env / "memory" / "tasks.yaml"
@@ -194,26 +202,34 @@ class TestLowComplexityRouting:
         with open(tasks_file, "w") as f:
             yaml.safe_dump(existing, f)
 
-        runner.main([
-            "--goal", "fix another bug",
-            "--complexity", "low",
-            "--max-iterations", "1",
-        ])
+        runner.main(
+            [
+                "--goal",
+                "fix another bug",
+                "--complexity",
+                "low",
+                "--max-iterations",
+                "1",
+            ]
+        )
         data = yaml.safe_load(tasks_file.read_text())
         # Should not have overwritten existing task
         assert data["tasks"][0]["id"] == "T-100"
 
-    def test_low_complexity_dry_run_does_not_skip(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_low_complexity_dry_run_does_not_skip(self, runner_env: Path, monkeypatch) -> None:
         """Test that low complexity in dry-run does NOT skip to code."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "hello world",
-            "--complexity", "low",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "hello world",
+                "--complexity",
+                "low",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         # In dry-run mode, low complexity should not modify current_node
         # It starts at init and advances via scaffolding
         assert state["complexity"] == "low"
@@ -321,25 +337,26 @@ class TestMediumComplexityRouting:
 
         return tmp_path
 
-    def test_medium_skips_reflect_in_scaffolding(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_medium_skips_reflect_in_scaffolding(self, runner_env: Path, monkeypatch) -> None:
         """Test that medium complexity skips reflect node in Mode 1."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "Add user login page",
-            "--complexity", "medium",
-            "--dry-run",
-            "--max-iterations", "3",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Add user login page",
+                "--complexity",
+                "medium",
+                "--dry-run",
+                "--max-iterations",
+                "3",
+            ]
+        )
         assert state["complexity"] == "medium"
         # The graph starts at review -> reflect (first transition).
         # Medium complexity overrides reflect -> plan, then plan -> code.
         assert state["current_node"] == "code"
 
-    def test_medium_skips_reflect_in_mode3(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_medium_skips_reflect_in_mode3(self, runner_env: Path, monkeypatch) -> None:
         """Test that medium complexity skips reflect/evolve in Mode 3."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
 
@@ -352,12 +369,18 @@ class TestMediumComplexityRouting:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "Add user login page",
-                "--complexity", "medium",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "Add user login page",
+                    "--complexity",
+                    "medium",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # review -> reflect transition, but medium complexity overrides to plan
         assert state["current_node"] == "plan"
@@ -449,17 +472,20 @@ class TestHighComplexityRouting:
 
         return tmp_path
 
-    def test_high_does_not_skip_reflect(
-        self, runner_env: Path, monkeypatch
-    ) -> None:
+    def test_high_does_not_skip_reflect(self, runner_env: Path, monkeypatch) -> None:
         """Test that high complexity does NOT skip reflect."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "Build a distributed architecture",
-            "--complexity", "high",
-            "--dry-run",
-            "--max-iterations", "3",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Build a distributed architecture",
+                "--complexity",
+                "high",
+                "--dry-run",
+                "--max-iterations",
+                "3",
+            ]
+        )
         assert state["complexity"] == "high"
         # Full flow: review -> reflect -> plan -> complete (no transitions from plan)
         assert state["current_node"] == "plan"
@@ -471,31 +497,46 @@ class TestAutoComplexityRouting:
 
     def test_auto_calls_assess_complexity(self) -> None:
         """Test that auto mode uses assess_complexity to determine routing."""
-        state = runner.main([
-            "--goal", "hello world",
-            "--complexity", "auto",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "hello world",
+                "--complexity",
+                "auto",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         # "hello world" should be assessed as low
         assert state["complexity"] == "low"
 
     def test_auto_detects_high(self) -> None:
         """Test that auto mode detects high complexity goals."""
-        state = runner.main([
-            "--goal", "Build a distributed microservice architecture",
-            "--complexity", "auto",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Build a distributed microservice architecture",
+                "--complexity",
+                "auto",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["complexity"] == "high"
 
     def test_auto_detects_medium(self) -> None:
         """Test that auto mode detects medium complexity goals."""
-        state = runner.main([
-            "--goal", "Add user login page feature",
-            "--complexity", "auto",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Add user login page feature",
+                "--complexity",
+                "auto",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["complexity"] == "medium"

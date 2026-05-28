@@ -210,7 +210,10 @@ class TestEvolutionRollbackGaps:
 
         change = engine.propose_change(
             "remove_node",
-            {"node_id": "temp_node", "node_backup": {"id": "temp_node", "description": "Temporary"}},
+            {
+                "node_id": "temp_node",
+                "node_backup": {"id": "temp_node", "description": "Temporary"},
+            },
             "Remove temp",
         )
         result = engine.apply_change(change)
@@ -288,9 +291,27 @@ class TestEvolutionReorderPartialOrder:
         graph_file = kernel_dir / "graph.yaml"
         graph_data = {
             "nodes": [
-                {"id": "a", "prompt_file": "", "description": "A", "transitions": [], "max_retries": 1},
-                {"id": "b", "prompt_file": "", "description": "B", "transitions": [], "max_retries": 1},
-                {"id": "c", "prompt_file": "", "description": "C", "transitions": [], "max_retries": 1},
+                {
+                    "id": "a",
+                    "prompt_file": "",
+                    "description": "A",
+                    "transitions": [],
+                    "max_retries": 1,
+                },
+                {
+                    "id": "b",
+                    "prompt_file": "",
+                    "description": "B",
+                    "transitions": [],
+                    "max_retries": 1,
+                },
+                {
+                    "id": "c",
+                    "prompt_file": "",
+                    "description": "C",
+                    "transitions": [],
+                    "max_retries": 1,
+                },
             ],
             "default_start": "a",
         }
@@ -539,7 +560,9 @@ class TestRunnerGaps:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         # Knowledge dir
         knowledge_dir = tmp_path / "knowledge"
@@ -556,7 +579,9 @@ class TestRunnerGaps:
         # Set progress to complete so is_complete() triggers on first check
         progress_path = runner_env / "memory" / "progress.yaml"
         with open(progress_path, "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 5, "tasks_done": 5, "status": "complete"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 5, "tasks_done": 5, "status": "complete"}, f
+            )
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
         state = runner.main(["--goal", "test", "--max-iterations", "10"])
@@ -659,7 +684,9 @@ class TestRunnerGaps:
         (memory_dir / "reflections.jsonl").touch()
         (memory_dir / "current_goal.md").touch()
         with open(memory_dir / "progress.yaml", "w") as f:
-            yaml.safe_dump({"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f)
+            yaml.safe_dump(
+                {"iteration": 0, "tasks_total": 0, "tasks_done": 0, "status": "pending"}, f
+            )
 
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir()
@@ -669,6 +696,8 @@ class TestRunnerGaps:
                 yaml.safe_dump({"items": []}, f)
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", tmp_path)
-        state = runner.main(["--goal", "test loop", "--max-iterations", "3", "--complexity", "high"])
+        state = runner.main(
+            ["--goal", "test loop", "--max-iterations", "3", "--complexity", "high"]
+        )
         assert state["iteration_count"] == 3
         assert state["status"] == "complete"

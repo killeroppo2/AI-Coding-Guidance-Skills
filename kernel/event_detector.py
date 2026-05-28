@@ -66,11 +66,13 @@ class EventDetector:
                     actual_type = event_type
                     if event_type == "note_left" and filepath.name == "tasks.yaml":
                         actual_type = "manual_task_added"
-                    events.append({
-                        "type": actual_type,
-                        "path": str(filepath.relative_to(self.kernel_root)),
-                        "modified_at": mtime.isoformat(),
-                    })
+                    events.append(
+                        {
+                            "type": actual_type,
+                            "path": str(filepath.relative_to(self.kernel_root)),
+                            "modified_at": mtime.isoformat(),
+                        }
+                    )
         return events
 
     def get_user_owned_files(self, state: dict) -> list[str]:

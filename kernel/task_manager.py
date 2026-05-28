@@ -190,9 +190,7 @@ class TaskManager:
         for task in tasks:
             for dep in task.get("dependencies", []):
                 if dep not in task_ids:
-                    issues.append(
-                        f"Task {task['id']} depends on non-existent task {dep}"
-                    )
+                    issues.append(f"Task {task['id']} depends on non-existent task {dep}")
 
         # Check for cycles using DFS
         # Build adjacency list: task -> tasks it depends on
@@ -211,9 +209,7 @@ class TaskManager:
                 if neighbor not in task_ids:
                     continue  # already reported as missing
                 if neighbor in in_stack:
-                    issues.append(
-                        f"Circular dependency detected involving {node} and {neighbor}"
-                    )
+                    issues.append(f"Circular dependency detected involving {node} and {neighbor}")
                     return True
                 if neighbor not in visited:
                     if dfs(neighbor):

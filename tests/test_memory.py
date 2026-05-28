@@ -15,16 +15,19 @@ class TestMemoryStructure:
     def test_memory_package_importable(self) -> None:
         """Test that memory package can be imported."""
         import memory
+
         assert memory is not None
 
     def test_state_manager_importable(self) -> None:
         """Test that memory.state_manager can be imported."""
         from memory import state_manager
+
         assert state_manager is not None
 
     def test_state_manager_class_exists(self) -> None:
         """Test that StateManager class exists."""
         from memory.state_manager import StateManager
+
         assert StateManager is not None
 
 
@@ -270,7 +273,9 @@ class TestRetryTracking:
         assert is_stalled is True
         assert stale_count == 5
 
-    def test_check_convergence_insufficient_history(self, tmp_state: Path, tmp_memory: Path) -> None:
+    def test_check_convergence_insufficient_history(
+        self, tmp_state: Path, tmp_memory: Path
+    ) -> None:
         """Test check_convergence with insufficient history returns not stalled."""
         sm = StateManager(str(tmp_state), str(tmp_memory))
         sm.state["progress_history"] = [3, 3]
@@ -282,12 +287,14 @@ class TestRetryTracking:
     def test_node_visits_in_default_state(self, tmp_path: Path) -> None:
         """Test that node_visits is in DEFAULT_STATE."""
         from memory.state_manager import DEFAULT_STATE
+
         assert "node_visits" in DEFAULT_STATE
         assert DEFAULT_STATE["node_visits"] == {}
 
     def test_progress_history_in_default_state(self, tmp_path: Path) -> None:
         """Test that progress_history is in DEFAULT_STATE."""
         from memory.state_manager import DEFAULT_STATE
+
         assert "progress_history" in DEFAULT_STATE
         assert DEFAULT_STATE["progress_history"] == []
 
@@ -298,6 +305,7 @@ class TestExecutionMode:
     def test_execution_mode_in_default_state(self) -> None:
         """Test that execution_mode is in DEFAULT_STATE."""
         from memory.state_manager import DEFAULT_STATE
+
         assert "execution_mode" in DEFAULT_STATE
         assert DEFAULT_STATE["execution_mode"] == "kernel"
 

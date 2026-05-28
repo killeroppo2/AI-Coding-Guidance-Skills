@@ -141,8 +141,7 @@ class SkillComposer:
 
                 if skill_b not in a_composable and skill_a not in b_composable:
                     warnings.append(
-                        f"Warning: {skill_a} and {skill_b} have no known "
-                        f"compatibility relationship"
+                        f"Warning: {skill_a} and {skill_b} have no known compatibility relationship"
                     )
 
         return warnings
@@ -179,8 +178,7 @@ class SkillComposer:
         if phase_name not in workflow:
             available = list(workflow.keys())
             raise ValueError(
-                f"Phase '{phase_name}' not found in workflow. "
-                f"Available phases: {available}"
+                f"Phase '{phase_name}' not found in workflow. Available phases: {available}"
             )
 
         skill_names = workflow[phase_name]

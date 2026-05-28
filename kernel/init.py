@@ -13,7 +13,7 @@ def init_runtime_files(kernel_root: Path) -> None:
         "current_node: init\n"
         "iteration_count: 0\n"
         "status: idle\n"
-        "goal: \"\"\n"
+        'goal: ""\n'
         "errors: []\n"
         "node_visits: {}\n"
     )
@@ -51,7 +51,4 @@ def init_runtime_files(kernel_root: Path) -> None:
             except OSError as e:
                 print(f"  [error] {path.relative_to(kernel_root)} ({e})")
 
-    print(
-        f"\nInitialization complete. Created {created} file(s), "
-        f"skipped {skipped} file(s)."
-    )
+    print(f"\nInitialization complete. Created {created} file(s), skipped {skipped} file(s).")

@@ -27,14 +27,19 @@ def _make_assembler_env(tmp_path: Path) -> Path:
 
     # contracts
     (kernel_dir / "contracts").mkdir()
-    (kernel_dir / "contracts" / "output_format.md").write_text(
-        "Output format contract content."
-    )
+    (kernel_dir / "contracts" / "output_format.md").write_text("Output format contract content.")
 
     # evolution history
     (kernel_dir / "evolution").mkdir()
     history_entries = [
-        json.dumps({"status": "applied", "type": "refactor", "reason": "improve", "timestamp": "2025-01-01T00:00:00"}),
+        json.dumps(
+            {
+                "status": "applied",
+                "type": "refactor",
+                "reason": "improve",
+                "timestamp": "2025-01-01T00:00:00",
+            }
+        ),
     ]
     (kernel_dir / "evolution" / "history.jsonl").write_text("\n".join(history_entries) + "\n")
 
@@ -121,7 +126,11 @@ def _make_assembler_env(tmp_path: Path) -> Path:
     (memory_dir / "plan.md").write_text("Plan content here.")
 
     # tasks.yaml so _load_current_task doesn't fail
-    tasks_data = {"tasks": [{"id": "t1", "title": "Task 1", "status": "in_progress", "description": "Do thing"}]}
+    tasks_data = {
+        "tasks": [
+            {"id": "t1", "title": "Task 1", "status": "in_progress", "description": "Do thing"}
+        ]
+    }
     with open(memory_dir / "tasks.yaml", "w") as f:
         yaml.safe_dump(tasks_data, f)
 
@@ -189,8 +198,12 @@ class TestContextTieringInit:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_node("init")
@@ -211,8 +224,12 @@ class TestContextTieringInit:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         node = graph.get_node("init")
@@ -238,8 +255,12 @@ class TestContextTieringCode:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "code", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "code",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "coding"},
         }
         node = graph.get_node("code")
@@ -270,8 +291,12 @@ class TestContextTieringCode:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "code", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "code",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "workspace_path": str(workspace),
             "context": {"skills_loaded": [], "current_task": "", "phase": "coding"},
         }
@@ -301,8 +326,12 @@ class TestContextTieringReflect:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "reflect", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "reflect",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "reflecting"},
         }
         node = graph.get_node("reflect")
@@ -326,8 +355,12 @@ class TestContextTieringReflect:
         graph = GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "reflect", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "reflect",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "workspace_path": str(env / "workspace"),
             "context": {"skills_loaded": [], "current_task": "", "phase": "reflecting"},
         }
@@ -353,8 +386,12 @@ class TestContextTieringBackwardCompat:
         GraphExecutor(str(env / "kernel" / "graph.yaml"))
         knowledge = KnowledgeStore(str(env / "knowledge"))
         state = {
-            "current_node": "init", "goal": "test", "iteration_count": 0,
-            "max_iterations": 30, "status": "running", "errors": [],
+            "current_node": "init",
+            "goal": "test",
+            "iteration_count": 0,
+            "max_iterations": 30,
+            "status": "running",
+            "errors": [],
             "context": {"skills_loaded": [], "current_task": "", "phase": "startup"},
         }
         # Create a node dict without 'id' key

@@ -101,12 +101,18 @@ class TestTrackVisitBeforeExecution:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test tracking",
-                "--ai-command", "echo hi",
-                "--max-iterations", "3",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test tracking",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "3",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Node "init" should have been visited 3 times despite all failures
         assert state["node_visits"].get("init", 0) == 3
@@ -130,11 +136,16 @@ class TestTrackVisitBeforeExecution:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test stuck on failure",
-                "--ai-command", "echo hi",
-                "--max-iterations", "10",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test stuck on failure",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "10",
+                ]
+            )
 
         # Should become stuck because init exceeded max_retries=2
         assert state["status"] == "stuck"
@@ -279,13 +290,20 @@ class TestRetryStrategies:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test continue",
-                "--ai-command", "echo hi",
-                "--max-iterations", "2",
-                "--retry-strategy", "continue",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test continue",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "2",
+                    "--retry-strategy",
+                    "continue",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Should stay on init
         assert state["current_node"] == "init"
@@ -300,13 +318,20 @@ class TestRetryStrategies:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            state = runner.main([
-                "--goal", "test skip",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-                "--retry-strategy", "skip",
-                "--complexity", "high",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test skip",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                    "--retry-strategy",
+                    "skip",
+                    "--complexity",
+                    "high",
+                ]
+            )
 
         # Should advance to "plan" (first available transition from init)
         assert state["current_node"] == "plan"
@@ -327,12 +352,18 @@ class TestRetryStrategies:
 
         with patch("subprocess.Popen", return_value=mock_proc):
             with patch("time.sleep", side_effect=mock_sleep):
-                runner.main([
-                    "--goal", "test backoff",
-                    "--ai-command", "echo hi",
-                    "--max-iterations", "3",
-                    "--retry-strategy", "backoff",
-                ])
+                runner.main(
+                    [
+                        "--goal",
+                        "test backoff",
+                        "--ai-command",
+                        "echo hi",
+                        "--max-iterations",
+                        "3",
+                        "--retry-strategy",
+                        "backoff",
+                    ]
+                )
 
         # Should have called time.sleep with exponential backoff
         # Visit 1: 2^(1-1)=1, Visit 2: 2^(2-1)=2, Visit 3: 2^(3-1)=4
@@ -366,13 +397,20 @@ class TestRetryStrategies:
 
         with patch("subprocess.Popen", return_value=mock_proc):
             with patch("time.sleep", side_effect=mock_sleep):
-                runner.main([
-                    "--goal", "test backoff cap",
-                    "--ai-command", "echo hi",
-                    "--max-iterations", "8",
-                    "--retry-strategy", "backoff",
-                    "--complexity", "high",
-                ])
+                runner.main(
+                    [
+                        "--goal",
+                        "test backoff cap",
+                        "--ai-command",
+                        "echo hi",
+                        "--max-iterations",
+                        "8",
+                        "--retry-strategy",
+                        "backoff",
+                        "--complexity",
+                        "high",
+                    ]
+                )
 
         # Visit 7: 2^(7-1)=64 -> capped to 60
         assert all(s <= 60 for s in sleep_calls)
@@ -417,11 +455,16 @@ class TestErrorsTrimmedEachIteration:
         mock_result.stderr = "Error"
 
         with patch("subprocess.run", return_value=mock_result):
-            state = runner.main([
-                "--goal", "test trim in loop",
-                "--ai-command", "echo hi",
-                "--max-iterations", "15",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test trim in loop",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "15",
+                ]
+            )
 
         # With 15 failures adding errors, trim_errors(20) should keep at most 20
         assert len(state.get("errors", [])) <= 20
@@ -443,11 +486,16 @@ class TestErrorsTrimmedEachIteration:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            state = runner.main([
-                "--goal", "test trim on success",
-                "--ai-command", "echo hi",
-                "--max-iterations", "1",
-            ])
+            state = runner.main(
+                [
+                    "--goal",
+                    "test trim on success",
+                    "--ai-command",
+                    "echo hi",
+                    "--max-iterations",
+                    "1",
+                ]
+            )
 
         # After trimming, should have at most 20 errors
         assert len(state.get("errors", [])) <= 20

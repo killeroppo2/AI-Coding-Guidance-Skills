@@ -27,7 +27,7 @@ def _parse_transition(output: str) -> str | None:
     for line in scan_output.splitlines():
         stripped = line.strip()
         if stripped.startswith("TRANSITION:"):
-            value = stripped[len("TRANSITION:"):].strip()
+            value = stripped[len("TRANSITION:") :].strip()
             # Reject values containing path separators or null bytes
             if any(c in value for c in ("/", "\\", "\x00", "..")):
                 return None

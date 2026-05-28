@@ -7,12 +7,32 @@ based on analysis of goal, loaded skills, history, and metrics.
 from typing import Any
 
 # Keywords that suggest UI/design work
-DESIGN_KEYWORDS = frozenset({
-    "ui", "ux", "design", "frontend", "interface", "layout",
-    "css", "styling", "component", "visual", "responsive", "tailwind",
-    "react", "vue", "angular", "svelte", "page", "screen", "mockup",
-    "wireframe", "figma", "prototype"
-})
+DESIGN_KEYWORDS = frozenset(
+    {
+        "ui",
+        "ux",
+        "design",
+        "frontend",
+        "interface",
+        "layout",
+        "css",
+        "styling",
+        "component",
+        "visual",
+        "responsive",
+        "tailwind",
+        "react",
+        "vue",
+        "angular",
+        "svelte",
+        "page",
+        "screen",
+        "mockup",
+        "wireframe",
+        "figma",
+        "prototype",
+    }
+)
 
 # Structural change confidence threshold (higher than prompt changes)
 STRUCTURAL_CONFIDENCE = 0.9

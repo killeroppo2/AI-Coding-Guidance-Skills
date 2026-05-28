@@ -36,15 +36,17 @@ class RalphAdapter:
                 acceptance_criteria = list(acceptance_criteria) + ["Typecheck passes"]
             priority = i + 1
             passes = task.get("status") == "done"
-            user_stories.append({
-                "id": story_id,
-                "title": title,
-                "description": description,
-                "acceptanceCriteria": acceptance_criteria,
-                "priority": priority,
-                "passes": passes,
-                "notes": "",
-            })
+            user_stories.append(
+                {
+                    "id": story_id,
+                    "title": title,
+                    "description": description,
+                    "acceptanceCriteria": acceptance_criteria,
+                    "priority": priority,
+                    "passes": passes,
+                    "notes": "",
+                }
+            )
         return {
             "project": self._derive_project_name(goal),
             "branchName": branch_name,
@@ -63,9 +65,7 @@ class RalphAdapter:
         """
         user_stories = prd_data.get("userStories", [])
         # Sort by priority (stable sort preserves input order as tie-breaker)
-        sorted_stories = sorted(
-            user_stories, key=lambda s: s.get("priority", 1)
-        )
+        sorted_stories = sorted(user_stories, key=lambda s: s.get("priority", 1))
         tasks = []
         # Track the last task index that had a strictly lower priority
         last_lower_priority_idx: int | None = None
@@ -88,13 +88,15 @@ class RalphAdapter:
                     dependencies = [f"T-{last_lower_priority_idx + 1:03d}"]
 
             prev_priority = current_priority
-            tasks.append({
-                "id": task_id,
-                "title": story.get("title", ""),
-                "description": story.get("description", ""),
-                "status": status,
-                "dependencies": dependencies,
-            })
+            tasks.append(
+                {
+                    "id": task_id,
+                    "title": story.get("title", ""),
+                    "description": story.get("description", ""),
+                    "status": status,
+                    "dependencies": dependencies,
+                }
+            )
         return tasks
 
     def _to_kebab_case(self, text: str) -> str:

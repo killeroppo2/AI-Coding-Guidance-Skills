@@ -102,9 +102,7 @@ class TestValidateChange:
     def test_valid_change(self, evolution_setup) -> None:
         """Test validation of a valid change."""
         engine, _, _ = evolution_setup
-        change = engine.propose_change(
-            "add_node", {"node": {"id": "new"}}, "Add new node"
-        )
+        change = engine.propose_change("add_node", {"node": {"id": "new"}}, "Add new node")
         valid, reason = engine.validate_change(change)
         assert valid is True
 
@@ -185,9 +183,7 @@ class TestApplyChange:
         engine, _, graph_executor = evolution_setup
         # Add an isolated node first
         graph_executor.add_node({"id": "isolated", "description": "Temp"})
-        change = engine.propose_change(
-            "remove_node", {"node_id": "isolated"}, "Remove temp node"
-        )
+        change = engine.propose_change("remove_node", {"node_id": "isolated"}, "Remove temp node")
         result = engine.apply_change(change)
         assert result is True
         with pytest.raises(KeyError):
@@ -303,9 +299,7 @@ class TestApplyReorder:
         engine, _, graph_executor = evolution_setup
         original_ids = [n["id"] for n in graph_executor.graph["nodes"]]
         reversed_ids = list(reversed(original_ids))
-        change = engine.propose_change(
-            "reorder", {"order": reversed_ids}, "Reverse node order"
-        )
+        change = engine.propose_change("reorder", {"order": reversed_ids}, "Reverse node order")
         result = engine.apply_change(change)
         assert result is True
         new_ids = [n["id"] for n in graph_executor.graph["nodes"]]
@@ -314,18 +308,14 @@ class TestApplyReorder:
     def test_apply_add_skill_type(self, evolution_setup) -> None:
         """Test applying an add_skill change (logged only)."""
         engine, _, _ = evolution_setup
-        change = engine.propose_change(
-            "add_skill", {"name": "test-skill"}, "Add skill"
-        )
+        change = engine.propose_change("add_skill", {"name": "test-skill"}, "Add skill")
         result = engine.apply_change(change)
         assert result is True
 
     def test_apply_add_rule_type(self, evolution_setup) -> None:
         """Test applying an add_rule change (logged only)."""
         engine, _, _ = evolution_setup
-        change = engine.propose_change(
-            "add_rule", {"name": "test-rule"}, "Add rule"
-        )
+        change = engine.propose_change("add_rule", {"name": "test-rule"}, "Add rule")
         result = engine.apply_change(change)
         assert result is True
 
@@ -469,8 +459,18 @@ class TestRevertIfWorse:
         assert graph_executor.get_node("revert_test") is not None
 
         # Metrics show degradation (dropped from 0.8 to 0.5)
-        metrics_before = {"success_rate": 0.8, "avg_retries": 0.0, "avg_duration": 1.0, "sample_count": 5}
-        metrics_after = {"success_rate": 0.5, "avg_retries": 1.0, "avg_duration": 2.0, "sample_count": 5}
+        metrics_before = {
+            "success_rate": 0.8,
+            "avg_retries": 0.0,
+            "avg_duration": 1.0,
+            "sample_count": 5,
+        }
+        metrics_after = {
+            "success_rate": 0.5,
+            "avg_retries": 1.0,
+            "avg_duration": 2.0,
+            "sample_count": 5,
+        }
 
         result = engine.revert_if_worse(change["id"], metrics_before, metrics_after, threshold=0.1)
         assert result is True
@@ -490,8 +490,18 @@ class TestRevertIfWorse:
         engine.apply_change(change)
 
         # Metrics show slight improvement
-        metrics_before = {"success_rate": 0.7, "avg_retries": 1.0, "avg_duration": 2.0, "sample_count": 5}
-        metrics_after = {"success_rate": 0.75, "avg_retries": 0.5, "avg_duration": 1.5, "sample_count": 5}
+        metrics_before = {
+            "success_rate": 0.7,
+            "avg_retries": 1.0,
+            "avg_duration": 2.0,
+            "sample_count": 5,
+        }
+        metrics_after = {
+            "success_rate": 0.75,
+            "avg_retries": 0.5,
+            "avg_duration": 1.5,
+            "sample_count": 5,
+        }
 
         result = engine.revert_if_worse(change["id"], metrics_before, metrics_after, threshold=0.1)
         assert result is False

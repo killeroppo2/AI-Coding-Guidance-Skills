@@ -292,11 +292,16 @@ class TestWorkspaceRunner:
     def test_workspace_cli_override(self, runner_env: Path, monkeypatch) -> None:
         """Test --workspace flag overrides goal-derived name."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "Build a REST API",
-            "--workspace", "custom-project",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Build a REST API",
+                "--workspace",
+                "custom-project",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["workspace_path"] == "./workspace/custom-project/"
         workspace_dir = runner_env / "workspace" / "custom-project"
         assert workspace_dir.exists()
@@ -304,11 +309,15 @@ class TestWorkspaceRunner:
     def test_workspace_dry_run_does_not_create_dir(self, runner_env: Path, monkeypatch) -> None:
         """Test that dry run sets workspace_path but does not create directory."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
-        state = runner.main([
-            "--goal", "Build a REST API",
-            "--dry-run",
-            "--max-iterations", "1",
-        ])
+        state = runner.main(
+            [
+                "--goal",
+                "Build a REST API",
+                "--dry-run",
+                "--max-iterations",
+                "1",
+            ]
+        )
         assert state["workspace_path"] == "./workspace/build-a-rest-api/"
         workspace_dir = runner_env / "workspace" / "build-a-rest-api"
         assert not workspace_dir.exists()

@@ -10,11 +10,35 @@ from pathlib import Path
 import yaml
 
 # Stop words that are too generic to be skill-matchable
-STOP_WORDS = frozenset({
-    "a", "an", "the", "and", "or", "for", "with", "that", "this",
-    "from", "into", "will", "build", "create", "make", "using",
-    "want", "need", "to", "of", "in", "on", "is", "it", "be",
-})
+STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "for",
+        "with",
+        "that",
+        "this",
+        "from",
+        "into",
+        "will",
+        "build",
+        "create",
+        "make",
+        "using",
+        "want",
+        "need",
+        "to",
+        "of",
+        "in",
+        "on",
+        "is",
+        "it",
+        "be",
+    }
+)
 
 
 class CapabilityAssessor:

@@ -166,6 +166,7 @@ class TestLogin:
     def test_login_token_contains_username(self):
         from app.config import settings
         from jose import jwt
+
         response = client.post(
             LOGIN_URL,
             json={"username": "login_test", "password": "correct_pw"},

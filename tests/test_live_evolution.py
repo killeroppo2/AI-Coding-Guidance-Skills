@@ -46,21 +46,11 @@ def live_env(tmp_path: Path):
     (prompts_dir / "coder.md").write_text(
         "You are the coder. Implement the next task from the plan."
     )
-    (prompts_dir / "tester.md").write_text(
-        "You are the tester. Run tests and verify coverage."
-    )
-    (prompts_dir / "reviewer.md").write_text(
-        "You are the reviewer. Review code for quality."
-    )
-    (prompts_dir / "code.md").write_text(
-        "You are the code node. Write implementation code."
-    )
-    (prompts_dir / "test.md").write_text(
-        "You are the test node. Execute and validate tests."
-    )
-    (prompts_dir / "review.md").write_text(
-        "You are the review node. Perform code review."
-    )
+    (prompts_dir / "tester.md").write_text("You are the tester. Run tests and verify coverage.")
+    (prompts_dir / "reviewer.md").write_text("You are the reviewer. Review code for quality.")
+    (prompts_dir / "code.md").write_text("You are the code node. Write implementation code.")
+    (prompts_dir / "test.md").write_text("You are the test node. Execute and validate tests.")
+    (prompts_dir / "review.md").write_text("You are the review node. Perform code review.")
 
     # Graph with multiple nodes
     graph_data = {
@@ -201,24 +191,19 @@ class TestLiveEvolutionWithRealisticIterations:
         # Verify: evolution engine proposed and applied a modify_prompt change
         # The prompt file should have been modified on disk
         history_entries = live_env["historian"].load_history()
-        applied_changes = [
-            e for e in history_entries if e.get("status") == "applied"
-        ]
+        applied_changes = [e for e in history_entries if e.get("status") == "applied"]
 
         # At least one change should have been applied
-        assert len(applied_changes) > 0, (
-            "Expected at least one applied change after 20 failures"
-        )
+        assert len(applied_changes) > 0, "Expected at least one applied change after 20 failures"
 
         # Verify a modify_prompt was applied for the code node
         prompt_changes = [
-            e for e in applied_changes
+            e
+            for e in applied_changes
             if e.get("type") == "modify_prompt"
             and "code" in e.get("details", {}).get("prompt_file", "")
         ]
-        assert len(prompt_changes) > 0, (
-            "Expected a modify_prompt change targeting code node"
-        )
+        assert len(prompt_changes) > 0, "Expected a modify_prompt change targeting code node"
 
         # Verify the prompt file content was actually modified on disk
         # The engine writes new content to the prompt file
@@ -244,7 +229,8 @@ class TestLiveEvolutionWithRealisticIterations:
         # No modify_prompt changes should be applied for success runs
         history_entries = live_env["historian"].load_history()
         prompt_changes = [
-            e for e in history_entries
+            e
+            for e in history_entries
             if e.get("type") == "modify_prompt" and e.get("status") == "applied"
         ]
         assert len(prompt_changes) == 0, (
@@ -268,18 +254,13 @@ class TestLiveEvolutionWithRealisticIterations:
 
         # Should have triggered proposal for review node
         history_entries = live_env["historian"].load_history()
-        applied_changes = [
-            e for e in history_entries if e.get("status") == "applied"
-        ]
+        applied_changes = [e for e in history_entries if e.get("status") == "applied"]
 
         # Check that proposals were generated (even if not all applied)
         review_changes = [
-            e for e in applied_changes
-            if "review" in e.get("details", {}).get("prompt_file", "")
+            e for e in applied_changes if "review" in e.get("details", {}).get("prompt_file", "")
         ]
-        assert len(review_changes) > 0, (
-            "Expected prompt modification after 15 review failures"
-        )
+        assert len(review_changes) > 0, "Expected prompt modification after 15 review failures"
 
     def test_full_50_iteration_sequence(self, live_env) -> None:
         """Run 50 iterations (20 code fail, 15 success, 15 review fail)."""
@@ -470,13 +451,8 @@ class TestScenarioFromYaml:
         applied = [e for e in history_entries if e.get("status") == "applied"]
 
         # Should have proposals of the expected type
-        matching = [
-            e for e in applied
-            if e.get("type") == expected["proposal_type"]
-        ]
-        assert len(matching) > 0, (
-            f"Expected applied changes of type '{expected['proposal_type']}'"
-        )
+        matching = [e for e in applied if e.get("type") == expected["proposal_type"]]
+        assert len(matching) > 0, f"Expected applied changes of type '{expected['proposal_type']}'"
 
     def test_backend_api_reviews_pass_scenario(self, live_env, scenarios) -> None:
         """Validate 'Backend API all reviews pass' scenario."""
@@ -508,10 +484,7 @@ class TestScenarioFromYaml:
         applied = [e for e in history_entries if e.get("status") == "applied"]
 
         expected = scenario["expected_outcome"]
-        matching = [
-            e for e in applied
-            if e.get("type") == expected["proposal_type"]
-        ]
+        matching = [e for e in applied if e.get("type") == expected["proposal_type"]]
         assert len(matching) > 0, (
             f"Expected applied changes of type '{expected['proposal_type']}' "
             f"for consistently successful review node"
@@ -561,23 +534,17 @@ class TestScenarioFromYaml:
         history_entries = live_env["historian"].load_history()
         applied = [e for e in history_entries if e.get("status") == "applied"]
 
-        matching = [
-            e for e in applied
-            if e.get("type") == expected["proposal_type"]
-        ]
-        assert len(matching) > 0, (
-            f"Expected applied changes of type '{expected['proposal_type']}'"
-        )
+        matching = [e for e in applied if e.get("type") == expected["proposal_type"]]
+        assert len(matching) > 0, f"Expected applied changes of type '{expected['proposal_type']}'"
 
         # Verify target node matches
         code_changes = [
-            e for e in matching
+            e
+            for e in matching
             if expected["target_node"] in e.get("details", {}).get("prompt_file", "")
             or expected["target_node"] in e.get("details", {}).get("node_id", "")
         ]
-        assert len(code_changes) > 0, (
-            f"Expected changes targeting node '{expected['target_node']}'"
-        )
+        assert len(code_changes) > 0, f"Expected changes targeting node '{expected['target_node']}'"
 
     def test_all_scenarios_load_correctly(self, scenarios) -> None:
         """Verify all scenarios in YAML are well-formed."""

@@ -81,15 +81,11 @@ class TestStateTransitionsConsistency:
     ) -> None:
         """Transition table rows match source->target from graph.yaml."""
         # Extract table rows from state_transitions.md
-        table_pattern = re.compile(
-            r"\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|"
-        )
+        table_pattern = re.compile(r"\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|")
         table_rows = table_pattern.findall(state_transitions_content)
         # Filter out header row
         doc_transitions = [
-            (src, tgt, cond)
-            for src, tgt, cond in table_rows
-            if src not in ("Source", "---")
+            (src, tgt, cond) for src, tgt, cond in table_rows if src not in ("Source", "---")
         ]
 
         # Build expected transitions from graph.yaml
@@ -101,13 +97,10 @@ class TestStateTransitionsConsistency:
 
         for src, tgt, cond in expected:
             assert (src, tgt, cond) in doc_transitions, (
-                f"Expected transition ({src}->{tgt} via {cond}) "
-                f"not found in transition table"
+                f"Expected transition ({src}->{tgt} via {cond}) not found in transition table"
             )
 
-    def test_documented_fields_updated_on_transition(
-        self, state_transitions_content: str
-    ) -> None:
+    def test_documented_fields_updated_on_transition(self, state_transitions_content: str) -> None:
         """Required state fields are documented in the update rules."""
         required_fields = ["current_node", "iteration_count", "last_updated", "node_visits"]
         for field_name in required_fields:
@@ -119,9 +112,7 @@ class TestStateTransitionsConsistency:
 class TestMode2ProtocolConsistency:
     """Tests that mode2_protocol.md references are valid."""
 
-    def test_referenced_files_exist(
-        self, kernel_root: Path, mode2_protocol_content: str
-    ) -> None:
+    def test_referenced_files_exist(self, kernel_root: Path, mode2_protocol_content: str) -> None:
         """File paths referenced in mode2_protocol.md exist in the project."""
         # Extract file paths from the table and text
         file_refs = [
@@ -147,14 +138,10 @@ class TestMode2ProtocolConsistency:
                     f"File '{file_ref}' referenced in mode2_protocol.md does not exist"
                 )
 
-    def test_yaml_examples_parse_correctly(
-        self, mode2_protocol_content: str
-    ) -> None:
+    def test_yaml_examples_parse_correctly(self, mode2_protocol_content: str) -> None:
         """YAML code blocks in mode2_protocol.md parse without errors."""
         # Extract YAML code blocks (```yaml ... ```)
-        yaml_blocks = re.findall(
-            r"```yaml\n(.*?)```", mode2_protocol_content, re.DOTALL
-        )
+        yaml_blocks = re.findall(r"```yaml\n(.*?)```", mode2_protocol_content, re.DOTALL)
         assert len(yaml_blocks) > 0, "No YAML examples found in mode2_protocol.md"
 
         for i, block in enumerate(yaml_blocks):
@@ -174,8 +161,7 @@ class TestMode2ProtocolConsistency:
             yaml_content = "\n".join(yaml_lines)
             # Strip comment-only lines for content check
             non_comment_lines = [
-                l for l in yaml_lines
-                if l.strip() and not l.strip().startswith("#")
+                l for l in yaml_lines if l.strip() and not l.strip().startswith("#")
             ]
             if not non_comment_lines:
                 # Block only had comments or JSON lines, skip
@@ -183,24 +169,16 @@ class TestMode2ProtocolConsistency:
 
             try:
                 result = yaml.safe_load(yaml_content)
-                assert result is not None, (
-                    f"YAML block {i + 1} parsed to None"
-                )
+                assert result is not None, f"YAML block {i + 1} parsed to None"
             except yaml.YAMLError as e:
-                pytest.fail(
-                    f"YAML block {i + 1} in mode2_protocol.md failed to parse: {e}"
-                )
+                pytest.fail(f"YAML block {i + 1} in mode2_protocol.md failed to parse: {e}")
 
-    def test_documents_yaml_format_for_state(
-        self, mode2_protocol_content: str
-    ) -> None:
+    def test_documents_yaml_format_for_state(self, mode2_protocol_content: str) -> None:
         """mode2_protocol.md documents YAML format for state files."""
         assert "YAML" in mode2_protocol_content
         assert "kernel/state.yaml" in mode2_protocol_content
 
-    def test_documents_jsonl_format_for_logs(
-        self, mode2_protocol_content: str
-    ) -> None:
+    def test_documents_jsonl_format_for_logs(self, mode2_protocol_content: str) -> None:
         """mode2_protocol.md documents JSONL format for log files."""
         assert "JSONL" in mode2_protocol_content
         assert "decisions.jsonl" in mode2_protocol_content

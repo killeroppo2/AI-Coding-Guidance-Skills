@@ -19,9 +19,9 @@ IMMUTABLE_FILES = frozenset(
 )
 
 # Valid change types
-VALID_CHANGE_TYPES = frozenset({
-    "add_node", "remove_node", "reorder", "modify_prompt", "add_skill", "add_rule"
-})
+VALID_CHANGE_TYPES = frozenset(
+    {"add_node", "remove_node", "reorder", "modify_prompt", "add_skill", "add_rule"}
+)
 
 
 class EvolutionEngine:
@@ -200,6 +200,7 @@ class EvolutionEngine:
 
             elif change_type == "add_skill":
                 from kernel.skill_factory import SkillFactory
+
                 skill_name = details.get("name", "")
                 skill_description = details.get("description", "")
                 skill_content = details.get("content", "")

@@ -8,10 +8,26 @@ import re
 from collections import Counter
 from pathlib import Path
 
-STOP_WORDS = frozenset({
-    "a", "an", "the", "is", "of", "to", "for", "with", "in", "on",
-    "and", "or", "as", "that", "this", "it",
-})
+STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "is",
+        "of",
+        "to",
+        "for",
+        "with",
+        "in",
+        "on",
+        "and",
+        "or",
+        "as",
+        "that",
+        "this",
+        "it",
+    }
+)
 
 
 class ProjectHistory:
