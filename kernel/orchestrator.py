@@ -32,6 +32,11 @@ from kernel.error_messages import format_error
 from kernel.event_detector import EventDetector
 from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
+from kernel.execution.protocol import (
+    check_should_stop,
+    resolve_transition,
+    update_progress_history,
+)
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
 from kernel.intent_analyzer import IntentAnalyzer
@@ -39,7 +44,8 @@ from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
 from kernel.mode3_executor import _parse_transition
 from kernel.phase_router import PhaseRouter
-from kernel.philosophy.principles import should_retreat, should_stop_iterating
+from kernel.philosophy.guards import bing_gui_shen_su, shui_guard, wu_wei_guard
+from kernel.philosophy.principles import should_retreat
 from kernel.reflector import Reflector
 from kernel.reporter import Reporter
 from kernel.security_policy import SecurityPolicy
@@ -439,6 +445,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         if state_mgr.is_complete():
             break
 
+        if mode3:
+            if not wu_wei_guard(state, "iterate"):
+                logger.info(
+                    "[PHILOSOPHY] \u65e0\u4e3a\u800c\u6cbb: No progress detected, stopping."
+                )
+                state_mgr.state["status"] = "complete"
+                break
+
         try:
             node = graph.get_current_node(state)
         except KeyError as e:
@@ -535,6 +549,13 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 state_mgr.state["context"]["skills_loaded"] = (
                     _routing_selection.primary + _routing_selection.auxiliary
                 )
+
+            # Philosophy guard: filter out high-failure skills
+            _current_skills = state_mgr.state["context"]["skills_loaded"]
+            _current_skills = shui_guard(
+                _current_skills, feedback_store, node["id"], intent_result.goal_type
+            )
+            state_mgr.state["context"]["skills_loaded"] = _current_skills
 
             # Mode 3: Real AI execution via subprocess
             if retry_lightweight:
@@ -718,25 +739,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])
             if transitions:
-                if transition_condition:
-                    # Try to match the AI-provided condition
-                    matched = False
-                    for t in transitions:
-                        if t.get("condition") == transition_condition:
-                            next_node_id = t["to"]
-                            matched = True
-                            break
-                    if not matched:
-                        # Fallback to first transition
-                        next_node_id = transitions[0]["to"]
-                        logger.warning(
-                            f"[WARNING] TRANSITION condition '{transition_condition}' "
-                            f"does not match any available transition, "
-                            f"falling back to first transition: {next_node_id}"
-                        )
-                else:
-                    # No TRANSITION line - fallback to first transition
-                    next_node_id = transitions[0]["to"]
+                next_node_id, had_warning = resolve_transition(
+                    transitions, transition_condition, complexity, logger
+                )
+                if had_warning and not transition_condition:
                     logger.warning(
                         f"[WARNING] No TRANSITION line found in AI output, "
                         f"falling back to first transition: {next_node_id}"
@@ -745,9 +751,6 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         f"No TRANSITION line in AI output on node {node['id']}, "
                         f"fell back to: {next_node_id}"
                     )
-                # Medium complexity: skip reflect/evolve
-                if complexity == "medium" and next_node_id in ("reflect", "evolve"):
-                    next_node_id = "plan"
                 state_mgr.set_current_node(next_node_id)
 
                 # Mark iteration success for incremental context
@@ -781,30 +784,27 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 )
 
                 # Populate progress_history for stall detection
-                tasks_path_progress = Path(memory_dir) / "tasks.yaml"
-                if tasks_path_progress.exists():
-                    tm_progress = TaskManager(memory_dir)
-                    _total, tasks_done_count = tm_progress.get_progress()
-                    if _total > 0:
-                        progress_history = state_mgr.state.setdefault("progress_history", [])
-                        progress_history.append(tasks_done_count)
-                        # Cap at 20 entries to prevent unbounded growth
-                        if len(progress_history) > MAX_PROGRESS_HISTORY_ENTRIES:
-                            state_mgr.state["progress_history"] = progress_history[
-                                -MAX_PROGRESS_HISTORY_ENTRIES:
-                            ]
+                update_progress_history(state_mgr.state, memory_dir)
+
+                # Philosophy guard: force complexity downgrade if stalling
+                tasks_done_for_guard = (
+                    state_mgr.state.get("progress_history", [0])[-1]
+                    if state_mgr.state.get("progress_history")
+                    else 0
+                )
+                speed_signal = bing_gui_shen_su(
+                    state_mgr.state.get("iteration_count", 0), tasks_done_for_guard
+                )
+                if speed_signal == "low" and complexity != "low":
+                    complexity = "low"
+                    state_mgr.state["complexity"] = "low"
+                    logger.info(
+                        "[PHILOSOPHY] \u5175\u8d35\u795e\u901f:"
+                        " Stalling detected, downgrading complexity."
+                    )
 
                 # Philosophy check: should_stop_iterating
-                reflections_path = Path(memory_dir) / "reflections.jsonl"
-                recent_reflections = []
-                if reflections_path.exists():
-                    lines = reflections_path.read_text(encoding="utf-8").strip().splitlines()
-                    for line in lines[-RECENT_REFLECTIONS_WINDOW:]:
-                        try:
-                            recent_reflections.append(json.loads(line))
-                        except (json.JSONDecodeError, ValueError):
-                            pass
-                if should_stop_iterating(state_mgr.state, recent_reflections):
+                if check_should_stop(memory_dir, state_mgr.state):
                     logger.info(
                         "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86:"
                         " Diminishing returns detected, stopping."

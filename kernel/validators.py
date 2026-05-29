@@ -27,7 +27,11 @@ def _sanitize_project_name(goal: str) -> str:
     )
     name = name.lower().replace(" ", "-")
     name = re.sub(r"[^a-z0-9-]", "", name)
-    return name[:50]
+    name = name.lstrip("-.")
+    name = name[:50]
+    if not name:
+        return "project"
+    return name
 
 
 def _validate_workspace_paths(files_written: list[str], workspace_path: str) -> list[str]:

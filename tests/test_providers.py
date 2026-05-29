@@ -198,3 +198,165 @@ class TestPackageExports:
         from kernel.providers import create_provider
 
         assert create_provider is factory_create_provider
+
+    def test_exports_subprocess_provider(self) -> None:
+        """Package exports SubprocessProvider."""
+        from kernel.providers import SubprocessProvider
+        from kernel.providers.subprocess_provider import (
+            SubprocessProvider as DirectSubprocessProvider,
+        )
+
+        assert SubprocessProvider is DirectSubprocessProvider
+
+
+class TestSubprocessProvider:
+    """Tests for the SubprocessProvider."""
+
+    def test_subprocess_provider_basic(self) -> None:
+        """SubprocessProvider returns a valid ProviderResponse."""
+        mock_proc = type(
+            "MockProc",
+            (),
+            {
+                "communicate": lambda self, input=None, timeout=None: (
+                    "STATUS: success\nTRANSITION: goal_loaded\n",
+                    "",
+                ),
+                "kill": lambda self: None,
+                "returncode": 0,
+            },
+        )()
+        with patch("kernel.providers.subprocess_provider.subprocess.Popen", return_value=mock_proc):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="echo test")
+            result = asyncio.run(provider.generate("hello", timeout=10))
+            assert "STATUS: success" in result.text
+            assert result.transition == "goal_loaded"
+            assert result.raw_output == result.text
+
+    def test_subprocess_provider_timeout(self) -> None:
+        """SubprocessProvider raises TimeoutError on timeout."""
+        call_count = {"n": 0}
+
+        def mock_communicate(input=None, timeout=None):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise subprocess.TimeoutExpired(cmd="echo test", timeout=10)
+            return ("", "")
+
+        mock_proc = type(
+            "MockProc",
+            (),
+            {
+                "communicate": mock_communicate,
+                "kill": lambda self: None,
+                "returncode": None,
+            },
+        )()
+        mock_proc.communicate = mock_communicate
+        with patch("kernel.providers.subprocess_provider.subprocess.Popen", return_value=mock_proc):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="echo test")
+            with pytest.raises(TimeoutError, match="timed out"):
+                asyncio.run(provider.generate("hello", timeout=10))
+
+    def test_subprocess_provider_command_not_found(self) -> None:
+        """SubprocessProvider raises FileNotFoundError for missing command."""
+        with patch(
+            "kernel.providers.subprocess_provider.subprocess.Popen",
+            side_effect=FileNotFoundError("No such file or directory"),
+        ):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="nonexistent_xyz_cmd")
+            with pytest.raises(FileNotFoundError):
+                asyncio.run(provider.generate("hello", timeout=5))
+
+    def test_subprocess_provider_nonzero_exit(self) -> None:
+        """SubprocessProvider raises RuntimeError on non-zero exit."""
+        mock_proc = type(
+            "MockProc",
+            (),
+            {
+                "communicate": lambda self, input=None, timeout=None: (
+                    "",
+                    "error occurred",
+                ),
+                "kill": lambda self: None,
+                "returncode": 1,
+            },
+        )()
+        with patch("kernel.providers.subprocess_provider.subprocess.Popen", return_value=mock_proc):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="bad_cmd")
+            with pytest.raises(RuntimeError, match="exited with code 1"):
+                asyncio.run(provider.generate("hello", timeout=10))
+
+    def test_subprocess_provider_parse_transition(self) -> None:
+        """SubprocessProvider correctly parses TRANSITION from output."""
+        mock_proc = type(
+            "MockProc",
+            (),
+            {
+                "communicate": lambda self, input=None, timeout=None: (
+                    "Some output\nTRANSITION: workflow_complete\nDone",
+                    "",
+                ),
+                "kill": lambda self: None,
+                "returncode": 0,
+            },
+        )()
+        with patch("kernel.providers.subprocess_provider.subprocess.Popen", return_value=mock_proc):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="echo test")
+            result = asyncio.run(provider.generate("prompt", timeout=10))
+            assert result.transition == "workflow_complete"
+
+    def test_subprocess_provider_no_transition(self) -> None:
+        """SubprocessProvider returns None transition when not in output."""
+        mock_proc = type(
+            "MockProc",
+            (),
+            {
+                "communicate": lambda self, input=None, timeout=None: (
+                    "Just normal output\nNo transition here",
+                    "",
+                ),
+                "kill": lambda self: None,
+                "returncode": 0,
+            },
+        )()
+        with patch("kernel.providers.subprocess_provider.subprocess.Popen", return_value=mock_proc):
+            from kernel.providers.subprocess_provider import SubprocessProvider
+
+            provider = SubprocessProvider(command="echo test")
+            result = asyncio.run(provider.generate("prompt", timeout=10))
+            assert result.transition is None
+
+    def test_subprocess_provider_is_ai_provider(self) -> None:
+        """SubprocessProvider is an instance of AIProvider."""
+        from kernel.providers.subprocess_provider import SubprocessProvider
+
+        provider = SubprocessProvider(command="echo test")
+        assert isinstance(provider, AIProvider)
+
+    def test_factory_creates_subprocess_provider(self) -> None:
+        """Factory creates SubprocessProvider for 'subprocess' type."""
+        from kernel.providers.subprocess_provider import SubprocessProvider
+
+        provider = factory_create_provider("subprocess", command="echo test")
+        assert isinstance(provider, SubprocessProvider)
+        assert provider.command == "echo test"
+        assert provider.timeout == 300
+
+    def test_factory_creates_subprocess_provider_custom_timeout(self) -> None:
+        """Factory creates SubprocessProvider with custom timeout."""
+        from kernel.providers.subprocess_provider import SubprocessProvider
+
+        provider = factory_create_provider("subprocess", command="echo test", timeout=60)
+        assert isinstance(provider, SubprocessProvider)
+        assert provider.timeout == 60

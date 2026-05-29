@@ -190,11 +190,11 @@ class TestSanitizeProjectName:
 
     def test_empty_goal(self) -> None:
         """Test sanitization of empty string."""
-        assert runner._sanitize_project_name("") == ""
+        assert runner._sanitize_project_name("") == "project"
 
     def test_all_special_chars(self) -> None:
         """Test goal that is only special characters."""
-        assert runner._sanitize_project_name("!@#$%^&*()") == ""
+        assert runner._sanitize_project_name("!@#$%^&*()") == "project"
 
     def test_numbers_preserved(self) -> None:
         """Test that numbers are preserved."""
@@ -208,6 +208,26 @@ class TestSanitizeProjectName:
     def test_mixed_case_lowered(self) -> None:
         """Test that mixed case is lowered."""
         assert runner._sanitize_project_name("MyProject") == "myproject"
+
+    def test_leading_dash_stripped(self) -> None:
+        """Test that leading dashes are stripped from sanitized name."""
+        result = runner._sanitize_project_name("...API")
+        assert not result.startswith("-")
+        assert result == "api"
+
+    def test_leading_dots_stripped(self) -> None:
+        """Test that leading dots are stripped from sanitized name."""
+        result = runner._sanitize_project_name("...hello")
+        assert result[0].isalnum()
+        assert result == "hello"
+
+    def test_all_dashes_returns_fallback(self) -> None:
+        """Test that all-dash input returns fallback name."""
+        assert runner._sanitize_project_name("---") == "project"
+
+    def test_goal_starting_with_special_then_word(self) -> None:
+        """Test goal starting with special characters followed by a word."""
+        assert runner._sanitize_project_name("!!!Build") == "build"
 
 
 class TestWorkspaceRunner:

@@ -250,3 +250,151 @@ class TestFallbackAndEdges:
         assert selection.primary == []
         assert selection.auxiliary == []
         assert selection.reason == ""
+
+
+# --- Data-driven routing tests ---
+
+
+class TestDataDrivenRouting:
+    """Test data-driven scoring in _select_primary."""
+
+    @pytest.fixture
+    def tagged_skills_index(self) -> dict:
+        """Skills index with tags for data-driven routing tests."""
+        return {
+            "core_items": [
+                {
+                    "name": "ralph",
+                    "composable_with": ["tdd"],
+                    "tags": ["python", "execution", "coding"],
+                },
+                {
+                    "name": "tdd",
+                    "composable_with": ["ralph"],
+                    "tags": ["testing", "tdd", "quality"],
+                },
+                {
+                    "name": "prototype",
+                    "composable_with": ["tdd"],
+                    "tags": ["rapid", "prototype", "simple"],
+                },
+            ],
+            "community_items": [
+                {
+                    "name": "diagnose",
+                    "composable_with": ["ralph"],
+                    "tags": ["debugging", "execution"],
+                },
+            ],
+        }
+
+    @pytest.fixture
+    def tagged_workflow(self) -> dict:
+        """Workflow for data-driven routing tests."""
+        return {
+            "execution_phase": ["ralph", "tdd", "prototype", "diagnose"],
+            "requirements_phase": ["prd"],
+            "quality_phase": ["diagnose"],
+            "lifecycle_phase": ["zoom-out"],
+            "meta_phase": ["write-a-skill"],
+        }
+
+    @pytest.fixture
+    def tagged_router(self, tagged_skills_index: dict, tagged_workflow: dict) -> PhaseRouter:
+        """Router with tagged skills for data-driven tests."""
+        return PhaseRouter(skills_index=tagged_skills_index, workflow=tagged_workflow)
+
+    def test_data_driven_routing_with_matching_tags(
+        self, tagged_router: PhaseRouter
+    ) -> None:
+        """Skills with tags matching tech_hints score higher."""
+        intent = IntentResult(
+            goal_type="build",
+            output_form="unknown",
+            tech_hints=["python"],
+            language="en",
+            is_vague=False,
+        )
+        result = tagged_router.route("code", intent, "medium")
+        # ralph has tags=['python', 'execution', 'coding'] -> python matches tech_hints -> score >= 1
+        assert "ralph" in result.primary
+
+    def test_data_driven_routing_high_complexity(
+        self, tagged_router: PhaseRouter
+    ) -> None:
+        """Skills with testing/tdd/architecture/quality tags score higher for high complexity."""
+        intent = IntentResult(
+            goal_type="build",
+            output_form="unknown",
+            tech_hints=[],
+            language="en",
+            is_vague=False,
+        )
+        result = tagged_router.route("code", intent, "high")
+        # tdd has tags=['testing', 'tdd', 'quality'] -> complexity match -> score >= 1
+        assert "tdd" in result.primary
+
+    def test_data_driven_routing_fallback_no_tags(self, router: PhaseRouter) -> None:
+        """When skills have no tags, fallback to hardcoded logic."""
+        intent = _make_intent()
+        result = router.route("code", intent, "medium")
+        # Existing fixture has no tags, so all scores are 0 -> fallback
+        assert result.primary == ["ralph"]
+
+    def test_data_driven_routing_top3_limit(self) -> None:
+        """Only top 3 scoring skills are returned even if more score > 0."""
+        skills_index = {
+            "core_items": [
+                {"name": "skill-a", "composable_with": [], "tags": ["python", "build"]},
+                {"name": "skill-b", "composable_with": [], "tags": ["python", "build"]},
+                {"name": "skill-c", "composable_with": [], "tags": ["python", "build"]},
+                {"name": "skill-d", "composable_with": [], "tags": ["python", "build"]},
+                {"name": "skill-e", "composable_with": [], "tags": ["python", "build"]},
+            ],
+            "community_items": [],
+        }
+        workflow = {
+            "execution_phase": ["skill-a", "skill-b", "skill-c", "skill-d", "skill-e"],
+        }
+        router = PhaseRouter(skills_index=skills_index, workflow=workflow)
+        intent = IntentResult(
+            goal_type="build",
+            output_form="unknown",
+            tech_hints=["python"],
+            language="en",
+            is_vague=False,
+        )
+        result = router.route("code", intent, "medium")
+        # All 5 skills score > 0 (python in tech_hints + build == goal_type)
+        assert len(result.primary) == 3
+
+    def test_data_driven_routing_goal_type_in_tags(
+        self, tagged_router: PhaseRouter
+    ) -> None:
+        """Skills with goal_type matching a tag get +1 score."""
+        intent = IntentResult(
+            goal_type="execution",
+            output_form="unknown",
+            tech_hints=[],
+            language="en",
+            is_vague=False,
+        )
+        result = tagged_router.route("code", intent, "medium")
+        # ralph has 'execution' in tags -> goal_type match
+        # diagnose has 'execution' in tags -> goal_type match
+        assert "ralph" in result.primary or "diagnose" in result.primary
+
+    def test_data_driven_routing_low_complexity(
+        self, tagged_router: PhaseRouter
+    ) -> None:
+        """Skills with rapid/prototype/simple tags score higher for low complexity."""
+        intent = IntentResult(
+            goal_type="build",
+            output_form="unknown",
+            tech_hints=[],
+            language="en",
+            is_vague=False,
+        )
+        result = tagged_router.route("code", intent, "low")
+        # prototype has tags=['rapid', 'prototype', 'simple'] -> low complexity match
+        assert "prototype" in result.primary

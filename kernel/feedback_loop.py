@@ -5,12 +5,33 @@ and auto-applies confident proposals via the evolution engine.
 """
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.historian import EvolutionHistorian
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.reflector import Reflector
+
+
+@dataclass
+class PendingEvaluation:
+    """Tracks a change that needs post-application evaluation.
+
+    After a change is applied, we wait a configurable number of iterations
+    before checking whether the change improved or degraded performance.
+
+    Args:
+        change_id: Unique ID of the applied change.
+        node_id: The node whose metrics are being tracked.
+        metrics_before: Snapshot of node metrics at the time the change was applied.
+        evaluate_after_iterations: The iteration number at which to evaluate.
+    """
+
+    change_id: str
+    node_id: str
+    metrics_before: dict = field(default_factory=dict)
+    evaluate_after_iterations: int = 0
 
 
 class FeedbackLoop:
@@ -56,18 +77,21 @@ class FeedbackLoop:
         self.max_applies_per_cycle = max_applies_per_cycle
         self.historian: EvolutionHistorian | None = None
         self.skill_accumulator = skill_accumulator
+        self._pending_evaluations: list[PendingEvaluation] = []
         if history_file is not None:
             self.historian = EvolutionHistorian(history_file)
 
     def run_cycle(self, iteration_data: dict) -> dict:
         """Run a full feedback cycle after an iteration.
 
+        0. Evaluate any pending changes that have reached their threshold
         1. Analyze iteration via reflector
         2. Record the reflection
         3. Read recent reflections (last 10)
         4. Generate evolution proposals
         4b. Adjust proposal confidence based on historical effectiveness
         5. Apply proposals with confidence > threshold
+        5b. Track applied changes for later evaluation
         6. Record metrics
         7. Auto-prune history if historian is available
 
@@ -78,6 +102,9 @@ class FeedbackLoop:
             Dict with: reflection, proposals_generated, proposals_applied,
             proposals_skipped.
         """
+        # 0. Evaluate pending changes
+        self._evaluate_pending(iteration_data.get("iteration", 0))
+
         # 1. Analyze iteration
         reflection = self.reflector.analyze_iteration(iteration_data)
 
@@ -104,6 +131,20 @@ class FeedbackLoop:
         applied = self.evolution_engine.apply_if_confident(
             proposals, self.threshold, max_applies=self.max_applies_per_cycle
         )
+
+        # 5b. Track applied changes for later evaluation
+        if applied:
+            node_id = iteration_data.get("node", "unknown")
+            current_iteration = iteration_data.get("iteration", 0)
+            for change in applied:
+                metrics_snapshot = self.metrics.get_node_metrics(node_id)
+                pending = PendingEvaluation(
+                    change_id=change["id"],
+                    node_id=node_id,
+                    metrics_before=metrics_snapshot,
+                    evaluate_after_iterations=current_iteration + 5,
+                )
+                self._pending_evaluations.append(pending)
 
         # 6. Record metrics
         node_id = iteration_data.get("node", "unknown")
@@ -133,6 +174,27 @@ class FeedbackLoop:
             "proposals_applied": len(applied),
             "proposals_skipped": proposals_skipped,
         }
+
+    def _evaluate_pending(self, current_iteration: int) -> None:
+        """Evaluate pending changes that have reached their iteration threshold.
+
+        For each pending evaluation whose evaluate_after_iterations has been
+        reached, get current metrics and call revert_if_worse on the evolution
+        engine. Removes evaluated entries from the list regardless of outcome.
+
+        Args:
+            current_iteration: The current iteration number.
+        """
+        remaining: list[PendingEvaluation] = []
+        for pe in self._pending_evaluations:
+            if current_iteration >= pe.evaluate_after_iterations:
+                current_metrics = self.metrics.get_node_metrics(pe.node_id)
+                self.evolution_engine.revert_if_worse(
+                    pe.change_id, pe.metrics_before, current_metrics
+                )
+            else:
+                remaining.append(pe)
+        self._pending_evaluations = remaining
 
     def _read_recent_reflections(self, count: int = 10) -> list[dict]:
         """Read last N reflections from reflections.jsonl.
