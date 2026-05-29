@@ -77,7 +77,8 @@ class FeedbackLoop:
         self.max_applies_per_cycle = max_applies_per_cycle
         self.historian: EvolutionHistorian | None = None
         self.skill_accumulator = skill_accumulator
-        self._pending_evaluations: list[PendingEvaluation] = []
+        self._pending_file = self.memory_dir / "pending_evaluations.json"
+        self._pending_evaluations: list[PendingEvaluation] = self._load_pending()
         if history_file is not None:
             self.historian = EvolutionHistorian(history_file)
 
@@ -145,6 +146,7 @@ class FeedbackLoop:
                     evaluate_after_iterations=current_iteration + 5,
                 )
                 self._pending_evaluations.append(pending)
+            self._save_pending()
 
         # 6. Record metrics
         node_id = iteration_data.get("node", "unknown")
@@ -195,6 +197,42 @@ class FeedbackLoop:
             else:
                 remaining.append(pe)
         self._pending_evaluations = remaining
+        self._save_pending()
+
+    def _load_pending(self) -> list[PendingEvaluation]:
+        """Load pending evaluations from disk.
+
+        Returns empty list if file doesn't exist or is corrupt.
+        """
+        if not self._pending_file.exists():
+            return []
+        try:
+            data = json.loads(self._pending_file.read_text(encoding="utf-8"))
+            return [
+                PendingEvaluation(
+                    change_id=entry["change_id"],
+                    node_id=entry["node_id"],
+                    metrics_before=entry.get("metrics_before", {}),
+                    evaluate_after_iterations=entry.get("evaluate_after_iterations", 0),
+                )
+                for entry in data
+            ]
+        except (json.JSONDecodeError, KeyError, TypeError, OSError):
+            return []
+
+    def _save_pending(self) -> None:
+        """Persist pending evaluations to disk."""
+        data = [
+            {
+                "change_id": pe.change_id,
+                "node_id": pe.node_id,
+                "metrics_before": pe.metrics_before,
+                "evaluate_after_iterations": pe.evaluate_after_iterations,
+            }
+            for pe in self._pending_evaluations
+        ]
+        self.memory_dir.mkdir(parents=True, exist_ok=True)
+        self._pending_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _read_recent_reflections(self, count: int = 10) -> list[dict]:
         """Read last N reflections from reflections.jsonl.
