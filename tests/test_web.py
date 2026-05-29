@@ -791,3 +791,70 @@ class TestOrchestratorIntegration:
             assert resp.status_code == 200
             time.sleep(0.5)
             # The stop flag was checked and returned True, so orchestrator was NOT called
+
+    def test_start_captures_stderr(self, client: TestClient, kernel_dir: Path):
+        """Verify stderr from orchestrator is captured and emitted with [stderr] prefix."""
+        import sys
+
+        def mock_main_with_stderr(**kwargs):
+            """Mock orchestrator that prints to stderr."""
+            print("stderr warning line", file=sys.stderr)
+            print("stdout info line")
+            return {}
+
+        app = create_app(kernel_root=kernel_dir)
+        queue: asyncio.Queue = asyncio.Queue()
+        app.state.log_subscribers.append(queue)
+        c = TestClient(app)
+
+        with patch("web.app.orchestrator.main", side_effect=mock_main_with_stderr):
+            with patch.dict("os.environ", {}, clear=False):
+                import os
+
+                os.environ.pop("AI_COMMAND", None)
+                resp = c.post(
+                    "/api/start", json={"goal": "Stderr test", "max_iterations": 1}
+                )
+                assert resp.status_code == 200
+                time.sleep(0.5)
+
+        messages = []
+        while not queue.empty():
+            msg = queue.get_nowait()
+            messages.append(msg["message"])
+
+        assert any("[stderr] stderr warning line" in m for m in messages)
+        assert any("stdout info line" in m for m in messages)
+
+    def test_system_exit_emits_stderr_content(self, client: TestClient, kernel_dir: Path):
+        """Verify SystemExit handler reads stderr_buf and logs first line."""
+        import sys
+
+        def mock_main_with_exit(**kwargs):
+            """Mock orchestrator that writes to stderr then exits."""
+            print("error: the following arguments are required: --goal", file=sys.stderr)
+            sys.exit(2)
+
+        app = create_app(kernel_root=kernel_dir)
+        queue: asyncio.Queue = asyncio.Queue()
+        app.state.log_subscribers.append(queue)
+        c = TestClient(app)
+
+        with patch("web.app.orchestrator.main", side_effect=mock_main_with_exit):
+            with patch.dict("os.environ", {}, clear=False):
+                import os
+
+                os.environ.pop("AI_COMMAND", None)
+                resp = c.post(
+                    "/api/start", json={"goal": "", "max_iterations": 1}
+                )
+                assert resp.status_code == 200
+                time.sleep(0.5)
+
+        messages = []
+        while not queue.empty():
+            msg = queue.get_nowait()
+            messages.append(msg["message"])
+
+        assert any("Kernel exited:" in m for m in messages)
+        assert any("--goal" in m for m in messages)
