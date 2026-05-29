@@ -151,8 +151,34 @@ class AutonomousExecutor:
         self.retry_lightweight = False
         self._last_was_lightweight = False
 
+    def _bootstrap_workspace(self) -> None:
+        """Generate CLAUDE.md in workspace if workspace_path is set."""
+        workspace_path = self.state_mgr.state.get("workspace_path", "")
+        if not workspace_path:
+            return
+
+        from kernel.workspace_bootstrap import generate_claude_md
+
+        goal = self.state_mgr.state.get("goal", "")
+        # Load tasks if available
+        from pathlib import Path as _Path
+
+        tasks_file = _Path(self.memory_dir) / "tasks.yaml"
+        tasks = None
+        if tasks_file.exists():
+            import yaml as _yaml
+
+            with open(tasks_file, "r", encoding="utf-8") as f:
+                tasks_data = _yaml.safe_load(f) or {}
+            tasks = tasks_data.get("tasks")
+
+        generate_claude_md(workspace_path, goal, tasks)
+
     def run(self) -> None:
         """Execute the Mode 3 autonomous iteration loop."""
+        # Bootstrap workspace CLAUDE.md for Claude Code compliance
+        self._bootstrap_workspace()
+
         for i in range(self.args.max_iterations):
             state = self.state_mgr.get_state()
 
