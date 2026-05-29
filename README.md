@@ -1,3 +1,5 @@
+[English](README.md) | [中文](README_CN.md)
+
 # AI-Coding-Guidance-Skills
 
 > A self-evolving AI development kernel that orchestrates coding workflows, learns from experience, and adapts its own behavior.
