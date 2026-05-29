@@ -8,6 +8,7 @@ invocation, contract validation, and feedback integration.
 from __future__ import annotations
 
 import asyncio
+import re
 import shlex
 import time
 from typing import TYPE_CHECKING
@@ -325,8 +326,11 @@ class AutonomousExecutor:
             except RuntimeError as e:
                 error_msg = str(e)
                 self.logger.error(f"[ERROR] {error_msg}")
+                # Preserve original error format for state (exit code only, no stderr)
+                code_match = re.search(r"exited with code (\d+)", error_msg)
+                exit_code = code_match.group(1) if code_match else "unknown"
                 self.state_mgr.state.setdefault("errors", []).append(
-                    f"{error_msg} on node {node['id']}"
+                    f"AI command exited with code {exit_code} on node {node['id']}"
                 )
                 # Track failed iteration
                 if self.tracking_enabled:

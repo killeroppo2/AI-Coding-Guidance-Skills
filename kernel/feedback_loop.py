@@ -5,6 +5,8 @@ and auto-applies confident proposals via the evolution engine.
 """
 
 import json
+import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -221,7 +223,7 @@ class FeedbackLoop:
             return []
 
     def _save_pending(self) -> None:
-        """Persist pending evaluations to disk."""
+        """Persist pending evaluations to disk atomically."""
         data = [
             {
                 "change_id": pe.change_id,
@@ -232,7 +234,20 @@ class FeedbackLoop:
             for pe in self._pending_evaluations
         ]
         self.memory_dir.mkdir(parents=True, exist_ok=True)
-        self._pending_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        # Atomic write: write to temp file then rename
+        tmp_fd, tmp_path = tempfile.mkstemp(
+            dir=str(self.memory_dir), suffix=".tmp", prefix="pending_"
+        )
+        try:
+            with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, str(self._pending_file))
+        except OSError:
+            # Clean up temp file on failure
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
     def _read_recent_reflections(self, count: int = 10) -> list[dict]:
         """Read last N reflections from reflections.jsonl.
