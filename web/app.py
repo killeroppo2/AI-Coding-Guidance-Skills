@@ -5,7 +5,10 @@ SSE log streaming, and WebSocket state broadcasts.
 """
 
 import asyncio
+import contextlib
+import io
 import json
+import os
 import re
 import threading
 import time
@@ -20,6 +23,8 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+import kernel.orchestrator as orchestrator
 
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
@@ -357,37 +362,32 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
         def _run_kernel():
             try:
                 _emit_log(f"Starting kernel with goal: {goal}, max_iterations: {max_iterations}")
-                # Simulate execution by reading state
-                state_path = kernel_root / "kernel" / "state.yaml"
-                state_data = _read_yaml(state_path)
-                if not isinstance(state_data, dict):
-                    state_data = {}
 
-                if goal:
-                    state_data["goal"] = goal
-                state_data["status"] = "running"
-                state_data["max_iterations"] = max_iterations
+                if app.state.stop_flag.is_set():
+                    _emit_log("Execution cancelled before start")
+                    return
 
-                state_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(state_path, "w", encoding="utf-8") as f:
-                    yaml.safe_dump(state_data, f, default_flow_style=False, allow_unicode=True)
+                argv = ["--goal", goal, "--max-iterations", str(max_iterations)]
+                ai_command = os.environ.get("AI_COMMAND")
+                if ai_command:
+                    argv.extend(["--ai-command", ai_command])
+                else:
+                    argv.append("--dry-run")
 
-                _emit_log("Kernel execution started")
+                stdout_buf = io.StringIO()
+                stderr_buf = io.StringIO()
+                with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(
+                    stderr_buf
+                ):
+                    orchestrator.main(argv=argv, kernel_root=kernel_root)
 
-                for i in range(max_iterations):
-                    if app.state.stop_flag.is_set():
-                        _emit_log("Execution stopped by user")
-                        break
-                    _emit_log(f"Iteration {i + 1}/{max_iterations}")
-                    # In a real implementation this would invoke the runner
-                    # For now, just mark as idle after one pass
-                    break
-
-                state_data["status"] = "idle"
-                with open(state_path, "w", encoding="utf-8") as f:
-                    yaml.safe_dump(state_data, f, default_flow_style=False, allow_unicode=True)
+                for line in stdout_buf.getvalue().splitlines():
+                    if line.strip():
+                        _emit_log(line)
 
                 _emit_log("Kernel execution completed")
+            except SystemExit:
+                _emit_log("Kernel execution exited")
             except Exception as e:
                 _emit_log(f"Error: {e}")
             finally:

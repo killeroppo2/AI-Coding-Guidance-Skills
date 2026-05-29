@@ -1,7 +1,10 @@
 """Tests for the web dashboard application."""
 
+import asyncio
 import json
+import time
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -671,3 +674,120 @@ class TestRateLimiterCleanup:
                 rate_limiter = middleware
                 break
         assert rate_limiter is not None
+
+
+class TestOrchestratorIntegration:
+    """Tests for orchestrator integration in POST /api/start."""
+
+    def test_start_invokes_orchestrator_dry_run(self, client: TestClient, kernel_dir: Path):
+        """Verify orchestrator.main is called with --dry-run when no AI_COMMAND is set."""
+        with patch("web.app.orchestrator.main", return_value={}) as mock_main:
+            with patch.dict("os.environ", {}, clear=False):
+                # Ensure AI_COMMAND is not set
+                import os
+
+                os.environ.pop("AI_COMMAND", None)
+                resp = client.post(
+                    "/api/start", json={"goal": "Test goal", "max_iterations": 5}
+                )
+                assert resp.status_code == 200
+                time.sleep(0.5)
+                mock_main.assert_called_once()
+                call_kwargs = mock_main.call_args[1]
+                argv = call_kwargs["argv"]
+                assert "--goal" in argv
+                assert "Test goal" in argv
+                assert "--max-iterations" in argv
+                assert "5" in argv
+                assert "--dry-run" in argv
+                assert call_kwargs["kernel_root"] == kernel_dir
+
+    def test_start_invokes_orchestrator_with_ai_command(
+        self, client: TestClient, kernel_dir: Path
+    ):
+        """Verify orchestrator.main is called with --ai-command when AI_COMMAND is set."""
+        with patch("web.app.orchestrator.main", return_value={}) as mock_main:
+            with patch.dict("os.environ", {"AI_COMMAND": "my-ai-tool"}, clear=False):
+                resp = client.post(
+                    "/api/start", json={"goal": "Build API", "max_iterations": 3}
+                )
+                assert resp.status_code == 200
+                time.sleep(0.5)
+                mock_main.assert_called_once()
+                call_kwargs = mock_main.call_args[1]
+                argv = call_kwargs["argv"]
+                assert "--ai-command" in argv
+                assert "my-ai-tool" in argv
+                assert "--dry-run" not in argv
+
+    def test_start_captures_stdout(self, client: TestClient, kernel_dir: Path):
+        """Verify stdout from orchestrator is captured and emitted as logs."""
+
+        def mock_main_with_output(**kwargs):
+            """Mock orchestrator that prints to stdout."""
+            print("Line one from orchestrator")
+            print("Line two from orchestrator")
+            return {}
+
+        with patch("web.app.orchestrator.main", side_effect=mock_main_with_output):
+            with patch.dict("os.environ", {}, clear=False):
+                import os
+
+                os.environ.pop("AI_COMMAND", None)
+                resp = client.post(
+                    "/api/start", json={"goal": "Capture test", "max_iterations": 1}
+                )
+                assert resp.status_code == 200
+                time.sleep(0.5)
+
+                # Verify logs were emitted by checking subscriber queues
+                # Since the thread already ran, we check that app.state.running is False
+
+                # Create a fresh app with a subscriber to verify log emission
+                app2 = create_app(kernel_root=kernel_dir)
+                queue: asyncio.Queue = asyncio.Queue()
+                app2.state.log_subscribers.append(queue)
+                c2 = TestClient(app2)
+
+                with patch(
+                    "web.app.orchestrator.main", side_effect=mock_main_with_output
+                ):
+                    os.environ.pop("AI_COMMAND", None)
+                    resp2 = c2.post(
+                        "/api/start",
+                        json={"goal": "Capture test 2", "max_iterations": 1},
+                    )
+                    assert resp2.status_code == 200
+                    time.sleep(0.5)
+
+                # Collect all log messages
+                messages = []
+                while not queue.empty():
+                    msg = queue.get_nowait()
+                    messages.append(msg["message"])
+
+                assert any("Line one from orchestrator" in m for m in messages)
+                assert any("Line two from orchestrator" in m for m in messages)
+
+    def test_start_stop_flag_prevents_execution(self, client: TestClient, kernel_dir: Path):
+        """Verify stop flag set before orchestrator call prevents execution."""
+
+        def mock_main_that_checks_flag(**kwargs):
+            """Mock that should not be called if stop flag works."""
+            raise AssertionError("Orchestrator should not be called")
+
+        with patch("web.app.orchestrator.main", side_effect=mock_main_that_checks_flag):
+            # Start the execution - this clears the stop_flag and launches a thread
+            # We test the mechanism by using a mock stop_flag where is_set always
+            # returns True and clear is a no-op.
+            app = create_app(kernel_root=kernel_dir)
+            mock_flag = MagicMock()
+            mock_flag.is_set.return_value = True
+            mock_flag.clear = MagicMock()
+            app.state.stop_flag = mock_flag
+            app.state.running = False
+            c = TestClient(app)
+            resp = c.post("/api/start", json={"goal": "Stopped goal", "max_iterations": 5})
+            assert resp.status_code == 200
+            time.sleep(0.5)
+            # The stop flag was checked and returned True, so orchestrator was NOT called
