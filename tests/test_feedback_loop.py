@@ -9,7 +9,7 @@ import yaml
 
 from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
-from kernel.feedback_loop import FeedbackLoop
+from kernel.feedback_loop import FeedbackLoop, PendingEvaluation
 from kernel.graph_executor import GraphExecutor
 from kernel.reflector import Reflector
 
@@ -750,3 +750,143 @@ class TestSkillAccumulatorIntegration:
         # Should not raise even with project_complete=True
         result = loop.run_cycle(iteration_data)
         assert "reflection" in result
+
+
+class TestPendingEvaluationClosedLoop:
+    """Tests for PendingEvaluation tracking and closed-loop verification."""
+
+    def test_pending_evaluation_created_after_successful_apply(self) -> None:
+        """Test that PendingEvaluation is appended after apply_if_confident succeeds."""
+        mock_reflector = MagicMock()
+        mock_reflector.analyze_iteration.return_value = {
+            "node": "code",
+            "success": True,
+            "learnings": [],
+            "issues": [],
+        }
+        mock_reflector.propose_evolution.return_value = []
+
+        mock_engine = MagicMock()
+        applied_change = {"id": "change-123", "type": "add_rule", "status": "applied"}
+        mock_engine.apply_if_confident.return_value = [applied_change]
+
+        metrics = EvolutionMetrics()
+        metrics.record_iteration("code", success=True)
+
+        loop = FeedbackLoop(
+            memory_dir="/tmp/test_memory",
+            reflector=mock_reflector,
+            evolution_engine=mock_engine,
+            metrics=metrics,
+        )
+        loop.memory_dir.mkdir(parents=True, exist_ok=True)
+
+        iteration_data = {
+            "node": "code",
+            "result": "success",
+            "errors": [],
+            "iteration": 3,
+        }
+
+        loop.run_cycle(iteration_data)
+
+        assert len(loop._pending_evaluations) == 1
+        pe = loop._pending_evaluations[0]
+        assert pe.change_id == "change-123"
+        assert pe.node_id == "code"
+        assert pe.evaluate_after_iterations == 8  # 3 + 5
+        assert "success_rate" in pe.metrics_before
+
+    def test_evaluate_pending_calls_revert_if_worse_when_threshold_reached(self) -> None:
+        """Test that _evaluate_pending calls revert_if_worse when iteration threshold is met."""
+        mock_engine = MagicMock()
+        mock_engine.revert_if_worse.return_value = True
+
+        metrics = EvolutionMetrics()
+        metrics.record_iteration("code", success=True)
+
+        mock_reflector = MagicMock()
+        loop = FeedbackLoop(
+            memory_dir="/tmp/test_memory",
+            reflector=mock_reflector,
+            evolution_engine=mock_engine,
+            metrics=metrics,
+        )
+
+        # Manually add a pending evaluation
+        pe = PendingEvaluation(
+            change_id="change-abc",
+            node_id="code",
+            metrics_before={"success_rate": 0.8, "avg_retries": 0.0, "avg_duration": 0.0, "sample_count": 5},
+            evaluate_after_iterations=10,
+        )
+        loop._pending_evaluations.append(pe)
+
+        # Call _evaluate_pending with current_iteration >= evaluate_after_iterations
+        loop._evaluate_pending(10)
+
+        mock_engine.revert_if_worse.assert_called_once_with(
+            "change-abc",
+            {"success_rate": 0.8, "avg_retries": 0.0, "avg_duration": 0.0, "sample_count": 5},
+            metrics.get_node_metrics("code"),
+        )
+
+    def test_evaluate_pending_does_not_call_revert_if_worse_below_threshold(self) -> None:
+        """Test that _evaluate_pending does NOT call revert_if_worse when threshold not reached."""
+        mock_engine = MagicMock()
+
+        metrics = EvolutionMetrics()
+        mock_reflector = MagicMock()
+        loop = FeedbackLoop(
+            memory_dir="/tmp/test_memory",
+            reflector=mock_reflector,
+            evolution_engine=mock_engine,
+            metrics=metrics,
+        )
+
+        pe = PendingEvaluation(
+            change_id="change-xyz",
+            node_id="code",
+            metrics_before={"success_rate": 0.9, "avg_retries": 0.0, "avg_duration": 0.0, "sample_count": 5},
+            evaluate_after_iterations=10,
+        )
+        loop._pending_evaluations.append(pe)
+
+        # Call with iteration below threshold
+        loop._evaluate_pending(7)
+
+        mock_engine.revert_if_worse.assert_not_called()
+        # Entry should still be in the list
+        assert len(loop._pending_evaluations) == 1
+        assert loop._pending_evaluations[0].change_id == "change-xyz"
+
+    def test_pending_entry_removed_after_evaluation(self) -> None:
+        """Test that after revert_if_worse is called, the pending entry is removed."""
+        mock_engine = MagicMock()
+        mock_engine.revert_if_worse.return_value = True
+
+        metrics = EvolutionMetrics()
+        metrics.record_iteration("code", success=True)
+
+        mock_reflector = MagicMock()
+        loop = FeedbackLoop(
+            memory_dir="/tmp/test_memory",
+            reflector=mock_reflector,
+            evolution_engine=mock_engine,
+            metrics=metrics,
+        )
+
+        pe = PendingEvaluation(
+            change_id="change-remove-me",
+            node_id="code",
+            metrics_before={"success_rate": 0.7, "avg_retries": 0.0, "avg_duration": 0.0, "sample_count": 3},
+            evaluate_after_iterations=5,
+        )
+        loop._pending_evaluations.append(pe)
+
+        assert len(loop._pending_evaluations) == 1
+
+        loop._evaluate_pending(5)
+
+        assert len(loop._pending_evaluations) == 0
+        mock_engine.revert_if_worse.assert_called_once()
