@@ -4,17 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-coding-guidance-skills"
-version = "0.1.0"
+version = "1.0.0"
 description = "Self-evolving AI development kernel"
 requires-python = ">=3.11"
 authors = [{name = "AI Coding Guidance Skills Contributors"}]
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 readme = "README.md"
 keywords = ["ai", "coding", "development", "kernel", "automation", "workflow", "skills"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -34,13 +33,35 @@ Repository = "https://github.com/killeroppo2/AI-Coding-Guidance-Skills"
 Issues = "https://github.com/killeroppo2/AI-Coding-Guidance-Skills/issues"
 
 [project.scripts]
-ai-kernel = "runner:main"
+ai-kernel = "kernel.orchestrator:main"
 
 [tool.setuptools.packages.find]
 include = ["kernel*", "memory*", "skills*", "knowledge*", "web*"]
 
 [tool.setuptools.package-data]
-kernel = ["py.typed"]
+kernel = [
+    "py.typed",
+    "graph.yaml",
+    "state.yaml",
+    "BOOT.md",
+    "constitution.md",
+    ".migration_version",
+    "prompts/*.md",
+    "contracts/*.md",
+    "philosophy/*.md",
+    "evolution/history.jsonl",
+    "migrations/*.py",
+]
+web = ["templates/*.html"]
+skills = [
+    "**/*.md",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.csv",
+    "**/*.sh",
+    "**/*.cjs",
+    "**/*.template.*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

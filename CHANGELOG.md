@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-05-29
+
 ### Added
 - MIT LICENSE file with proper copyright attribution
 - Dockerfile for containerized deployment (python:3.12-slim, port 8000)
@@ -22,3 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Replaced print statements in kernel package with Python logging module
 - Updated README.md license section to reference LICENSE file
+
+### Fixed
+- Entry point now correctly references `kernel.orchestrator:main` instead of unreachable `runner:main`
+- Package data includes all kernel config files (graph.yaml, state.yaml, BOOT.md, prompts, contracts, philosophy)
+- Package data includes all skills data files (YAML, Markdown, CSV, shell scripts)
+- Package data includes web templates (dashboard.html)
+- License metadata uses SPDX string format instead of deprecated table format
+- Development status classifier updated to Production/Stable for 1.0.0 release
