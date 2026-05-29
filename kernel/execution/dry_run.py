@@ -16,9 +16,13 @@ if TYPE_CHECKING:
 class DryRunExecutor:
     """Executor for Mode 1: dry-run scaffolding.
 
-    Encapsulates the dry-run execution loop logic extracted from
-    orchestrator.py. Currently used as a namespace/marker for the
-    dry-run execution path.
+    Intentional scaffolding for incremental extraction of the Mode 1
+    execution loop from orchestrator.py. This class will grow to
+    encapsulate the full dry-run execution lifecycle.
+
+    Planned: will encapsulate the Mode 1 scaffolding loop currently in
+    orchestrator.main(), including graph traversal with automatic
+    transition selection, progress tracking, and summary generation.
     """
 
     pass

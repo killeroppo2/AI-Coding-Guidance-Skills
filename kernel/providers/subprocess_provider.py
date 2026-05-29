@@ -6,9 +6,6 @@ import subprocess
 from kernel.mode3_executor import _parse_transition
 from kernel.providers.base import AIProvider, ProviderResponse
 
-# Module-level reference to the active subprocess for signal handler cleanup
-_active_subprocess: subprocess.Popen | None = None
-
 
 class SubprocessProvider(AIProvider):
     """AI provider that executes commands via subprocess.
@@ -26,6 +23,7 @@ class SubprocessProvider(AIProvider):
         """
         self.command = command
         self.timeout = timeout
+        self._active_subprocess: subprocess.Popen | None = None
 
     async def generate(self, prompt: str, timeout: int = 300) -> ProviderResponse:
         """Generate a response by piping prompt to subprocess.
@@ -42,7 +40,6 @@ class SubprocessProvider(AIProvider):
             TimeoutError: If the subprocess times out.
             RuntimeError: If the subprocess returns a non-zero exit code.
         """
-        global _active_subprocess
         effective_timeout = timeout or self.timeout
 
         proc = subprocess.Popen(
@@ -52,7 +49,7 @@ class SubprocessProvider(AIProvider):
             stderr=subprocess.PIPE,
             text=True,
         )
-        _active_subprocess = proc
+        self._active_subprocess = proc
         try:
             try:
                 stdout, stderr = proc.communicate(
@@ -61,12 +58,12 @@ class SubprocessProvider(AIProvider):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.communicate()
-                _active_subprocess = None
+                self._active_subprocess = None
                 raise TimeoutError(
                     f"Subprocess timed out after {effective_timeout}s"
                 )
         finally:
-            _active_subprocess = None
+            self._active_subprocess = None
 
         if proc.returncode != 0:
             raise RuntimeError(
