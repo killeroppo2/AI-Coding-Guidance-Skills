@@ -13,6 +13,7 @@ import signal
 import subprocess
 import sys
 import time
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -33,9 +34,11 @@ from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
+from kernel.intent_analyzer import IntentAnalyzer
 from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
 from kernel.mode3_executor import _parse_transition
+from kernel.phase_router import PhaseRouter
 from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
 from kernel.reporter import Reporter
@@ -229,6 +232,26 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         goal_text = state_mgr.state.get("goal", "")
         selected_skills = select_skills_for_goal(goal_text, available_skills)
     state_mgr.state.setdefault("context", {})["skills_loaded"] = selected_skills
+
+    # Intent analysis and PhaseRouter setup for dynamic per-node skill selection
+    intent_analyzer = IntentAnalyzer()
+    goal_text_for_intent = state_mgr.state.get("goal", "")
+    intent_result = intent_analyzer.analyze(goal_text_for_intent)
+    state_mgr.state.setdefault("context", {})["intent_result"] = asdict(intent_result)
+
+    # Load skills index and workflow for PhaseRouter
+    skills_index_path = KERNEL_ROOT / "skills" / "_index.yaml"
+    if skills_index_path.exists():
+        with open(skills_index_path, "r", encoding="utf-8") as _idx_f:
+            _skills_index_data = yaml.safe_load(_idx_f) or {}
+    else:
+        _skills_index_data = {}
+    _skills_index_for_router = {
+        "core_items": _skills_index_data.get("core_items", []),
+        "community_items": _skills_index_data.get("community_items", []),
+    }
+    _workflow_for_router = _skills_index_data.get("core_workflow", {})
+    phase_router = PhaseRouter(_skills_index_for_router, _workflow_for_router)
 
     # Capability assessment
     if not args.dry_run and args.goal:
@@ -464,6 +487,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         state_mgr.increment_iteration()
 
         if mode3:
+            # Dynamic skill routing: update skills per node (skip if --skills was set)
+            if not (hasattr(args, "skills") and args.skills is not None):
+                _routing_selection = phase_router.route(
+                    node["id"], intent_result, complexity
+                )
+                state_mgr.state["context"]["skills_loaded"] = (
+                    _routing_selection.primary + _routing_selection.auxiliary
+                )
+
             # Mode 3: Real AI execution via subprocess
             if retry_lightweight:
                 # Build minimal prompt for format-only retry
