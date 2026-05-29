@@ -74,9 +74,9 @@ class TestReportCompletion:
         assert "Build a REST API" in result
         assert "complete" in result
         assert "10/30" in result
-        assert "3/3 complete" in result
-        assert "Errors encountered: 0" in result
-        assert "Last error" not in result
+        assert "3/3 已完成" in result
+        assert "遇到错误: 0" in result
+        assert "最近错误" not in result
 
     def test_report_completion_with_errors(self) -> None:
         """Test completion report when there are errors."""
@@ -96,9 +96,9 @@ class TestReportCompletion:
         assert "Fix bugs" in result
         assert "stuck" in result
         assert "15/30" in result
-        assert "1/2 complete" in result
-        assert "Errors encountered: 2" in result
-        assert "Last error: contract violation on test" in result
+        assert "1/2 已完成" in result
+        assert "遇到错误: 2" in result
+        assert "最近错误: contract violation on test" in result
 
     def test_report_completion_no_tasks(self) -> None:
         """Test completion report with empty task list."""
@@ -113,7 +113,7 @@ class TestReportCompletion:
         tasks = []
         result = reporter.report_completion(state, tasks)
         assert "Explore" in result
-        assert "0/0 complete" in result
+        assert "0/0 已完成" in result
 
     def test_report_completion_multiline(self) -> None:
         """Test that completion report is multi-line."""
@@ -127,7 +127,7 @@ class TestReportCompletion:
         }
         result = reporter.report_completion(state, [])
         assert "\n" in result
-        assert "=== Execution Summary ===" in result
+        assert "=== 执行摘要 ===" in result
 
 
 class TestReportStuck:
@@ -139,8 +139,8 @@ class TestReportStuck:
         state = {"current_node": "code", "iteration_count": 10}
         errors = ["timeout", "contract violation", "AI error"]
         result = reporter.report_stuck(state, "code", errors)
-        assert "STUCK: Node 'code' is not making progress" in result
-        assert "Check if the task is too complex. Try splitting it." in result
+        assert "卡住: 节点 'code' 没有进展" in result
+        assert "检查任务是否太复杂，尝试拆分任务。" in result
         assert "timeout" in result
         assert "contract violation" in result
         assert "AI error" in result
@@ -151,8 +151,8 @@ class TestReportStuck:
         state = {"current_node": "test", "iteration_count": 5}
         errors = ["tests failed", "assertion error"]
         result = reporter.report_stuck(state, "test", errors)
-        assert "STUCK: Node 'test' is not making progress" in result
-        assert "Tests keep failing. Review test expectations." in result
+        assert "卡住: 节点 'test' 没有进展" in result
+        assert "测试持续失败，请检查测试预期。" in result
 
     def test_report_stuck_other_node(self) -> None:
         """Test stuck report for an unknown node with generic suggestion."""
@@ -160,16 +160,16 @@ class TestReportStuck:
         state = {"current_node": "plan", "iteration_count": 8}
         errors = ["plan revision needed"]
         result = reporter.report_stuck(state, "plan", errors)
-        assert "STUCK: Node 'plan' is not making progress" in result
-        assert "Consider using --retry-strategy skip to advance past this node." in result
+        assert "卡住: 节点 'plan' 没有进展" in result
+        assert "考虑使用 --retry-strategy skip 跳过该节点。" in result
 
     def test_report_stuck_no_errors(self) -> None:
         """Test stuck report with no error messages."""
         reporter = Reporter()
         state = {}
         result = reporter.report_stuck(state, "init", [])
-        assert "STUCK: Node 'init' is not making progress" in result
-        assert "(none recorded)" in result
+        assert "卡住: 节点 'init' 没有进展" in result
+        assert "(无记录)" in result
 
     def test_report_stuck_trims_to_last_3(self) -> None:
         """Test that stuck report only shows last 3 errors."""
@@ -201,13 +201,13 @@ class TestFormatStatus:
             "errors": [],
         }
         result = reporter.format_status(state, [])
-        assert "=== Kernel Status ===" in result
-        assert "Status: idle" in result
-        assert "Progress: iteration 0/30" in result
-        assert "Current node: init" in result
-        assert "Execution mode: kernel" in result
-        assert "Tasks: 0/0 complete" in result
-        assert "Errors: 0" in result
+        assert "=== 内核状态 ===" in result
+        assert "状态: idle" in result
+        assert "进度: 迭代 0/30" in result
+        assert "当前节点: init" in result
+        assert "执行模式: kernel" in result
+        assert "任务: 0/0 已完成" in result
+        assert "错误: 0" in result
 
     def test_format_status_running(self) -> None:
         """Test status format for running state with progress."""
@@ -227,12 +227,12 @@ class TestFormatStatus:
             {"id": "T-003", "status": "pending"},
         ]
         result = reporter.format_status(state, tasks)
-        assert "Goal: Build API" in result
-        assert "Status: running" in result
-        assert "Progress: iteration 5/30" in result
-        assert "Current node: code" in result
-        assert "Tasks: 1/3 complete" in result
-        assert "Errors: 1 (minor warning)" in result
+        assert "目标: Build API" in result
+        assert "状态: running" in result
+        assert "进度: 迭代 5/30" in result
+        assert "当前节点: code" in result
+        assert "任务: 1/3 已完成" in result
+        assert "错误: 1 (minor warning)" in result
 
     def test_format_status_complete(self) -> None:
         """Test status format for completed state."""
@@ -251,9 +251,9 @@ class TestFormatStatus:
             {"id": "T-002", "status": "done"},
         ]
         result = reporter.format_status(state, tasks)
-        assert "Status: complete" in result
-        assert "Tasks: 2/2 complete" in result
-        assert "Execution mode: ralph" in result
+        assert "状态: complete" in result
+        assert "任务: 2/2 已完成" in result
+        assert "执行模式: ralph" in result
 
     def test_format_status_no_tasks(self) -> None:
         """Test status format with no tasks."""
@@ -268,7 +268,7 @@ class TestFormatStatus:
             "errors": [],
         }
         result = reporter.format_status(state, [])
-        assert "Tasks: 0/0 complete" in result
+        assert "任务: 0/0 已完成" in result
 
     def test_format_status_long_error_truncated(self) -> None:
         """Test that long error messages are truncated in status."""
@@ -386,7 +386,7 @@ class TestRunnerStatusFlag:
         monkeypatch.setattr(runner, "KERNEL_ROOT", status_env)
         state = runner.main(["--status"])
         captured = capsys.readouterr()
-        assert "=== Kernel Status ===" in captured.out
+        assert "=== 内核状态 ===" in captured.out
         assert "Build a web app" in captured.out
         assert "running" in captured.out
         assert "code" in captured.out
@@ -399,7 +399,7 @@ class TestRunnerStatusFlag:
         monkeypatch.setattr(runner, "KERNEL_ROOT", status_env)
         runner.main(["--status"])
         captured = capsys.readouterr()
-        assert "1/2 complete" in captured.out
+        assert "1/2 已完成" in captured.out
 
     def test_status_no_tasks_file(self, status_env: Path, monkeypatch, capsys) -> None:
         """Test --status works when tasks.yaml does not exist."""
@@ -410,7 +410,7 @@ class TestRunnerStatusFlag:
         monkeypatch.setattr(runner, "KERNEL_ROOT", status_env)
         runner.main(["--status"])
         captured = capsys.readouterr()
-        assert "0/0 complete" in captured.out
+        assert "0/0 已完成" in captured.out
 
 
 class TestRunnerVerboseFlag:

@@ -327,8 +327,8 @@ class TestRunnerIntegration:
             runner.main(["--goal", "deploy kubernetes cluster monitoring"])
 
         captured = capsys.readouterr()
-        assert "[WARNING] Low skill coverage" in captured.err
-        assert "Consider creating skills" in captured.err
+        assert "[警告] 技能覆盖率低" in captured.err
+        assert "考虑使用 'write-a-skill' 创建技能" in captured.err
 
     def test_runner_integration_high_confidence(self, tmp_path, capsys):
         """No warning printed when confidence is high."""

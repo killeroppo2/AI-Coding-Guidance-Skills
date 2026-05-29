@@ -107,15 +107,15 @@ class TestMain:
         """Test that dry run produces output."""
         runner.main(["--goal", "test goal", "--max-iterations", "1", "--dry-run"])
         captured = capsys.readouterr()
-        assert "[DRY RUN]" in captured.out
+        assert "[试运行]" in captured.out
         assert "test goal" in captured.out
 
     def test_main_shows_node_info(self, capsys) -> None:
         """Test that dry run shows node information."""
         runner.main(["--goal", "test", "--max-iterations", "2", "--dry-run"])
         captured = capsys.readouterr()
-        assert "Node:" in captured.out
-        assert "Prompt file:" in captured.out
+        assert "节点:" in captured.out
+        assert "提示文件:" in captured.out
 
     def test_main_non_dry_run(self, tmp_path: Path, monkeypatch) -> None:
         """Test main function without dry-run modifies state."""
@@ -1019,8 +1019,8 @@ class TestStuckDetection:
             ]
         )
         captured = capsys.readouterr()
-        assert "STUCK" in captured.out
-        assert "exceeded max_retries" in captured.out
+        assert "卡住" in captured.out
+        assert "超过最大重试次数" in captured.out
         assert state["status"] == "stuck"
 
 
@@ -1168,7 +1168,7 @@ class TestReviewFixes:
             )
 
         captured = capsys.readouterr()
-        assert "[CONTRACT VIOLATION] Missing required TRANSITION line" in captured.err
+        assert "[合约违规] Missing required TRANSITION line" in captured.err
         # Contract violation stays on same node and records error
         assert any("Contract violations" in str(e) for e in state.get("errors", []))
 
@@ -1201,7 +1201,7 @@ class TestReviewFixes:
             )
 
         captured = capsys.readouterr()
-        assert "[CONTRACT VIOLATION]" in captured.err
+        assert "[合约违规]" in captured.err
         assert "nonexistent_condition" in captured.err
 
     def test_resume_resets_node_visits(self, runner_env: Path, monkeypatch) -> None:
