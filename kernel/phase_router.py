@@ -88,7 +88,94 @@ class PhaseRouter:
     def _select_primary(
         self, node_id: str, intent: IntentResult, complexity: str
     ) -> list[str]:
-        """Select primary skills based on node and conditions."""
+        """Select primary skills using data-driven scoring with fallback.
+
+        Scores candidates from the workflow against intent and complexity.
+        Falls back to hardcoded logic when no candidates score > 0.
+
+        Args:
+            node_id: Current graph node identifier.
+            intent: Analyzed intent from IntentAnalyzer.
+            complexity: Complexity level ('low', 'medium', 'high').
+
+        Returns:
+            List of selected skill names (up to 3).
+        """
+        phase_key = _NODE_TO_PHASE.get(node_id, "none")
+        if phase_key == "none":
+            return self._fallback_primary(node_id, intent, complexity)
+
+        candidates = self._workflow.get(phase_key, [])
+        if not candidates:
+            return self._fallback_primary(node_id, intent, complexity)
+
+        scored: list[tuple[str, int]] = []
+        for skill_name in candidates:
+            meta = self._get_skill_metadata(skill_name)
+            if meta is None:
+                continue
+            tags = meta.get("tags", [])
+            if not tags:
+                continue
+            score = 0
+            # +1 for each tag matching a tech_hint
+            for tag in tags:
+                if tag in intent.tech_hints:
+                    score += 1
+            # +1 if goal_type appears in tags
+            if intent.goal_type in tags:
+                score += 1
+            # +1 if output_form appears in tags
+            if intent.output_form in tags:
+                score += 1
+            # +1 for complexity match
+            if complexity == "high" and any(
+                t in tags for t in ("testing", "architecture", "tdd", "quality")
+            ):
+                score += 1
+            elif complexity == "low" and any(
+                t in tags for t in ("rapid", "prototype", "simple")
+            ):
+                score += 1
+            if score > 0:
+                scored.append((skill_name, score))
+
+        if not scored:
+            return self._fallback_primary(node_id, intent, complexity)
+
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [name for name, _ in scored[:3]]
+
+    def _get_skill_metadata(self, skill_name: str) -> dict | None:
+        """Look up skill metadata by name from core_items or community_items.
+
+        Args:
+            skill_name: The skill name to search for.
+
+        Returns:
+            The skill metadata dict if found, otherwise None.
+        """
+        for item in self._skills_index.get("core_items", []):
+            if item.get("name") == skill_name:
+                return item
+        for item in self._skills_index.get("community_items", []):
+            if item.get("name") == skill_name:
+                return item
+        return None
+
+    def _fallback_primary(
+        self, node_id: str, intent: IntentResult, complexity: str
+    ) -> list[str]:
+        """Fallback primary skill selection using hardcoded logic.
+
+        Args:
+            node_id: Current graph node identifier.
+            intent: Analyzed intent from IntentAnalyzer.
+            complexity: Complexity level ('low', 'medium', 'high').
+
+        Returns:
+            List of selected skill names.
+        """
         if node_id == "init":
             return []
 
