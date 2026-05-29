@@ -345,7 +345,13 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
         NOTE: No authentication is enforced on this endpoint. This is a
         development dashboard intended for localhost access. For production
         deployments, configure an auth proxy or middleware. See .env.example.
+
+        The stop flag is checked once before orchestrator.main() begins.
+        Once running, the kernel manages its own iteration lifecycle and
+        the stop flag has no further effect.
         """
+        # Serialization point: prevents concurrent orchestrator calls which
+        # would race on the module-level KERNEL_ROOT global.
         if app.state.running:
             return {"status": "already_running"}
 
@@ -376,6 +382,8 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
 
                 stdout_buf = io.StringIO()
                 stderr_buf = io.StringIO()
+                # redirect_stdout/stderr is safe here because app.state.running
+                # guarantees only one execution thread at a time.
                 with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(
                     stderr_buf
                 ):
@@ -385,9 +393,17 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
                     if line.strip():
                         _emit_log(line)
 
+                for line in stderr_buf.getvalue().splitlines():
+                    if line.strip():
+                        _emit_log(f"[stderr] {line}")
+
                 _emit_log("Kernel execution completed")
             except SystemExit:
-                _emit_log("Kernel execution exited")
+                stderr_output = stderr_buf.getvalue().strip()
+                if stderr_output:
+                    _emit_log(f"Kernel exited: {stderr_output.splitlines()[0]}")
+                else:
+                    _emit_log("Kernel execution exited")
             except Exception as e:
                 _emit_log(f"Error: {e}")
             finally:
