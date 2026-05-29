@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-05-29
 
 ### Added
-- MIT LICENSE file with proper copyright attribution
+- Apache 2.0 LICENSE file with proper copyright attribution
 - Dockerfile for containerized deployment (python:3.12-slim, port 8000)
 - .dockerignore for clean Docker builds
 - Makefile with standard development targets (init, install, test, lint, typecheck, format, run, clean, docker-build, docker-run, release)
