@@ -16,9 +16,14 @@ if TYPE_CHECKING:
 class AutonomousExecutor:
     """Executor for Mode 3: AI subprocess-driven execution.
 
-    Encapsulates the Mode 3 execution loop logic extracted from
-    orchestrator.py. Currently used as a namespace/marker for the
-    autonomous execution path.
+    Intentional scaffolding for incremental extraction of the Mode 3
+    execution loop from orchestrator.py. This class will grow to
+    encapsulate the full autonomous execution lifecycle.
+
+    Planned: will encapsulate the Mode 3 execution loop currently in
+    orchestrator.main(), including context assembly, AI subprocess
+    invocation, transition resolution, contract validation, philosophy
+    guard checks, and feedback integration.
     """
 
     pass
