@@ -17,6 +17,7 @@ class SkillFeedbackStore:
             memory_dir: Path to the memory directory.
         """
         self._path = Path(memory_dir) / "skill_feedback.jsonl"
+        self._entry_count: int = self._count_lines()
 
     def record(
         self,
@@ -43,7 +44,9 @@ class SkillFeedbackStore:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with open(self._path, "a") as f:
             f.write(json.dumps(entry) + "\n")
-        self._prune()
+        self._entry_count += 1
+        if self._entry_count > 500:
+            self._prune()
 
     def get_recommendations(
         self, node_id: str, goal_type: str, top_n: int = 3
@@ -139,6 +142,17 @@ class SkillFeedbackStore:
         if len(lines) > max_entries:
             kept = lines[-max_entries:]
             self._path.write_text("\n".join(kept) + "\n")
+            self._entry_count = max_entries
+
+    def _count_lines(self) -> int:
+        """Count lines in the feedback file without loading content."""
+        if not self._path.exists():
+            return 0
+        count = 0
+        with open(self._path, "r") as f:
+            for _ in f:
+                count += 1
+        return count
 
     def _read_entries(self) -> list[dict]:
         """Read all valid JSONL entries from the store file."""
