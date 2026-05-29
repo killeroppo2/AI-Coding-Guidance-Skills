@@ -29,6 +29,86 @@ Runs repeated rounds of critical analysis on your code and UI. Each round, the A
 
 ---
 
+## Fast Mode (效率优先)
+
+> 兵贵神速 — Speed is the essence of war.
+> 少则得，多则惑 — Less yields gain; more yields confusion.
+
+Fast mode optimizes for speed and cost while maintaining zero-HIGH guarantee. Use when:
+- Iterating on a project you've already iterated before
+- CI budget is limited
+- Rapid feedback is more valuable than exhaustive coverage
+
+**Differences from maximum mode:**
+
+| Aspect | Maximum Mode | Fast Mode | Savings |
+|--------|-------------|-----------|---------|
+| Test strategy | Full suite every round | Related tests only; full suite on final round | ~70% test time |
+| Checklist | All 20 items every round | Only items matching round focus (see table below) | ~50% analysis tokens |
+| Stopping criteria | 6 conditions + 2 consecutive clean rounds | Min rounds + zero HIGH = done | 2 fewer rounds |
+| Baseline | Full rebuild every time | Reuse `--status` output or prior iteration data | 5-10 min saved |
+| Persona selection | Strict sequential rotation | Skip irrelevant personas for scope (see below) | ~30% fewer personas |
+
+### Smart Test Strategy (智能测试)
+
+Instead of running the full test suite every round:
+
+1. **During each round:** Run only tests related to modified files:
+   - `pytest tests/test_<module>.py -q` for each modified module
+   - Or `pytest -k "keyword" -q` matching the fix area
+2. **Final round only:** Run full test suite with coverage to confirm zero regressions
+3. **If a related test fails:** Fix immediately before proceeding (same as maximum mode)
+
+This follows 道德经 "大道至简" — test what you changed, not what you didn't.
+
+### Focused Checklist (聚焦检查)
+
+Instead of evaluating all 20 checklist items every round, match checklist to round focus:
+
+| Round Range | Checklist Items to Evaluate |
+|-------------|----------------------------|
+| 1-2 (Surface) | Engineering #1, #3, #4 only |
+| 3-4 (Structural) | Engineering #2, #5 only |
+| 5-6 (Usability) | UX dimensions 1-5 (skip if backend scope) |
+| 7-8 (Operational) | Engineering #1, #4 + custom: timeout/concurrency/resource |
+| 9-10 (Edge cases) | Engineering #4 + custom: injection/overflow/adversarial |
+
+Items not in the current round's focus are assumed PASS unless a finding surfaces naturally during flow execution.
+
+### Persona Skip Rules (画像跳过)
+
+Skip personas whose primary concern doesn't apply to the current scope:
+
+| Scope | Skip Personas | Reason |
+|-------|--------------|--------|
+| `backend` | #2 (commuter), #4 (elder), #6 (screen reader), #8 (designer) | No UI to test |
+| `infra` | #2, #3, #4, #5, #6, #7, #8, #9, #10 | Only #1 (first-time), #11 (malicious), #12 (DevOps) apply |
+| `ui` | #11 (malicious), #12 (DevOps) | Security and ops are backend concerns |
+
+When a persona is skipped, advance to the next applicable persona. Round number still increments.
+
+### Relaxed Stopping Criteria
+
+In fast mode, stop when ALL of:
+1. Minimum requested rounds completed.
+2. Zero HIGH findings in the latest round.
+3. Coverage >= target (checked only on final round).
+
+Do NOT require:
+- Two consecutive clean rounds (one clean round is sufficient in fast mode)
+- Simulated new user walkthrough (replaced by docs spot-check)
+- Feature completeness audit (deferred to maximum mode)
+
+### Cost Estimate
+
+| Rounds | Maximum Mode | Fast Mode | Savings |
+|--------|-------------|-----------|---------|
+| 5 | ~100K tokens, 15-30 min | ~40K tokens, 8-15 min | 60% |
+| 10 | ~200K tokens, 30-60 min | ~80K tokens, 15-30 min | 60% |
+| 20 | ~400K tokens, 60-90 min | ~160K tokens, 30-50 min | 60% |
+
+---
+
 ## Trigger
 
 ```
@@ -43,6 +123,8 @@ Runs repeated rounds of critical analysis on your code and UI. Each round, the A
 | `/iterate backend` | 10 | Backend only | maximum |
 | `/iterate mild` | 10 | full-stack | reduced (critical only) |
 | `/iterate 5 ui` | 5 | UI/UX only | maximum |
+| `/iterate fast` | 10 | full-stack | efficiency (fast mode) |
+| `/iterate fast backend` | 10 | Backend only | efficiency |
 
 **Alternative triggers:**
 
@@ -54,6 +136,7 @@ Runs repeated rounds of critical analysis on your code and UI. Each round, the A
 | polish / keep improving | refine quality |
 | harden this | robustness focus (backend) |
 | stress test / find problems | find breaking points |
+| fast / 快速迭代 (kuai su die dai) | efficiency mode - 2x speed, -60% cost |
 
 **Parameters:**
 
@@ -61,7 +144,7 @@ Runs repeated rounds of critical analysis on your code and UI. Each round, the A
 |-----------|---------|--------|
 | Rounds | 10 | 1-100 |
 | Scope | full-stack | `full-stack`, `ui`, `backend`, `frontend`, `infra` |
-| Strictness | maximum | `maximum`, `mild` (critical/high only) |
+| Strictness | maximum | `maximum`, `fast` (efficiency mode), `mild` (critical/high only) |
 
 ---
 
@@ -178,7 +261,7 @@ If no problems found in both 2b and 2c: select the most adversarial persona from
 
 1. Modify code to apply each fix.
 2. Add or update tests for each change.
-3. Run full test suite.
+3. Run full test suite. (In fast mode: run only related tests; full suite on final round only.)
 4. Confirm: test count >= baseline, no new failures, no regressions.
 5. Re-check each fix: does the fix introduce any new problem? If yes, fix that too.
 6. Commit: `fix(scope): description (Round N)`
@@ -306,6 +389,7 @@ Each principle connects to a concrete rule:
 | Know yourself and enemy | 知己知彼 (zhi ji zhi bi) | Re-read code before each round, never assume |
 | Speed is respect | 兵贵神速 (bing gui shen su) | Every operation: feedback within 300ms |
 | Adapt to findings | 因敌变化而取胜 (yin di bian hua er qu sheng) | Shift focus based on what each round reveals |
+| Efficiency is respect | 以逸待劳 (yi yi dai lao) | Don't spend 100% effort for 1% improvement |
 
 ---
 
@@ -368,4 +452,7 @@ User: "/iterate 20 ui" -> 20 rounds, UI only
 User: "迭代这个页面，挑刺" -> "Iterate this page, nitpick" -> max strictness
 User: "Keep iterating until production quality" -> stop when criteria met
 User: "用挑刺者角度分析修复，不断循环" -> "Nitpick, fix, loop" -> full iteration
+User: "/iterate fast" -> 10 rounds, full-stack, efficiency mode (smart tests, focused checklist)
+User: "/iterate fast 5 backend" -> 5 rounds, backend only, efficiency mode
+User: "快速迭代" -> fast mode, 10 rounds
 ```
