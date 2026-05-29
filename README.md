@@ -4,8 +4,8 @@
 
 > A self-evolving AI development kernel that orchestrates coding workflows, learns from experience, and adapts its own behavior.
 
-![Tests](https://img.shields.io/badge/tests-passing-green)
-![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+[![CI](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml/badge.svg)](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen)](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml)
 
 ## What's New
 
