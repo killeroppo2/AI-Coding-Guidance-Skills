@@ -1,5 +1,7 @@
 """Tests for ContextAssembler skill truncation and context size estimation."""
 
+import logging
+import logging.handlers
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -105,15 +107,36 @@ class TestEstimateTotalContextSize:
         result = assembler._estimate_total_context_size([])
         assert result == 0
 
-    def test_warning_emitted_when_over_100k(self, tmp_path: Path, capsys) -> None:
-        """Warning is emitted to stderr when context exceeds 100K chars."""
+    def test_warning_emitted_when_over_100k(self, tmp_path: Path) -> None:
+        """Warning is emitted via logger when context exceeds 100K chars."""
         assembler = ContextAssembler(tmp_path)
         sections = ["X" * 100001]
-        assembler._estimate_total_context_size(sections)
-        captured = capsys.readouterr()
-        assert "[WARNING]" in captured.err
-        assert "100001 chars" in captured.err
-        assert "exceeds recommended limit" in captured.err
+        logger = logging.getLogger("kernel.context_assembler")
+        # Remove stale handlers that may reference closed streams
+        stale_handlers = list(logger.handlers)
+        for h in stale_handlers:
+            logger.removeHandler(h)
+        # Add a fresh handler to capture the warning
+        handler = logging.handlers.MemoryHandler(capacity=100)
+        handler.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        original_propagate = logger.propagate
+        logger.propagate = True
+        try:
+            assembler._estimate_total_context_size(sections)
+        finally:
+            logger.removeHandler(handler)
+            logger.propagate = original_propagate
+            for h in stale_handlers:
+                logger.addHandler(h)
+        # Check the records captured by the handler
+        records = handler.buffer
+        assert len(records) == 1
+        msg = records[0].getMessage()
+        assert "[警告]" in msg
+        assert "100001 字符" in msg
+        assert "超出推荐限制" in msg
 
     def test_no_warning_when_under_100k(self, tmp_path: Path, capsys) -> None:
         """No warning when context is under 100K chars."""

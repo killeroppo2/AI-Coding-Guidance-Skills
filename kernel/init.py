@@ -36,20 +36,20 @@ def init_runtime_files(kernel_root: Path) -> None:
 
     for path, content in files.items():
         if path.exists():
-            print(f"  [skip] {path.relative_to(kernel_root)} (already exists)")
+            print(f"  [跳过] {path.relative_to(kernel_root)} (已存在)")
             skipped += 1
         else:
             try:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(content, encoding="utf-8")
-                print(f"  [created] {path.relative_to(kernel_root)}")
+                print(f"  [已创建] {path.relative_to(kernel_root)}")
                 created += 1
             except PermissionError:
                 print(
-                    f"  [error] {path.relative_to(kernel_root)}"
-                    " (permission denied - check directory permissions)"
+                    f"  [错误] {path.relative_to(kernel_root)}"
+                    " (权限被拒绝 - 请检查目录权限)"
                 )
             except OSError as e:
-                print(f"  [error] {path.relative_to(kernel_root)} ({e})")
+                print(f"  [错误] {path.relative_to(kernel_root)} ({e})")
 
-    print(f"\nInitialization complete. Created {created} file(s), skipped {skipped} file(s).")
+    print(f"\n初始化完成。创建了 {created} 个文件，跳过了 {skipped} 个文件。")

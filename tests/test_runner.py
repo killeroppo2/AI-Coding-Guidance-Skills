@@ -1272,7 +1272,7 @@ class TestReviewFixes:
 
         captured = capsys.readouterr()
         # Should log error to stderr
-        assert "[ERROR] AI command exited with code 1" in captured.err
+        assert "[错误] AI command exited with code 1" in captured.err
         assert "API rate limited" in captured.err
         # Should record error in state
         assert any("exited with code 1" in e for e in state.get("errors", []))

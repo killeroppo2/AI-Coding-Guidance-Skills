@@ -459,7 +459,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
         if budget_tracker is not None:
             budget_report = budget_tracker.get_efficiency_report()
-            if "No context assemblies" not in budget_report:
+            if "尚未记录上下文组装数据" not in budget_report:
                 print(budget_report)
 
     # Export to prd.json if execution mode is ralph
