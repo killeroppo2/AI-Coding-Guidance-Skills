@@ -351,7 +351,7 @@ class AutonomousExecutor:
                 continue
             except RuntimeError as e:
                 error_msg = str(e)
-                self.logger.error(f"[ERROR] {error_msg}")
+                self.logger.error(f"[错误] {error_msg}")
                 # Preserve original error format for state (exit code only, no stderr)
                 code_match = re.search(r"exited with code (\d+)", error_msg)
                 exit_code = code_match.group(1) if code_match else "unknown"

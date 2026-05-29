@@ -46,8 +46,8 @@ class TestInitRuntimeFiles:
 
         # Verify output shows skip messages
         captured = capsys.readouterr()
-        assert "[skip]" in captured.out
-        assert "already exists" in captured.out
+        assert "[跳过]" in captured.out
+        assert "已存在" in captured.out
 
     def test_state_yaml_default_structure(self, tmp_path: Path) -> None:
         """Test that created state.yaml has the correct default structure."""
@@ -104,9 +104,9 @@ class TestInitRuntimeFiles:
         init_runtime_files(tmp_path)
 
         captured = capsys.readouterr()
-        assert "Initialization complete." in captured.out
-        assert "Created 10 file(s)" in captured.out
-        assert "skipped 0 file(s)" in captured.out
+        assert "初始化完成。" in captured.out
+        assert "创建了 10 个文件" in captured.out
+        assert "跳过了 0 个文件" in captured.out
 
     def test_partial_existing_files(self, tmp_path: Path, capsys) -> None:
         """Test init with some files already existing."""
@@ -119,8 +119,8 @@ class TestInitRuntimeFiles:
         init_runtime_files(tmp_path)
 
         captured = capsys.readouterr()
-        assert "Created 8 file(s)" in captured.out
-        assert "skipped 2 file(s)" in captured.out
+        assert "创建了 8 个文件" in captured.out
+        assert "跳过了 2 个文件" in captured.out
 
     def test_permission_error_handled_gracefully(self, tmp_path: Path, capsys) -> None:
         """Test that permission errors are reported without crashing."""
@@ -138,5 +138,5 @@ class TestInitRuntimeFiles:
             init_runtime_files(tmp_path)
 
         captured = capsys.readouterr()
-        assert "[error]" in captured.out
-        assert "permission denied" in captured.out.lower()
+        assert "[错误]" in captured.out
+        assert "权限被拒绝" in captured.out

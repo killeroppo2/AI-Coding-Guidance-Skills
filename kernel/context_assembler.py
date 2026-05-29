@@ -641,8 +641,8 @@ class ContextAssembler:
         total = sum(len(s) for s in sections)
         if total > CONTEXT_SIZE_WARNING_THRESHOLD:
             logger.warning(
-                f"[WARNING] Context size ({total} chars) exceeds recommended "
-                f"limit. Skills may be over-loaded."
+                f"[警告] 上下文大小 ({total} 字符) 超出推荐限制。"
+                f"技能内容可能过载。"
             )
         return total
 

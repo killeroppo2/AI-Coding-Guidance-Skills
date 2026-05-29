@@ -44,9 +44,9 @@ def resolve_transition(
         if not matched:
             next_node_id = transitions[0]["to"]
             logger.warning(
-                f"[WARNING] TRANSITION condition '{transition_condition}' "
-                f"does not match any available transition, "
-                f"falling back to first transition: {next_node_id}"
+                f"[警告] TRANSITION 条件 '{transition_condition}' "
+                f"不匹配任何可用转换，"
+                f"回退到第一个转换: {next_node_id}"
             )
             had_warning = True
     else:
