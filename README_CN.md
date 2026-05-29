@@ -4,8 +4,8 @@
 
 > 一个自我进化的 AI 开发内核，编排编码工作流、从经验中学习，并自适应调整自身行为。
 
-![Tests](https://img.shields.io/badge/tests-passing-green)
-![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+[![CI](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml/badge.svg)](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen)](https://github.com/killeroppo2/AI-Coding-Guidance-Skills/actions/workflows/ci.yml)
 
 ## 最新动态
 
