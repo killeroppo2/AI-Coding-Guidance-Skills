@@ -39,6 +39,7 @@ from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
 from kernel.mode3_executor import _parse_transition
 from kernel.phase_router import PhaseRouter
+from kernel.philosophy.guards import bing_gui_shen_su, shui_guard, wu_wei_guard
 from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
 from kernel.reporter import Reporter
@@ -439,6 +440,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         if state_mgr.is_complete():
             break
 
+        if mode3:
+            if not wu_wei_guard(state, "iterate"):
+                logger.info(
+                    "[PHILOSOPHY] \u65e0\u4e3a\u800c\u6cbb: No progress detected, stopping."
+                )
+                state_mgr.state["status"] = "complete"
+                break
+
         try:
             node = graph.get_current_node(state)
         except KeyError as e:
@@ -535,6 +544,13 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 state_mgr.state["context"]["skills_loaded"] = (
                     _routing_selection.primary + _routing_selection.auxiliary
                 )
+
+            # Philosophy guard: filter out high-failure skills
+            _current_skills = state_mgr.state["context"]["skills_loaded"]
+            _current_skills = shui_guard(
+                _current_skills, feedback_store, node["id"], intent_result.goal_type
+            )
+            state_mgr.state["context"]["skills_loaded"] = _current_skills
 
             # Mode 3: Real AI execution via subprocess
             if retry_lightweight:
@@ -793,6 +809,23 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                             state_mgr.state["progress_history"] = progress_history[
                                 -MAX_PROGRESS_HISTORY_ENTRIES:
                             ]
+
+                # Philosophy guard: force complexity downgrade if stalling
+                tasks_done_for_guard = (
+                    state_mgr.state.get("progress_history", [0])[-1]
+                    if state_mgr.state.get("progress_history")
+                    else 0
+                )
+                speed_signal = bing_gui_shen_su(
+                    state_mgr.state.get("iteration_count", 0), tasks_done_for_guard
+                )
+                if speed_signal == "low" and complexity != "low":
+                    complexity = "low"
+                    state_mgr.state["complexity"] = "low"
+                    logger.info(
+                        "[PHILOSOPHY] \u5175\u8d35\u795e\u901f:"
+                        " Stalling detected, downgrading complexity."
+                    )
 
                 # Philosophy check: should_stop_iterating
                 reflections_path = Path(memory_dir) / "reflections.jsonl"
