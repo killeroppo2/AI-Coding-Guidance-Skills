@@ -10,6 +10,23 @@ from typing import Any
 import yaml
 
 
+def _estimate_tokens(text: str) -> int:
+    """Estimate token count with CJK-awareness.
+
+    CJK characters (U+4E00 to U+9FFF) tokenize to ~1.5 tokens each.
+    ASCII/Latin text tokenizes to ~0.25 tokens per character.
+
+    Args:
+        text: The text to estimate tokens for.
+
+    Returns:
+        Estimated token count.
+    """
+    cjk_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+    ascii_chars = len(text) - cjk_chars
+    return int(cjk_chars * 1.5 + ascii_chars * 0.25)
+
+
 class SkillComposer:
     """Composes and applies skills from the knowledge base.
 
@@ -56,7 +73,7 @@ class SkillComposer:
             content = self.get_skill_content(name)
             section = f"## Skill: {name}\n\n{content}"
             if max_tokens is not None:
-                estimated = len(section) // 4
+                estimated = _estimate_tokens(section)
                 if total_tokens + estimated > max_tokens:
                     excluded.append(name)
                     continue

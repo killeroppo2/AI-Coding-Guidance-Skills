@@ -66,6 +66,22 @@ class ContextAssembler:
         self._last_iteration_count: int = 0
         self._last_successful: bool = False
 
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate token count with CJK-awareness.
+
+        CJK characters (U+4E00 to U+9FFF) typically tokenize to ~1.5 tokens each.
+        ASCII/Latin text tokenizes to ~0.25 tokens per character (4 chars per token).
+
+        Args:
+            text: The text to estimate tokens for.
+
+        Returns:
+            Estimated token count.
+        """
+        cjk_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+        ascii_chars = len(text) - cjk_chars
+        return int(cjk_chars * 1.5 + ascii_chars * 0.25)
+
     def _should_include(self, section_key: str, node_id: str | None, tier_rules: dict) -> bool:
         """Check if a section should be included for the given node.
 
@@ -232,14 +248,14 @@ class ContextAssembler:
             return "\n\n".join(all_parts)
 
         full_text = _build_text(sections, active_trimmable)
-        estimated_tokens = len(full_text) // 4
+        estimated_tokens = self._estimate_tokens(full_text)
 
         # Remove sections from least important until within budget
         while estimated_tokens > token_budget and active_trimmable:
             # Remove the first item (least important remaining)
             active_trimmable.pop(0)
             full_text = _build_text(sections, active_trimmable)
-            estimated_tokens = len(full_text) // 4
+            estimated_tokens = self._estimate_tokens(full_text)
 
         # Check total context size and warn if over recommended limit
         all_sections = sections + active_trimmable
@@ -254,7 +270,7 @@ class ContextAssembler:
                     name = header_line[4:-4].strip().lower().replace(" ", "_")
                 else:
                     name = f"section_{idx}"
-                section_tokens[name] = len(s) // 4
+                section_tokens[name] = self._estimate_tokens(s)
             self._budget_tracker.record_assembly(
                 node_id=node_id or "unknown",
                 total_tokens=estimated_tokens,
