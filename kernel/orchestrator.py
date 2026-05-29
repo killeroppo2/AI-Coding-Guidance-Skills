@@ -8,18 +8,14 @@ Mode 3 (real AI execution via subprocess).
 import atexit
 import json
 import os
-import shlex
 import signal
-import subprocess
 import sys
-import time
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-import kernel.mode3_executor as _mode3_mod
 from kernel.adapters.ralph_adapter import RalphAdapter
 from kernel.bootstrap import BootstrapGenerator
 from kernel.capability_assessment import CapabilityAssessor
@@ -28,83 +24,34 @@ from kernel.complexity_assessor import assess_complexity
 from kernel.context_assembler import ContextAssembler
 from kernel.context_budget import ContextBudgetTracker
 from kernel.contracts import OutputContractValidator
-from kernel.error_messages import format_error
 from kernel.event_detector import EventDetector
 from kernel.evolution.engine import EvolutionEngine
 from kernel.evolution.metrics import EvolutionMetrics
+from kernel.execution.autonomous import AutonomousExecutor
+from kernel.execution.dry_run import DryRunExecutor
 from kernel.execution.protocol import (
-    check_should_stop,
-    resolve_transition,
-    update_progress_history,
+    MAX_PROGRESS_HISTORY_ENTRIES as MAX_PROGRESS_HISTORY_ENTRIES,
 )
 from kernel.feedback_loop import FeedbackLoop
 from kernel.graph_executor import GraphExecutor
 from kernel.intent_analyzer import IntentAnalyzer
 from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
-from kernel.mode3_executor import _parse_transition
 from kernel.phase_router import PhaseRouter
-from kernel.philosophy.guards import bing_gui_shen_su, shui_guard, wu_wei_guard
-from kernel.philosophy.principles import should_retreat
-from kernel.reflector import Reflector
+from kernel.providers.subprocess_provider import SubprocessProvider
 from kernel.reporter import Reporter
-from kernel.security_policy import SecurityPolicy
 from kernel.skill_feedback import SkillFeedbackStore
 from kernel.skill_selector import select_skills_for_goal
 from kernel.skill_triggers import SkillTriggerEngine
 from kernel.task_manager import TaskManager
-from kernel.validators import _sanitize_project_name, _validate_workspace_paths
+from kernel.validators import _sanitize_project_name
 from knowledge.store import KnowledgeStore
 from memory.state_manager import StateManager
 
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
-# Maximum delay in seconds for exponential backoff retry strategy
-MAX_BACKOFF_DELAY_SECONDS = 60
-
-# Maximum number of progress history entries to retain
-MAX_PROGRESS_HISTORY_ENTRIES = 20
-
-# Number of recent reflections to check for stop-iterating philosophy
-RECENT_REFLECTIONS_WINDOW = 10
-
 # Timeout in seconds for graceful subprocess termination before kill
 SUBPROCESS_TERMINATE_TIMEOUT = 5
-
-# Maximum characters to capture from partial output in timeout messages
-PARTIAL_OUTPUT_PREVIEW_LENGTH = 200
-
-
-def _run_post_iteration(
-    feedback_store: SkillFeedbackStore,
-    trigger_engine: SkillTriggerEngine,
-    state_mgr: "StateManager",
-    node_id: str,
-    outcome: str,
-    goal_type: str,
-    logger,
-) -> None:
-    """Run trigger evaluation and feedback recording after an iteration."""
-    # Check auto-triggers first
-    _triggers = trigger_engine.evaluate(state_mgr.state, node_id, outcome)
-    if _triggers:
-        _current_skills = state_mgr.state.get("context", {}).get("skills_loaded", [])
-        for _trig in _triggers:
-            if _trig.skill not in _current_skills:
-                _current_skills.append(_trig.skill)
-                logger.info(
-                    f"[TRIGGER] {_trig.trigger_name}: "
-                    f"activating {_trig.skill} for {_trig.target_node}"
-                )
-        state_mgr.state["context"]["skills_loaded"] = _current_skills
-
-    # Record skill feedback AFTER triggers (captures triggered skills)
-    feedback_store.record(
-        node_id=node_id,
-        skills_used=state_mgr.state.get("context", {}).get("skills_loaded", []),
-        outcome=outcome,
-        goal_type=goal_type,
-    )
 
 
 def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict[str, Any]:
@@ -366,15 +313,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
     # Register signal and atexit handlers for graceful shutdown in Mode 3
     if mode3:
+        provider = SubprocessProvider(command=args.ai_command, timeout=args.timeout)
 
         def _shutdown_handler(signum, frame):
-            if _mode3_mod._active_subprocess is not None:
+            if provider._active_subprocess is not None:
                 try:
-                    _mode3_mod._active_subprocess.terminate()
-                    _mode3_mod._active_subprocess.wait(timeout=SUBPROCESS_TERMINATE_TIMEOUT)
+                    provider._active_subprocess.terminate()
+                    provider._active_subprocess.wait(timeout=SUBPROCESS_TERMINATE_TIMEOUT)
                 except Exception:
                     try:
-                        _mode3_mod._active_subprocess.kill()
+                        provider._active_subprocess.kill()
                     except Exception:
                         pass
             state_mgr.state["status"] = "interrupted"
@@ -412,6 +360,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         budget_tracker = ContextBudgetTracker() if not args.dry_run else None
         assembler = ContextAssembler(KERNEL_ROOT, budget_tracker=budget_tracker)
         validator = OutputContractValidator(str(KERNEL_ROOT / "kernel" / "graph.yaml"))
+        from kernel.reflector import Reflector
+
         reflector = Reflector(memory_dir, knowledge)
         evolution_engine = EvolutionEngine(str(KERNEL_ROOT / "kernel"), graph)
         evolution_metrics = EvolutionMetrics()
@@ -419,8 +369,6 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         event_detector = EventDetector(KERNEL_ROOT)
         trigger_engine = SkillTriggerEngine()
         feedback_store = SkillFeedbackStore(memory_dir)
-        retry_lightweight = False
-        _last_was_lightweight = False
 
         from kernel.session_tracker import SessionTracker
 
@@ -439,442 +387,46 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         node["id"]: node.get("max_retries", 10) for node in graph.graph.get("nodes", [])
     }
 
-    for i in range(args.max_iterations):
-        state = state_mgr.get_state()
-
-        if state_mgr.is_complete():
-            break
-
-        if mode3:
-            if not wu_wei_guard(state, "iterate"):
-                logger.info(
-                    "[PHILOSOPHY] \u65e0\u4e3a\u800c\u6cbb: No progress detected, stopping."
-                )
-                state_mgr.state["status"] = "complete"
-                break
-
-        try:
-            node = graph.get_current_node(state)
-        except KeyError as e:
-            state_mgr.state["status"] = "error"
-            state_mgr.state.setdefault("errors", []).append(str(e))
-            break
-
-        prompt_path = graph.get_prompt_for_node(node["id"])
-
-        if args.dry_run:
-            print(f"[DRY RUN] Iteration {state.get('iteration_count', 0) + 1}:")
-            print(f"  Node: {node['id']}")
-            print(f"  Description: {node.get('description', 'N/A')}")
-            print(f"  Prompt file: {prompt_path}")
-
-            # Load prompt to show length
-            full_prompt_path = KERNEL_ROOT / "kernel" / prompt_path
-            if full_prompt_path.exists():
-                prompt_content = full_prompt_path.read_text(encoding="utf-8")
-                print(f"  Prompt length: {len(prompt_content)} chars")
-            else:
-                print("  Prompt file: [not found]")
-
-        if mode3:
-            # Check external events at start of execution
-            if i == 0:
-                external_events = event_detector.detect_external_changes(
-                    state_mgr.state.get("last_updated", "")
-                )
-                if external_events:
-                    for event in external_events:
-                        if event["type"] == "prompt_modified":
-                            event_detector.mark_user_owned(state_mgr.state, event["path"])
-                    if args.verbose:
-                        logger.debug(f"[INFO] Detected {len(external_events)} external change(s)")
-
-            # Mode 3: Track visit BEFORE execution so failures count
-            state_mgr.track_node_visit(node["id"])
-            if _tracking_enabled:
-                session_tracker.track_event("node_enter", {"node": node["id"], "iteration": i})
-            is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
-            if is_stuck:
-                assert stuck_node is not None  # guaranteed when is_stuck=True
-                # Check for stuck_handler
-                try:
-                    stuck_node_def = graph.get_node(stuck_node)
-                    handler = stuck_node_def.get("stuck_handler")
-                except KeyError:
-                    handler = None
-                if handler:
-                    state_mgr.set_current_node(handler)
-                else:
-                    # Philosophy: should_retreat check
-                    if should_retreat(stuck_node, visits, max_retries_map.get(stuck_node, 5)):
-                        logger.info(
-                            "[PHILOSOPHY] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a:"
-                            f" Retreating from node '{stuck_node}'"
-                        )
-                    state_mgr.state["status"] = "stuck"
-                    state_mgr.state.setdefault("errors", []).append(
-                        f"Node '{stuck_node}' exceeded max_retries "
-                        f"(visited {visits} times, max {max_retries_map.get(stuck_node)})"
-                    )
-                    # Report stuck to stderr
-                    reporter = Reporter()
-                    logger.error(
-                        reporter.report_stuck(
-                            state_mgr.state, stuck_node, state_mgr.state.get("errors", [])
-                        )
-                    )
-                    logger.error(
-                        format_error(
-                            "stuck_node",
-                            node=stuck_node,
-                            visits=visits,
-                            max_retries=max_retries_map.get(stuck_node, 5),
-                        )
-                    )
-                    break
-                continue
-
-        state_mgr.increment_iteration()
-
-        if mode3:
-            # Dynamic skill routing: update skills per node (skip if --skills was set)
-            if not (hasattr(args, "skills") and args.skills is not None):
-                _feedback_recs = feedback_store.get_recommendations(
-                    node["id"], intent_result.goal_type
-                )
-                _routing_selection = phase_router.route(
-                    node["id"], intent_result, complexity,
-                    recommendations=_feedback_recs,
-                )
-                state_mgr.state["context"]["skills_loaded"] = (
-                    _routing_selection.primary + _routing_selection.auxiliary
-                )
-
-            # Philosophy guard: filter out high-failure skills
-            _current_skills = state_mgr.state["context"]["skills_loaded"]
-            _current_skills = shui_guard(
-                _current_skills, feedback_store, node["id"], intent_result.goal_type
-            )
-            state_mgr.state["context"]["skills_loaded"] = _current_skills
-
-            # Mode 3: Real AI execution via subprocess
-            if retry_lightweight:
-                # Build minimal prompt for format-only retry
-                transitions = graph.get_available_transitions(node["id"])
-                valid_conditions = ", ".join(
-                    t.get("condition", "") for t in transitions if t.get("condition")
-                )
-                context_prompt = (
-                    "Your previous output was rejected because it is missing "
-                    "required format lines.\n"
-                    "Please output ONLY these two lines now:\n\n"
-                    "STATUS: success\n"
-                    f"TRANSITION: <condition>\n\n"
-                    f"Current node: {node['id']}\n"
-                    f"Valid TRANSITION values: {valid_conditions}\n"
-                )
-                retry_lightweight = False
-                _last_was_lightweight = True
-            else:
-                # Try incremental context for same-node repeats
-                context_prompt = assembler.assemble_incremental(state, node, graph, knowledge)
-                if not context_prompt:
-                    # Full context needed
-                    context_prompt = assembler.assemble(state, node, graph, knowledge)
-                _last_was_lightweight = False
-            try:
-                proc = subprocess.Popen(
-                    shlex.split(args.ai_command),
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                _mode3_mod._active_subprocess = proc
-                try:
-                    stdout, stderr = proc.communicate(input=context_prompt, timeout=args.timeout)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    stdout, stderr = proc.communicate()
-                    timeout_detail = f"Timeout after {args.timeout}s on node {node['id']}"
-                    if stdout:
-                        preview = stdout[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
-                        timeout_detail += f" | partial stdout: {preview}"
-                    if stderr:
-                        preview = stderr[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
-                        timeout_detail += f" | stderr: {preview}"
-                    state_mgr.state.setdefault("errors", []).append(timeout_detail)
-                    state_mgr.trim_errors()
-                    logger.error(
-                        format_error(
-                            "timeout",
-                            seconds=str(args.timeout),
-                            node=node["id"],
-                        )
-                    )
-                    # Invalidate incremental context on failure
-                    assembler.mark_iteration_failure()
-                    # Stay on same node - do not advance
-                    continue
-                finally:
-                    _mode3_mod._active_subprocess = None
-                result_returncode = proc.returncode
-                result_stdout = stdout
-                result_stderr = stderr
-                if result_returncode != 0:
-                    logger.error(
-                        f"[ERROR] AI command exited with code {result_returncode}: "
-                        f"{result_stderr.strip()}"
-                    )
-                    state_mgr.state.setdefault("errors", []).append(
-                        f"AI command exited with code {result_returncode} on node {node['id']}"
-                    )
-                    # Track failed iteration
-                    if _tracking_enabled:
-                        session_tracker.track_event(
-                            "iteration_complete",
-                            {"node": node["id"], "result": "failed", "reason": "ai_error"},
-                        )
-                    # Verbose: report failed iteration
-                    if args.verbose:
-                        reporter = Reporter()
-                        print(reporter.report_iteration(state_mgr.get_state(), node, "failed"))
-                    # Run feedback loop on failure
-                    iteration_data = {
-                        "node": node["id"],
-                        "result": "failed",
-                        "errors": [f"AI command exited with code {result_returncode}"],
-                        "iteration": state_mgr.state.get("iteration_count", 0),
-                    }
-                    feedback_loop.run_cycle(iteration_data)
-                    state_mgr.trim_errors()
-                    # Invalidate incremental context on failure
-                    assembler.mark_iteration_failure()
-
-                    # Run triggers and record feedback (以战养战)
-                    _run_post_iteration(
-                        feedback_store, trigger_engine, state_mgr,
-                        node["id"], "failed",
-                        intent_result.goal_type, logger,
-                    )
-
-                    # Apply retry strategy
-                    if args.retry_strategy == "skip":
-                        transitions = graph.get_available_transitions(node["id"])
-                        if transitions:
-                            next_node_id = transitions[0]["to"]
-                            state_mgr.set_current_node(next_node_id)
-                        continue
-                    elif args.retry_strategy == "backoff":
-                        visit_count = state_mgr.state.get("node_visits", {}).get(node["id"], 1)
-                        delay = min(2 ** (visit_count - 1), MAX_BACKOFF_DELAY_SECONDS)
-                        time.sleep(delay)
-                        continue
-                    else:  # "continue"
-                        continue
-                ai_output = result_stdout
-                transition_condition = _parse_transition(ai_output)
-            except FileNotFoundError:
-                logger.error(
-                    f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
-                    f"Please verify the command is installed and in your PATH."
-                )
-                logger.error(
-                    format_error(
-                        "command_not_found",
-                        cmd=shlex.split(args.ai_command)[0],
-                    )
-                )
-                state_mgr.state["status"] = "error"
-                state_mgr.state.setdefault("errors", []).append(
-                    f"Command not found: {shlex.split(args.ai_command)[0]}"
-                )
-                break
-
-            # Validate output against contract
-            contract_result = validator.validate_output(ai_output, node["id"])
-            if not contract_result.valid:
-                for violation in contract_result.violations:
-                    logger.warning(f"[CONTRACT VIOLATION] {violation}")
-                state_mgr.state.setdefault("errors", []).append(
-                    f"Contract violations on node {node['id']}: {contract_result.violations}"
-                )
-                state_mgr.trim_errors()
-                # Track failed iteration due to contract violation
-                if _tracking_enabled:
-                    session_tracker.track_event(
-                        "iteration_complete",
-                        {
-                            "node": node["id"],
-                            "result": "failed",
-                            "reason": "contract_violation",
-                        },
-                    )
-                # Check if violations are about missing format lines
-                has_format_violation = any(
-                    "Missing required TRANSITION" in v or "Missing required STATUS" in v
-                    for v in contract_result.violations
-                )
-                if has_format_violation and not _last_was_lightweight:
-                    retry_lightweight = True
-                # Invalidate incremental context on failure
-                assembler.mark_iteration_failure()
-                # Stay on same node - do not advance
-                continue
-
-            # Validate workspace boundary for files_written
-            workspace_path = state_mgr.state.get("workspace_path", "")
-            if workspace_path and contract_result.files_written:
-                ws_violations = _validate_workspace_paths(
-                    contract_result.files_written, workspace_path
-                )
-                for v in ws_violations:
-                    logger.warning(f"[WARNING] Workspace boundary: {v}")
-                # Security policy check on written files
-                security_policy = SecurityPolicy(workspace_path)
-                for fpath in contract_result.files_written:
-                    if security_policy.check_path(fpath) == "deny":
-                        logger.warning(f"[SECURITY] Denied file write: {fpath}")
-
-            # Determine next node
-            transitions = graph.get_available_transitions(node["id"])
-            if transitions:
-                next_node_id, had_warning = resolve_transition(
-                    transitions, transition_condition, complexity, logger
-                )
-                if had_warning and not transition_condition:
-                    logger.warning(
-                        f"[WARNING] No TRANSITION line found in AI output, "
-                        f"falling back to first transition: {next_node_id}"
-                    )
-                    state_mgr.state.setdefault("errors", []).append(
-                        f"No TRANSITION line in AI output on node {node['id']}, "
-                        f"fell back to: {next_node_id}"
-                    )
-                state_mgr.set_current_node(next_node_id)
-
-                # Mark iteration success for incremental context
-                assembler.mark_iteration_success(node["id"])
-
-                # Track successful iteration transition
-                if _tracking_enabled:
-                    session_tracker.track_event(
-                        "iteration_complete", {"node": node["id"], "next_node": next_node_id}
-                    )
-
-                # Verbose: report successful iteration
-                if args.verbose:
-                    reporter = Reporter()
-                    print(reporter.report_iteration(state_mgr.get_state(), node, "success"))
-
-                # Run feedback loop on successful iteration
-                iteration_data = {
-                    "node": node["id"],
-                    "result": "success",
-                    "errors": [],
-                    "iteration": state_mgr.state.get("iteration_count", 0),
-                }
-                feedback_loop.run_cycle(iteration_data)
-
-                # Run triggers and record feedback (以战养战 + 道常无为而无不为)
-                _run_post_iteration(
-                    feedback_store, trigger_engine, state_mgr,
-                    node["id"], "success",
-                    intent_result.goal_type, logger,
-                )
-
-                # Populate progress_history for stall detection
-                update_progress_history(state_mgr.state, memory_dir)
-
-                # Philosophy guard: force complexity downgrade if stalling
-                tasks_done_for_guard = (
-                    state_mgr.state.get("progress_history", [0])[-1]
-                    if state_mgr.state.get("progress_history")
-                    else 0
-                )
-                speed_signal = bing_gui_shen_su(
-                    state_mgr.state.get("iteration_count", 0), tasks_done_for_guard
-                )
-                if speed_signal == "low" and complexity != "low":
-                    complexity = "low"
-                    state_mgr.state["complexity"] = "low"
-                    logger.info(
-                        "[PHILOSOPHY] \u5175\u8d35\u795e\u901f:"
-                        " Stalling detected, downgrading complexity."
-                    )
-
-                # Philosophy check: should_stop_iterating
-                if check_should_stop(memory_dir, state_mgr.state):
-                    logger.info(
-                        "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86:"
-                        " Diminishing returns detected, stopping."
-                    )
-                    state_mgr.state["status"] = "complete"
-                    break
-            else:
-                state_mgr.state["status"] = "complete"
-                break
-            state_mgr.trim_errors()
-        else:
-            # SCAFFOLDING: In this mode (Mode 1), the runner always picks the first
-            # available transition without evaluating conditions. This is intentional:
-            # the runner does not call an LLM and cannot evaluate conditions like
-            # "tests_pass" or "plan_ready". For actual condition evaluation, an AI
-            # agent should read BOOT.md directly (Mode 2) and decide transitions itself.
-
-            # Track visit BEFORE advancing so stuck detection works on failed loops
-            state_mgr.track_node_visit(node["id"])
-            is_stuck, stuck_node, visits = state_mgr.check_stuck(max_retries_map)
-            if is_stuck:
-                assert stuck_node is not None  # guaranteed when is_stuck=True
-                # Check for stuck_handler
-                try:
-                    stuck_node_def = graph.get_node(stuck_node)
-                    handler = stuck_node_def.get("stuck_handler")
-                except KeyError:
-                    handler = None
-                if handler:
-                    if args.dry_run:
-                        print(
-                            f"  STUCK: Node '{stuck_node}' exceeded max_retries "
-                            f"(visited {visits} times, max {max_retries_map.get(stuck_node)})"
-                        )
-                        print(f"  Redirecting to stuck_handler: {handler}")
-                        print()
-                    state_mgr.set_current_node(handler)
-                else:
-                    if args.dry_run:
-                        print(
-                            f"  STUCK: Node '{stuck_node}' exceeded max_retries "
-                            f"(visited {visits} times, max {max_retries_map.get(stuck_node)})"
-                        )
-                        print()
-                    state_mgr.state["status"] = "stuck"
-                    state_mgr.state.setdefault("errors", []).append(
-                        f"Node '{stuck_node}' exceeded max_retries "
-                        f"(visited {visits} times, max {max_retries_map.get(stuck_node)})"
-                    )
-                    break
-                continue
-
-            transitions = graph.get_available_transitions(node["id"])
-            if transitions:
-                next_node_id = transitions[0]["to"]
-
-                # Medium complexity: skip reflect/evolve in scaffolding mode
-                if complexity == "medium" and next_node_id in ("reflect", "evolve"):
-                    next_node_id = "plan"
-                state_mgr.set_current_node(next_node_id)
-
-                if args.dry_run:
-                    print(f"  Next node: {next_node_id}")
-                    print()
-            else:
-                state_mgr.state["status"] = "complete"
-                if args.dry_run:
-                    print("  Next node: END")
-                    print()
-                break
+    # Delegate to appropriate executor
+    if mode3:
+        executor = AutonomousExecutor(
+            state_mgr=state_mgr,
+            graph=graph,
+            knowledge=knowledge,
+            assembler=assembler,
+            validator=validator,
+            reflector=reflector,
+            evolution_engine=evolution_engine,
+            evolution_metrics=evolution_metrics,
+            feedback_loop=feedback_loop,
+            event_detector=event_detector,
+            trigger_engine=trigger_engine,
+            feedback_store=feedback_store,
+            session_tracker=session_tracker,
+            phase_router=phase_router,
+            intent_result=intent_result,
+            args=args,
+            logger=logger,
+            provider=provider,
+            budget_tracker=budget_tracker,
+            lifecycle_guard=lifecycle_guard,
+            max_retries_map=max_retries_map,
+            tracking_enabled=_tracking_enabled,
+            memory_dir=memory_dir,
+            complexity=complexity,
+        )
+        executor.run()
+    else:
+        executor = DryRunExecutor(
+            state_mgr=state_mgr,
+            graph=graph,
+            args=args,
+            max_retries_map=max_retries_map,
+            complexity=complexity,
+            logger=logger,
+            kernel_root=KERNEL_ROOT,
+        )
+        executor.run()
 
     # Mark as complete if we finished the loop
     if state_mgr.state.get("status") == "running":
