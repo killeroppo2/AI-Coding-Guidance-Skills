@@ -7,7 +7,7 @@ def create_provider(provider_type: str, **kwargs) -> AIProvider:
     """Create an AI provider instance.
 
     Args:
-        provider_type: One of 'cli', 'openai', 'anthropic'.
+        provider_type: One of 'cli', 'openai', 'anthropic', 'subprocess'.
         **kwargs: Provider-specific configuration.
 
     Returns:
@@ -28,7 +28,12 @@ def create_provider(provider_type: str, **kwargs) -> AIProvider:
         from kernel.providers.anthropic_provider import AnthropicProvider
 
         return AnthropicProvider(**kwargs)
+    elif provider_type == "subprocess":
+        from kernel.providers.subprocess_provider import SubprocessProvider
+
+        return SubprocessProvider(**kwargs)
     else:
         raise ValueError(
-            f"Unknown provider type: {provider_type!r}. Must be one of: cli, openai, anthropic"
+            f"Unknown provider type: {provider_type!r}. "
+            "Must be one of: cli, openai, anthropic, subprocess"
         )
