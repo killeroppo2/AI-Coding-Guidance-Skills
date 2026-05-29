@@ -467,7 +467,10 @@ class TestTokenBudgeting:
 
         # Now use a tight budget that forces decisions to be dropped
         # Calculate a budget just under the full size
-        full_tokens = len(full_result) // 4
+        # Use CJK-aware token estimation matching ContextAssembler._estimate_tokens
+        cjk_chars = sum(1 for c in full_result if '\u4e00' <= c <= '\u9fff')
+        ascii_chars = len(full_result) - cjk_chars
+        full_tokens = int(cjk_chars * 1.5 + ascii_chars * 0.25)
         # Set budget to full_tokens minus enough to force decisions removal
         tight_budget = full_tokens - 50
 
