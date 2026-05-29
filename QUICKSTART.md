@@ -63,6 +63,29 @@ python runner.py --goal "Build a REST API" --ai-command "claude --print"
 4. Generate a consolidated prompt: `python runner.py --goal "Build X" --generate-prompt`
 5. Pipe to your AI: `python runner.py --goal "Build X" --generate-prompt | claude --print`
 
+## Mode 3b: API Bridge (no local CLI needed)
+
+If you don't have `claude` CLI installed, use the API bridge script with your
+API key:
+
+```bash
+# Install the provider SDK
+pip install anthropic   # or: pip install openai
+
+# Set your API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Run via the bridge
+python runner.py --goal "Build a REST API" --ai-command "python scripts/api_bridge.py"
+
+# Or use OpenAI instead
+export AI_PROVIDER="openai"
+export OPENAI_API_KEY="sk-..."
+python runner.py --goal "Build a REST API" --ai-command "python scripts/api_bridge.py"
+```
+
+See `scripts/README.md` for full configuration details.
+
 ## Key Commands
 
 ```bash
