@@ -53,15 +53,15 @@ class Reporter:
         done_tasks = sum(1 for t in tasks if t.get("status") == "done")
 
         lines = [
-            "=== Execution Summary ===",
-            f"Goal: {goal}",
-            f"Status: {status}",
-            f"Iterations used: {iteration}/{max_iter}",
-            f"Tasks: {done_tasks}/{total_tasks} complete",
-            f"Errors encountered: {error_count}",
+            "=== 执行摘要 ===",
+            f"目标: {goal}",
+            f"状态: {status}",
+            f"迭代次数: {iteration}/{max_iter}",
+            f"任务: {done_tasks}/{total_tasks} 已完成",
+            f"遇到错误: {error_count}",
         ]
         if errors:
-            lines.append(f"Last error: {errors[-1]}")
+            lines.append(f"最近错误: {errors[-1]}")
 
         return "\n".join(lines)
 
@@ -86,24 +86,24 @@ class Reporter:
         Returns:
             Multi-line stuck report string.
         """
-        lines = [f"STUCK: Node '{node}' is not making progress"]
+        lines = [f"卡住: 节点 '{node}' 没有进展"]
 
         recent_errors = errors[-3:] if errors else []
         if recent_errors:
-            lines.append("Errors:")
+            lines.append("错误:")
             for err in recent_errors:
                 lines.append(f"  - {err}")
         else:
-            lines.append("Errors: (none recorded)")
+            lines.append("错误: (无记录)")
 
         if "code" in node:
-            suggestion = "Check if the task is too complex. Try splitting it."
+            suggestion = "检查任务是否太复杂，尝试拆分任务。"
         elif "test" in node:
-            suggestion = "Tests keep failing. Review test expectations."
+            suggestion = "测试持续失败，请检查测试预期。"
         else:
-            suggestion = "Consider using --retry-strategy skip to advance past this node."
+            suggestion = "考虑使用 --retry-strategy skip 跳过该节点。"
 
-        lines.append(f"Suggestion: {suggestion}")
+        lines.append(f"建议: {suggestion}")
 
         return "\n".join(lines)
 
@@ -140,21 +140,21 @@ class Reporter:
         done_tasks = sum(1 for t in tasks if t.get("status") == "done")
 
         lines = [
-            "=== Kernel Status ===",
-            f"Goal: {goal}",
-            f"Status: {status}",
-            f"Progress: iteration {iteration}/{max_iter}",
-            f"Current node: {current_node}",
-            f"Execution mode: {execution_mode}",
-            f"Tasks: {done_tasks}/{total_tasks} complete",
+            "=== 内核状态 ===",
+            f"目标: {goal}",
+            f"状态: {status}",
+            f"进度: 迭代 {iteration}/{max_iter}",
+            f"当前节点: {current_node}",
+            f"执行模式: {execution_mode}",
+            f"任务: {done_tasks}/{total_tasks} 已完成",
         ]
 
         if errors:
             last_error = errors[-1]
             # Truncate long error messages for preview
             preview = last_error[:60] + "..." if len(last_error) > 60 else last_error
-            lines.append(f"Errors: {error_count} ({preview})")
+            lines.append(f"错误: {error_count} ({preview})")
         else:
-            lines.append(f"Errors: {error_count}")
+            lines.append(f"错误: {error_count}")
 
         return "\n".join(lines)

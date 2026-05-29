@@ -598,7 +598,7 @@ class TestRunnerContractIntegration:
             )
 
         captured = capsys.readouterr()
-        assert "[CONTRACT VIOLATION]" in captured.err
+        assert "[合约违规]" in captured.err
 
 
 class TestContextAssemblerContract:

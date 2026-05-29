@@ -62,18 +62,18 @@ class DryRunExecutor:
             prompt_path = self.graph.get_prompt_for_node(node["id"])
 
             if self.args.dry_run:
-                print(f"[DRY RUN] Iteration {state.get('iteration_count', 0) + 1}:")
-                print(f"  Node: {node['id']}")
-                print(f"  Description: {node.get('description', 'N/A')}")
-                print(f"  Prompt file: {prompt_path}")
+                print(f"[试运行] 迭代 {state.get('iteration_count', 0) + 1}:")
+                print(f"  节点: {node['id']}")
+                print(f"  描述: {node.get('description', 'N/A')}")
+                print(f"  提示文件: {prompt_path}")
 
                 # Load prompt to show length
                 full_prompt_path = self.kernel_root / "kernel" / prompt_path
                 if full_prompt_path.exists():
                     prompt_content = full_prompt_path.read_text(encoding="utf-8")
-                    print(f"  Prompt length: {len(prompt_content)} chars")
+                    print(f"  提示长度: {len(prompt_content)} 字符")
                 else:
-                    print("  Prompt file: [not found]")
+                    print("  提示文件: [未找到]")
 
             self.state_mgr.increment_iteration()
 
@@ -97,19 +97,19 @@ class DryRunExecutor:
                 if handler:
                     if self.args.dry_run:
                         print(
-                            f"  STUCK: Node '{stuck_node}' exceeded max_retries "
-                            f"(visited {visits} times, "
-                            f"max {self.max_retries_map.get(stuck_node)})"
+                            f"  卡住: 节点 '{stuck_node}' 超过最大重试次数"
+                            f"（已访问 {visits} 次，"
+                            f"最大 {self.max_retries_map.get(stuck_node)}）"
                         )
-                        print(f"  Redirecting to stuck_handler: {handler}")
+                        print(f"  重定向到卡住处理器: {handler}")
                         print()
                     self.state_mgr.set_current_node(handler)
                 else:
                     if self.args.dry_run:
                         print(
-                            f"  STUCK: Node '{stuck_node}' exceeded max_retries "
-                            f"(visited {visits} times, "
-                            f"max {self.max_retries_map.get(stuck_node)})"
+                            f"  卡住: 节点 '{stuck_node}' 超过最大重试次数"
+                            f"（已访问 {visits} 次，"
+                            f"最大 {self.max_retries_map.get(stuck_node)}）"
                         )
                         print()
                     self.state_mgr.state["status"] = "stuck"
@@ -130,11 +130,11 @@ class DryRunExecutor:
                 self.state_mgr.set_current_node(next_node_id)
 
                 if self.args.dry_run:
-                    print(f"  Next node: {next_node_id}")
+                    print(f"  下一节点: {next_node_id}")
                     print()
             else:
                 self.state_mgr.state["status"] = "complete"
                 if self.args.dry_run:
-                    print("  Next node: END")
+                    print("  下一节点: 结束")
                     print()
                 break

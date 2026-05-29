@@ -73,8 +73,8 @@ def _run_post_iteration(
             if _trig.skill not in _current_skills:
                 _current_skills.append(_trig.skill)
                 logger.info(
-                    f"[TRIGGER] {_trig.trigger_name}: "
-                    f"activating {_trig.skill} for {_trig.target_node}"
+                    f"[触发] {_trig.trigger_name}: "
+                    f"为 {_trig.target_node} 激活 {_trig.skill}"
                 )
         state_mgr.state["context"]["skills_loaded"] = _current_skills
 
@@ -187,7 +187,7 @@ class AutonomousExecutor:
 
             if not wu_wei_guard(state, "iterate"):
                 self.logger.info(
-                    "[PHILOSOPHY] \u65e0\u4e3a\u800c\u6cbb: No progress detected, stopping."
+                    "[哲学] \u65e0\u4e3a\u800c\u6cbb: 未检测到进展，停止执行。"
                 )
                 self.state_mgr.state["status"] = "complete"
                 break
@@ -212,7 +212,7 @@ class AutonomousExecutor:
                             )
                     if self.args.verbose:
                         self.logger.debug(
-                            f"[INFO] Detected {len(external_events)} external change(s)"
+                            f"[信息] 检测到 {len(external_events)} 个外部变更"
                         )
 
             # Track visit BEFORE execution so failures count
@@ -238,8 +238,8 @@ class AutonomousExecutor:
                         stuck_node, visits, self.max_retries_map.get(stuck_node, 5)
                     ):
                         self.logger.info(
-                            "[PHILOSOPHY] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a:"
-                            f" Retreating from node '{stuck_node}'"
+                            "[哲学] \u4e09\u5341\u516d\u8ba1\u8d70\u4e3a\u4e0a:"
+                            f" 从节点 '{stuck_node}' 撤退"
                         )
                     self.state_mgr.state["status"] = "stuck"
                     self.state_mgr.state.setdefault("errors", []).append(
@@ -428,7 +428,7 @@ class AutonomousExecutor:
             contract_result = self.validator.validate_output(ai_output, node["id"])
             if not contract_result.valid:
                 for violation in contract_result.violations:
-                    self.logger.warning(f"[CONTRACT VIOLATION] {violation}")
+                    self.logger.warning(f"[合约违规] {violation}")
                 self.state_mgr.state.setdefault("errors", []).append(
                     f"Contract violations on node {node['id']}: {contract_result.violations}"
                 )
@@ -462,12 +462,12 @@ class AutonomousExecutor:
                     contract_result.files_written, workspace_path
                 )
                 for v in ws_violations:
-                    self.logger.warning(f"[WARNING] Workspace boundary: {v}")
+                    self.logger.warning(f"[警告] 工作区边界: {v}")
                 # Security policy check on written files
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        self.logger.warning(f"[SECURITY] Denied file write: {fpath}")
+                        self.logger.warning(f"[安全] 拒绝文件写入: {fpath}")
 
             # Determine next node
             transitions = self.graph.get_available_transitions(node["id"])
@@ -477,8 +477,8 @@ class AutonomousExecutor:
                 )
                 if had_warning and not transition_condition:
                     self.logger.warning(
-                        f"[WARNING] No TRANSITION line found in AI output, "
-                        f"falling back to first transition: {next_node_id}"
+                        f"[警告] AI输出中未找到 TRANSITION 行，"
+                        f"回退到第一个转换: {next_node_id}"
                     )
                     self.state_mgr.state.setdefault("errors", []).append(
                         f"No TRANSITION line in AI output on node {node['id']}, "
@@ -539,15 +539,15 @@ class AutonomousExecutor:
                     self.complexity = "low"
                     self.state_mgr.state["complexity"] = "low"
                     self.logger.info(
-                        "[PHILOSOPHY] \u5175\u8d35\u795e\u901f:"
-                        " Stalling detected, downgrading complexity."
+                        "[哲学] \u5175\u8d35\u795e\u901f:"
+                        " 检测到停滞，降低复杂度。"
                     )
 
                 # Philosophy check: should_stop_iterating
                 if check_should_stop(self.memory_dir, self.state_mgr.state):
                     self.logger.info(
-                        "[PHILOSOPHY] \u77e5\u6b62\u4e0d\u6b86:"
-                        " Diminishing returns detected, stopping."
+                        "[哲学] \u77e5\u6b62\u4e0d\u6b86:"
+                        " 检测到收益递减，停止执行。"
                     )
                     self.state_mgr.state["status"] = "complete"
                     break

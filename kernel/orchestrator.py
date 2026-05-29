@@ -255,14 +255,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
             if confidence < 0.3 and gaps:
                 logger.warning(
-                    f"[WARNING] Low skill coverage ({confidence:.0%}). "
-                    f"The kernel lacks skills for: {', '.join(gaps[:5])}. "
-                    f"Consider creating skills with 'write-a-skill'."
+                    f"[警告] 技能覆盖率低 ({confidence:.0%})。"
+                    f"内核缺少以下技能: {', '.join(gaps[:5])}。"
+                    f"考虑使用 'write-a-skill' 创建技能。"
                 )
             elif confidence < 0.7 and gaps:
                 logger.info(
-                    f"[NOTE] Partial skill coverage ({confidence:.0%}). "
-                    f"Some areas may need new skills: {', '.join(gaps[:5])}"
+                    f"[提示] 部分技能覆盖 ({confidence:.0%})。"
+                    f"某些领域可能需要新技能: {', '.join(gaps[:5])}"
                 )
 
             assessor.write_assessment(assessment, args.goal, memory_dir)
@@ -351,9 +351,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         lifecycle_guard.start()
 
     if args.dry_run:
-        print(f"[DRY RUN] Goal: {args.goal}")
-        print(f"[DRY RUN] Max iterations: {args.max_iterations}")
-        print(f"[DRY RUN] Starting node: {state_mgr.state.get('current_node', 'init')}")
+        print(f"[试运行] 目标: {args.goal}")
+        print(f"[试运行] 最大迭代: {args.max_iterations}")
+        print(f"[试运行] 起始节点: {state_mgr.state.get('current_node', 'init')}")
         print()
 
     if mode3:
@@ -482,7 +482,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         state_mgr.save_state()
 
     if args.dry_run:
-        print(f"[DRY RUN] Final status: {state_mgr.state.get('status')}")
-        print(f"[DRY RUN] Total iterations: {state_mgr.state.get('iteration_count', 0)}")
+        print(f"[试运行] 最终状态: {state_mgr.state.get('status')}")
+        print(f"[试运行] 总迭代次数: {state_mgr.state.get('iteration_count', 0)}")
 
     return state_mgr.get_state()
