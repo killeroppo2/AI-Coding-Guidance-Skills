@@ -814,6 +814,7 @@ class TestPendingEvaluationClosedLoop:
         )
 
         # Manually add a pending evaluation
+        loop._pending_evaluations = []
         pe = PendingEvaluation(
             change_id="change-abc",
             node_id="code",
@@ -844,6 +845,7 @@ class TestPendingEvaluationClosedLoop:
             metrics=metrics,
         )
 
+        loop._pending_evaluations = []
         pe = PendingEvaluation(
             change_id="change-xyz",
             node_id="code",
@@ -876,6 +878,7 @@ class TestPendingEvaluationClosedLoop:
             metrics=metrics,
         )
 
+        loop._pending_evaluations = []
         pe = PendingEvaluation(
             change_id="change-remove-me",
             node_id="code",
@@ -890,3 +893,99 @@ class TestPendingEvaluationClosedLoop:
 
         assert len(loop._pending_evaluations) == 0
         mock_engine.revert_if_worse.assert_called_once()
+
+
+class TestPendingEvaluationPersistence:
+    """Tests for PendingEvaluation disk persistence."""
+
+    def test_pending_evaluations_survive_roundtrip(self, feedback_setup) -> None:
+        """Pending evaluations persist to disk and reload in new instance."""
+        loop, memory_dir, kernel_dir, engine, metrics = feedback_setup
+
+        # Manually add a pending evaluation
+        pe = PendingEvaluation(
+            change_id="persist-test-001",
+            node_id="code",
+            metrics_before={"success_rate": 0.85, "avg_retries": 1.0},
+            evaluate_after_iterations=10,
+        )
+        loop._pending_evaluations.append(pe)
+        loop._save_pending()
+
+        # Create a NEW FeedbackLoop instance pointing at same memory_dir
+        loop2 = FeedbackLoop(
+            memory_dir=str(memory_dir),
+            reflector=loop.reflector,
+            evolution_engine=engine,
+            metrics=metrics,
+        )
+
+        assert len(loop2._pending_evaluations) == 1
+        loaded = loop2._pending_evaluations[0]
+        assert loaded.change_id == "persist-test-001"
+        assert loaded.node_id == "code"
+        assert loaded.metrics_before == {"success_rate": 0.85, "avg_retries": 1.0}
+        assert loaded.evaluate_after_iterations == 10
+
+    def test_corrupt_pending_file_handled_gracefully(self, feedback_setup) -> None:
+        """Corrupt JSON in pending_evaluations.json doesn't crash."""
+        loop, memory_dir, _, engine, metrics = feedback_setup
+
+        # Write invalid JSON to the file
+        pending_file = memory_dir / "pending_evaluations.json"
+        pending_file.write_text("this is not valid json {{{", encoding="utf-8")
+
+        # Create FeedbackLoop - should not crash
+        loop2 = FeedbackLoop(
+            memory_dir=str(memory_dir),
+            reflector=loop.reflector,
+            evolution_engine=engine,
+            metrics=metrics,
+        )
+
+        assert loop2._pending_evaluations == []
+
+    def test_evaluations_removed_from_disk_after_evaluation(self, feedback_setup) -> None:
+        """After evaluation threshold is reached, entries are removed from disk."""
+        loop, memory_dir, _, engine, metrics = feedback_setup
+
+        # Add pending eval manually
+        pe = PendingEvaluation(
+            change_id="eval-remove-001",
+            node_id="code",
+            metrics_before={"success_rate": 0.9},
+            evaluate_after_iterations=5,
+        )
+        loop._pending_evaluations.append(pe)
+        loop._save_pending()
+
+        # Verify file has data
+        pending_file = memory_dir / "pending_evaluations.json"
+        data = json.loads(pending_file.read_text(encoding="utf-8"))
+        assert len(data) == 1
+
+        # Call _evaluate_pending at threshold
+        loop._evaluate_pending(5)
+
+        # Verify the file on disk has empty array
+        data = json.loads(pending_file.read_text(encoding="utf-8"))
+        assert data == []
+
+    def test_missing_pending_file_handled(self, feedback_setup) -> None:
+        """No crash when pending_evaluations.json doesn't exist."""
+        loop, memory_dir, _, engine, metrics = feedback_setup
+
+        # Ensure no pending file exists
+        pending_file = memory_dir / "pending_evaluations.json"
+        if pending_file.exists():
+            pending_file.unlink()
+
+        # Create a fresh loop - should handle missing file gracefully
+        loop2 = FeedbackLoop(
+            memory_dir=str(memory_dir),
+            reflector=loop.reflector,
+            evolution_engine=engine,
+            metrics=metrics,
+        )
+
+        assert loop2._pending_evaluations == []
