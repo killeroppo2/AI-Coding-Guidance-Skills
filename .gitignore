@@ -42,6 +42,7 @@ kernel/.migration_version
 kernel/evolution/history.jsonl
 memory/decisions.jsonl
 memory/reflections.jsonl
+memory/skill_feedback.jsonl
 memory/progress.yaml
 memory/assessment.yaml
 memory/current_goal.md

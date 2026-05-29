@@ -57,6 +57,7 @@ class PhaseRouter:
         intent: IntentResult,
         complexity: str,
         history: list[str] | None = None,
+        recommendations: list[str] | None = None,
     ) -> SkillSelection:
         """Route to appropriate skills for the given node.
 
@@ -65,11 +66,19 @@ class PhaseRouter:
             intent: Analyzed intent from IntentAnalyzer.
             complexity: Complexity level ('low', 'medium', 'high').
             history: Optional list of previously visited node IDs.
+            recommendations: Optional list of recommended skills from feedback store.
 
         Returns:
             SkillSelection with primary skills, auxiliary skills, and reasoning.
         """
         primary = self._select_primary(node_id, intent, complexity)
+
+        # Boost recommended skills to primary (from feedback store)
+        if recommendations:
+            for rec_skill in recommendations:
+                if rec_skill in self._composable_map and rec_skill not in primary:
+                    primary.append(rec_skill)
+
         phase = _NODE_TO_PHASE.get(node_id, "none")
         auxiliary = self._select_auxiliary(primary, phase)
         reason = self._build_reason(node_id, intent, complexity, primary)

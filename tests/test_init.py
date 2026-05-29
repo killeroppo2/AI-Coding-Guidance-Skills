@@ -23,6 +23,7 @@ class TestInitRuntimeFiles:
             tmp_path / "memory" / "tasks.yaml",
             tmp_path / "memory" / "decisions.jsonl",
             tmp_path / "memory" / "reflections.jsonl",
+            tmp_path / "memory" / "skill_feedback.jsonl",
             tmp_path / "kernel" / "evolution" / "history.jsonl",
         ]
 
@@ -79,6 +80,7 @@ class TestInitRuntimeFiles:
             tmp_path / "memory" / "plan.md",
             tmp_path / "memory" / "decisions.jsonl",
             tmp_path / "memory" / "reflections.jsonl",
+            tmp_path / "memory" / "skill_feedback.jsonl",
             tmp_path / "kernel" / "evolution" / "history.jsonl",
         ]
 
@@ -103,7 +105,7 @@ class TestInitRuntimeFiles:
 
         captured = capsys.readouterr()
         assert "Initialization complete." in captured.out
-        assert "Created 9 file(s)" in captured.out
+        assert "Created 10 file(s)" in captured.out
         assert "skipped 0 file(s)" in captured.out
 
     def test_partial_existing_files(self, tmp_path: Path, capsys) -> None:
@@ -117,7 +119,7 @@ class TestInitRuntimeFiles:
         init_runtime_files(tmp_path)
 
         captured = capsys.readouterr()
-        assert "Created 7 file(s)" in captured.out
+        assert "Created 8 file(s)" in captured.out
         assert "skipped 2 file(s)" in captured.out
 
     def test_permission_error_handled_gracefully(self, tmp_path: Path, capsys) -> None:

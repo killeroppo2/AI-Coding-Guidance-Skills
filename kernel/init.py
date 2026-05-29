@@ -27,6 +27,7 @@ def init_runtime_files(kernel_root: Path) -> None:
         kernel_root / "memory" / "tasks.yaml": "tasks: []\n",
         kernel_root / "memory" / "decisions.jsonl": "",
         kernel_root / "memory" / "reflections.jsonl": "",
+        kernel_root / "memory" / "skill_feedback.jsonl": "",
         kernel_root / "kernel" / "evolution" / "history.jsonl": "",
     }
 

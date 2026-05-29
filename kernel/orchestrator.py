@@ -43,7 +43,9 @@ from kernel.philosophy.principles import should_retreat, should_stop_iterating
 from kernel.reflector import Reflector
 from kernel.reporter import Reporter
 from kernel.security_policy import SecurityPolicy
+from kernel.skill_feedback import SkillFeedbackStore
 from kernel.skill_selector import select_skills_for_goal
+from kernel.skill_triggers import SkillTriggerEngine
 from kernel.task_manager import TaskManager
 from kernel.validators import _sanitize_project_name, _validate_workspace_paths
 from knowledge.store import KnowledgeStore
@@ -377,6 +379,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         evolution_metrics = EvolutionMetrics()
         feedback_loop = FeedbackLoop(memory_dir, reflector, evolution_engine, evolution_metrics)
         event_detector = EventDetector(KERNEL_ROOT)
+        trigger_engine = SkillTriggerEngine()
+        feedback_store = SkillFeedbackStore(memory_dir)
         retry_lightweight = False
         _last_was_lightweight = False
 
@@ -489,8 +493,12 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         if mode3:
             # Dynamic skill routing: update skills per node (skip if --skills was set)
             if not (hasattr(args, "skills") and args.skills is not None):
+                _feedback_recs = feedback_store.get_recommendations(
+                    node["id"], intent_result.goal_type
+                )
                 _routing_selection = phase_router.route(
-                    node["id"], intent_result, complexity
+                    node["id"], intent_result, complexity,
+                    recommendations=_feedback_recs,
                 )
                 state_mgr.state["context"]["skills_loaded"] = (
                     _routing_selection.primary + _routing_selection.auxiliary
@@ -589,6 +597,34 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     state_mgr.trim_errors()
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
+
+                    # Record skill feedback on failure
+                    feedback_store.record(
+                        node_id=node["id"],
+                        skills_used=state_mgr.state.get("context", {}).get(
+                            "skills_loaded", []
+                        ),
+                        outcome="failed",
+                        goal_type=intent_result.goal_type,
+                    )
+
+                    # Check auto-triggers on failure
+                    _triggers = trigger_engine.evaluate(
+                        state_mgr.state, node["id"], "failed"
+                    )
+                    if _triggers:
+                        _current_skills = state_mgr.state.get("context", {}).get(
+                            "skills_loaded", []
+                        )
+                        for _trig in _triggers:
+                            if _trig.skill not in _current_skills:
+                                _current_skills.append(_trig.skill)
+                                logger.info(
+                                    f"[TRIGGER] {_trig.trigger_name}: "
+                                    f"activating {_trig.skill} for {_trig.target_node}"
+                                )
+                        state_mgr.state["context"]["skills_loaded"] = _current_skills
+
                     # Apply retry strategy
                     if args.retry_strategy == "skip":
                         transitions = graph.get_available_transitions(node["id"])
@@ -724,6 +760,33 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     "iteration": state_mgr.state.get("iteration_count", 0),
                 }
                 feedback_loop.run_cycle(iteration_data)
+
+                # Record skill feedback (以战养战)
+                feedback_store.record(
+                    node_id=node["id"],
+                    skills_used=state_mgr.state.get("context", {}).get(
+                        "skills_loaded", []
+                    ),
+                    outcome="success",
+                    goal_type=intent_result.goal_type,
+                )
+
+                # Check auto-triggers (道常无为而无不为)
+                _triggers = trigger_engine.evaluate(
+                    state_mgr.state, node["id"], "success"
+                )
+                if _triggers:
+                    _current_skills = state_mgr.state.get("context", {}).get(
+                        "skills_loaded", []
+                    )
+                    for _trig in _triggers:
+                        if _trig.skill not in _current_skills:
+                            _current_skills.append(_trig.skill)
+                            logger.info(
+                                f"[TRIGGER] {_trig.trigger_name}: "
+                                f"activating {_trig.skill} for {_trig.target_node}"
+                            )
+                    state_mgr.state["context"]["skills_loaded"] = _current_skills
 
                 # Populate progress_history for stall detection
                 tasks_path_progress = Path(memory_dir) / "tasks.yaml"
