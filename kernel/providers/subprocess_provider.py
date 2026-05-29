@@ -57,11 +57,14 @@ class SubprocessProvider(AIProvider):
                 )
             except subprocess.TimeoutExpired:
                 proc.kill()
-                proc.communicate()
+                stdout, stderr = proc.communicate()
                 self._active_subprocess = None
-                raise TimeoutError(
-                    f"Subprocess timed out after {effective_timeout}s"
-                )
+                detail = f"Subprocess timed out after {effective_timeout}s"
+                if stdout:
+                    detail += f" | partial stdout: {stdout[:200]}"
+                if stderr:
+                    detail += f" | stderr: {stderr[:200]}"
+                raise TimeoutError(detail)
         finally:
             self._active_subprocess = None
 
