@@ -38,6 +38,54 @@ class TestWuWeiGuard:
         state = {"progress_history": [1, 2, 3, 3]}
         assert wu_wei_guard(state, "iterate") is True
 
+    def test_wu_wei_guard_allows_when_workspace_errors_exist(self):
+        """Guard allows action when stalled but workspace path errors present."""
+        state = {
+            "progress_history": [6, 6, 6],
+            "errors": ["Path 'src/main.py' is outside workspace './workspace/project/'"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_allows_when_security_errors_exist(self):
+        """Guard allows action when stalled but security denial errors present."""
+        state = {
+            "progress_history": [6, 6, 6],
+            "errors": ["[SECURITY] Denied file write: src/main.py"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_allows_when_boundary_errors_exist(self):
+        """Guard allows action when stalled but boundary violation errors present."""
+        state = {
+            "progress_history": [6, 6, 6],
+            "errors": ["Workspace boundary violation: file outside allowed area"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_stops_when_stalled_without_path_errors(self):
+        """Guard still stops when stalled and errors are unrelated to paths."""
+        state = {
+            "progress_history": [6, 6, 6],
+            "errors": ["AI command exited with code 1 on node code"],
+        }
+        assert wu_wei_guard(state, "iterate") is False
+
+    def test_wu_wei_guard_allows_when_old_errors_but_recent_path_error(self):
+        """Guard allows when recent errors (last 5) contain path errors."""
+        state = {
+            "progress_history": [6, 6, 6],
+            "errors": [
+                "some old error",
+                "another old error",
+                "yet another error",
+                "more errors",
+                "even more errors",
+                "still more errors",
+                "Workspace boundary: Path outside workspace",
+            ],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
 
 class TestShuiGuard:
     """Tests for shui_guard function."""

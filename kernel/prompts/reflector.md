@@ -63,3 +63,15 @@ Valid TRANSITION values for this node:
 - Update `knowledge/` if new patterns or rules discovered
 - Update `memory/progress.yaml` with tasks_done increment
 - If proposing evolution, document it clearly with justification
+
+## CRITICAL: Output Format Reminder
+
+Your response MUST end with these exact lines (as plain text, NOT in a code block):
+
+STATUS: success
+TRANSITION: <valid_condition>
+
+If you wrote files, include before STATUS:
+FILES_WRITTEN: path/to/file1, path/to/file2
+
+The system will REJECT your response without these lines. Do not forget them.

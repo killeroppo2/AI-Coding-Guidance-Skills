@@ -28,7 +28,18 @@ def wu_wei_guard(state: dict, proposed_action: str = "iterate") -> bool:
     if len(progress_history) >= 3:
         last_three = progress_history[-3:]
         if len(set(last_three)) == 1:
-            return False
+            # Check if stall is due to workspace/security path errors
+            errors = state.get("errors", [])
+            recent_errors = errors[-5:] if errors else []
+            has_path_errors = any(
+                "workspace" in str(e).lower()
+                or "security" in str(e).lower()
+                or "boundary" in str(e).lower()
+                for e in recent_errors
+            )
+            if has_path_errors:
+                return True  # Allow retry - path errors are fixable
+            return False  # True stall - stop
     return True
 
 
