@@ -470,7 +470,7 @@ class AutonomousExecutor:
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        self.logger.debug(f"[安全] 拒绝文件写入: {fpath}")
+                        self.user_logger.warning(f"[安全] 拒绝文件写入: {fpath}")
 
             # Determine next node
             transitions = self.graph.get_available_transitions(node["id"])

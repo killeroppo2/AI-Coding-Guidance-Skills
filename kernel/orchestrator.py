@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 cleanup_path = Path(memory_dir) / cleanup_file
                 if cleanup_path.exists():
                     cleanup_path.unlink()
-            logger.info("[系统] 检测到新目标，已自动重置状态")
+            print("[系统] 检测到新目标，已自动重置状态")
 
     if args.goal:
         if args.resume and state_mgr.state.get("goal"):
