@@ -138,21 +138,51 @@ class TestEstimateTotalContextSize:
         assert "100001 字符" in msg
         assert "超出推荐限制" in msg
 
-    def test_no_warning_when_under_100k(self, tmp_path: Path, capsys) -> None:
+    def test_no_warning_when_under_100k(self, tmp_path: Path) -> None:
         """No warning when context is under 100K chars."""
         assembler = ContextAssembler(tmp_path)
         sections = ["X" * 50000]
-        assembler._estimate_total_context_size(sections)
-        captured = capsys.readouterr()
-        assert captured.err == ""
+        logger = logging.getLogger("kernel.context_assembler")
+        stale_handlers = list(logger.handlers)
+        for h in stale_handlers:
+            logger.removeHandler(h)
+        handler = logging.handlers.MemoryHandler(capacity=100)
+        handler.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        original_propagate = logger.propagate
+        logger.propagate = False
+        try:
+            assembler._estimate_total_context_size(sections)
+        finally:
+            logger.removeHandler(handler)
+            logger.propagate = original_propagate
+            for h in stale_handlers:
+                logger.addHandler(h)
+        assert len(handler.buffer) == 0
 
-    def test_warning_at_boundary(self, tmp_path: Path, capsys) -> None:
+    def test_warning_at_boundary(self, tmp_path: Path) -> None:
         """No warning at exactly 100000 chars (only > triggers)."""
         assembler = ContextAssembler(tmp_path)
         sections = ["X" * 100000]
-        assembler._estimate_total_context_size(sections)
-        captured = capsys.readouterr()
-        assert captured.err == ""
+        logger = logging.getLogger("kernel.context_assembler")
+        stale_handlers = list(logger.handlers)
+        for h in stale_handlers:
+            logger.removeHandler(h)
+        handler = logging.handlers.MemoryHandler(capacity=100)
+        handler.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        original_propagate = logger.propagate
+        logger.propagate = False
+        try:
+            assembler._estimate_total_context_size(sections)
+        finally:
+            logger.removeHandler(handler)
+            logger.propagate = original_propagate
+            for h in stale_handlers:
+                logger.addHandler(h)
+        assert len(handler.buffer) == 0
 
 
 class TestLoadSkillsRespectsTruncation:
