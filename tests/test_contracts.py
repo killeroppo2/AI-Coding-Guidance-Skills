@@ -573,7 +573,7 @@ class TestRunnerContractIntegration:
     def test_mode3_contract_violation_logged_to_stderr(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that contract violations are printed to stderr."""
+        """Test that contract violations are recorded (suppressed from stderr in non-verbose)."""
         from unittest.mock import MagicMock, patch
 
         import runner
@@ -586,7 +586,7 @@ class TestRunnerContractIntegration:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main(
+            state = runner.main(
                 [
                     "--goal",
                     "test violation logging",
@@ -597,8 +597,8 @@ class TestRunnerContractIntegration:
                 ]
             )
 
-        captured = capsys.readouterr()
-        assert "[合约违规]" in captured.err
+        # Contract violations are recorded in state errors
+        assert any("Contract violations" in str(e) for e in state.get("errors", []))
 
 
 class TestContextAssemblerContract:

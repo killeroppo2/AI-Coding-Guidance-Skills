@@ -174,6 +174,21 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     graph = GraphExecutor(graph_path)
     knowledge = KnowledgeStore(knowledge_dir)
 
+    # Auto-reset when a new goal is provided and not resuming
+    if args.goal and not args.resume and not args.dry_run:
+        stored_goal = state_mgr.state.get("goal", "")
+        stored_status = state_mgr.state.get("status", "idle")
+        if stored_status in ("complete", "stuck", "error") or (
+            stored_goal and stored_goal != args.goal
+        ):
+            state_mgr.reset()
+            # Clean up memory files for fresh start
+            for cleanup_file in ["tasks.yaml", "progress.yaml", "assessment.yaml"]:
+                cleanup_path = Path(memory_dir) / cleanup_file
+                if cleanup_path.exists():
+                    cleanup_path.unlink()
+            logger.info("[系统] 检测到新目标，已自动重置状态")
+
     if args.goal:
         if args.resume and state_mgr.state.get("goal"):
             # When resuming, do not overwrite existing goal
@@ -193,6 +208,13 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         state_mgr.set_workspace(project_name)
     elif project_name and args.dry_run:
         state_mgr.state["workspace_path"] = f"./workspace/{project_name}/"
+
+    # Startup banner for Mode 3 / scaffolding (not in dry-run or generate-prompt)
+    if not args.dry_run and not args.generate_prompt:
+        workspace_display = state_mgr.state.get("workspace_path", "./workspace/")
+        print("\n\U0001f680 AI \u5f00\u53d1\u5185\u6838\u542f\u52a8")
+        print(f"   \u76ee\u6807: {state_mgr.state.get('goal', '')}")
+        print(f"   \u5de5\u4f5c\u533a: {workspace_display}\n")
 
     # Reset node_visits on resume so stale counts don't trigger false stuck detection
     if args.resume:
@@ -455,7 +477,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             tasks_list = tm.load_tasks()
         else:
             tasks_list = []
-        print(reporter.report_completion(state_mgr.get_state(), tasks_list))
+        if args.verbose:
+            print(reporter.report_completion(state_mgr.get_state(), tasks_list))
+        else:
+            print(reporter.report_completion_clean(state_mgr.get_state(), tasks_list))
 
         if budget_tracker is not None:
             budget_report = budget_tracker.get_efficiency_report()

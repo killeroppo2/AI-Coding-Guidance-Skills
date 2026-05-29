@@ -65,6 +65,47 @@ class Reporter:
 
         return "\n".join(lines)
 
+    def report_completion_clean(self, state: dict, tasks: list[dict]) -> str:
+        """Compact user-friendly completion summary with emoji indicators.
+
+        Args:
+            state: Final state dict.
+            tasks: List of task dicts from TaskManager.
+
+        Returns:
+            Multi-line compact summary string.
+        """
+        status = state.get("status", "unknown")
+        iteration = state.get("iteration_count", 0)
+        workspace = state.get("workspace_path", "./workspace/")
+        total_tasks = len(tasks)
+        done_tasks = sum(1 for t in tasks if t.get("status") == "done")
+        errors = state.get("errors", [])
+
+        if status == "complete":
+            lines = [
+                "\u2705 \u5b8c\u6210\uff01",
+                f"   \u4efb\u52a1: {done_tasks}/{total_tasks} \u5df2\u5b8c\u6210",
+                f"   \u6587\u4ef6: {workspace}",
+                f"   \u8017\u65f6: {iteration} \u6b21\u8fed\u4ee3",
+            ]
+        else:
+            last_error = errors[-1] if errors else "\u672a\u77e5\u9519\u8bef"
+            # Truncate long error for display
+            if len(last_error) > 60:
+                last_error = last_error[:60] + "..."
+            lines = [
+                "\u274c \u672a\u5b8c\u6210",
+                f"   \u5b8c\u6210: {done_tasks}/{total_tasks} \u4efb\u52a1",
+                f"   \u95ee\u9898: {last_error}",
+                (
+                    "   \u5efa\u8bae: \u5c1d\u8bd5\u7b80\u5316\u76ee\u6807"
+                    "\uff0c\u6216\u8fd0\u884c python runner.py --goal"
+                    ' "\u66f4\u7b80\u5355\u7684\u76ee\u6807" --ai-command "..."'
+                ),
+            ]
+        return "\n".join(lines)
+
     def report_stuck(self, state: dict, node: str, errors: list[str]) -> str:
         """Report when execution is stuck on a node.
 

@@ -289,6 +289,84 @@ class TestFormatStatus:
         assert long_error not in result
 
 
+class TestReportCompletionClean:
+    """Tests for Reporter.report_completion_clean()."""
+
+    def test_complete_status_shows_checkmark(self) -> None:
+        """Test that complete status shows checkmark emoji."""
+        reporter = Reporter()
+        state = {
+            "status": "complete",
+            "iteration_count": 5,
+            "workspace_path": "./workspace/test/",
+            "errors": [],
+        }
+        tasks = [{"status": "done"}, {"status": "done"}, {"status": "done"}]
+        result = reporter.report_completion_clean(state, tasks)
+        assert "\u2705 \u5b8c\u6210\uff01" in result
+        assert "3/3 \u5df2\u5b8c\u6210" in result
+        assert "./workspace/test/" in result
+        assert "5 \u6b21\u8fed\u4ee3" in result
+
+    def test_stuck_status_shows_cross(self) -> None:
+        """Test that stuck status shows cross emoji."""
+        reporter = Reporter()
+        state = {
+            "status": "stuck",
+            "iteration_count": 10,
+            "workspace_path": "./workspace/test/",
+            "errors": ["some error"],
+        }
+        tasks = [{"status": "done"}, {"status": "pending"}]
+        result = reporter.report_completion_clean(state, tasks)
+        assert "\u274c \u672a\u5b8c\u6210" in result
+        assert "1/2 \u4efb\u52a1" in result
+        assert "some error" in result
+        assert "\u5efa\u8bae" in result
+
+    def test_error_status_shows_cross(self) -> None:
+        """Test that error status shows cross emoji."""
+        reporter = Reporter()
+        state = {
+            "status": "error",
+            "iteration_count": 3,
+            "workspace_path": "./workspace/",
+            "errors": ["command not found"],
+        }
+        tasks = [{"status": "pending"}]
+        result = reporter.report_completion_clean(state, tasks)
+        assert "\u274c \u672a\u5b8c\u6210" in result
+        assert "command not found" in result
+
+    def test_long_error_truncated(self) -> None:
+        """Test that long errors are truncated to 60 chars."""
+        reporter = Reporter()
+        long_error = "x" * 100
+        state = {
+            "status": "stuck",
+            "iteration_count": 5,
+            "workspace_path": "./workspace/",
+            "errors": [long_error],
+        }
+        tasks = []
+        result = reporter.report_completion_clean(state, tasks)
+        assert "..." in result
+        assert long_error not in result
+
+    def test_no_errors_shows_unknown(self) -> None:
+        """Test that no errors shows unknown error message."""
+        reporter = Reporter()
+        state = {
+            "status": "stuck",
+            "iteration_count": 5,
+            "workspace_path": "./workspace/",
+            "errors": [],
+        }
+        tasks = []
+        result = reporter.report_completion_clean(state, tasks)
+        assert "\u672a\u77e5\u9519\u8bef" in result
+
+
 class TestRunnerStatusFlag:
     """Tests for --status flag in runner.py."""
 

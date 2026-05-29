@@ -58,10 +58,13 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-    log_level = level_map.get(log_level_str, logging.INFO)
-
     if verbose:
         log_level = logging.DEBUG
+    else:
+        # In non-verbose mode, suppress info/warning to keep output clean
+        log_level = level_map.get(log_level_str, logging.INFO)
+        if log_level < logging.WARNING:
+            log_level = logging.WARNING
 
     # Get the kernel logger
     logger = logging.getLogger("kernel")
@@ -86,4 +89,25 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     # Prevent propagation to root logger to avoid duplicate output
     logger.propagate = False
 
+    return logger
+
+
+def get_user_logger() -> logging.Logger:
+    """Return a logger for user-facing messages that always displays.
+
+    This logger is separate from the kernel logger and stays at INFO level
+    so critical messages (fatal errors, stuck detection) always appear,
+    regardless of the main logger's verbosity setting.
+
+    Returns:
+        A logger named 'kernel.user' at INFO level writing to stderr.
+    """
+    logger = logging.getLogger("kernel.user")
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
     return logger

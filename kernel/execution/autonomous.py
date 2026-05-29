@@ -19,6 +19,7 @@ from kernel.execution.protocol import (
     resolve_transition,
     update_progress_history,
 )
+from kernel.logging_config import get_user_logger
 from kernel.philosophy.guards import bing_gui_shen_su, shui_guard, wu_wei_guard
 from kernel.philosophy.principles import should_retreat
 from kernel.reporter import Reporter
@@ -150,6 +151,7 @@ class AutonomousExecutor:
         # Instance state for retry logic
         self.retry_lightweight = False
         self._last_was_lightweight = False
+        self.user_logger = get_user_logger()
 
     def _bootstrap_workspace(self) -> None:
         """Generate CLAUDE.md in workspace if workspace_path is set."""
@@ -248,14 +250,14 @@ class AutonomousExecutor:
                     )
                     # Report stuck to stderr
                     reporter = Reporter()
-                    self.logger.error(
+                    self.user_logger.error(
                         reporter.report_stuck(
                             self.state_mgr.state,
                             stuck_node,
                             self.state_mgr.state.get("errors", []),
                         )
                     )
-                    self.logger.error(
+                    self.user_logger.error(
                         format_error(
                             "stuck_node",
                             node=stuck_node,
@@ -338,12 +340,17 @@ class AutonomousExecutor:
                     timeout_detail += " | " + parts[1]
                 self.state_mgr.state.setdefault("errors", []).append(timeout_detail)
                 self.state_mgr.trim_errors()
-                self.logger.error(
+                self.logger.debug(
                     format_error(
                         "timeout",
                         seconds=str(self.args.timeout),
                         node=node["id"],
                     )
+                )
+                self.user_logger.info(
+                    f"\u23f1\ufe0f AI\u54cd\u5e94\u8d85\u65f6"
+                    f"\uff08{self.args.timeout}\u79d2\uff09"
+                    f"\uff0c\u6b63\u5728\u91cd\u8bd5..."
                 )
                 # Invalidate incremental context on failure
                 self.assembler.mark_iteration_failure()
@@ -408,15 +415,11 @@ class AutonomousExecutor:
                 else:  # "continue"
                     continue
             except FileNotFoundError:
-                self.logger.error(
-                    f"Error: AI command not found: '{shlex.split(self.args.ai_command)[0]}'. "
-                    f"Please verify the command is installed and in your PATH."
-                )
-                self.logger.error(
-                    format_error(
-                        "command_not_found",
-                        cmd=shlex.split(self.args.ai_command)[0],
-                    )
+                cmd_name = shlex.split(self.args.ai_command)[0]
+                self.user_logger.error(
+                    f"\u274c AI\u547d\u4ee4 '{cmd_name}' \u672a\u627e\u5230\u3002"
+                    f"\u8bf7\u68c0\u67e5\u662f\u5426\u5df2\u5b89\u88c5"
+                    f"\u5e76\u5728 PATH \u4e2d\u3002"
                 )
                 self.state_mgr.state["status"] = "error"
                 self.state_mgr.state.setdefault("errors", []).append(
@@ -428,7 +431,7 @@ class AutonomousExecutor:
             contract_result = self.validator.validate_output(ai_output, node["id"])
             if not contract_result.valid:
                 for violation in contract_result.violations:
-                    self.logger.warning(f"[合约违规] {violation}")
+                    self.logger.debug(f"[合约违规] {violation}")
                 self.state_mgr.state.setdefault("errors", []).append(
                     f"Contract violations on node {node['id']}: {contract_result.violations}"
                 )
@@ -462,12 +465,12 @@ class AutonomousExecutor:
                     contract_result.files_written, workspace_path
                 )
                 for v in ws_violations:
-                    self.logger.warning(f"[警告] 工作区边界: {v}")
+                    self.logger.debug(f"[警告] 工作区边界: {v}")
                 # Security policy check on written files
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        self.logger.warning(f"[安全] 拒绝文件写入: {fpath}")
+                        self.logger.debug(f"[安全] 拒绝文件写入: {fpath}")
 
             # Determine next node
             transitions = self.graph.get_available_transitions(node["id"])
@@ -476,7 +479,7 @@ class AutonomousExecutor:
                     transitions, transition_condition, self.complexity, self.logger
                 )
                 if had_warning and not transition_condition:
-                    self.logger.warning(
+                    self.logger.debug(
                         f"[警告] AI输出中未找到 TRANSITION 行，"
                         f"回退到第一个转换: {next_node_id}"
                     )
@@ -502,6 +505,10 @@ class AutonomousExecutor:
                     print(
                         reporter.report_iteration(self.state_mgr.get_state(), node, "success")
                     )
+                else:
+                    iteration = self.state_mgr.state.get("iteration_count", 0)
+                    max_iter = self.state_mgr.state.get("max_iterations", 30)
+                    print(f"[{iteration}/{max_iter}] {node['id']} \u2713")
 
                 # Run feedback loop on successful iteration
                 iteration_data = {

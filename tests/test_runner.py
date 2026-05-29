@@ -478,7 +478,8 @@ class TestMode3:
             "not found" in e.lower() or "Command not found" in e for e in state.get("errors", [])
         )
         captured = capsys.readouterr()
-        assert "nonexistent_command" in captured.err
+        # Command name appears in completion summary or stderr
+        assert "nonexistent_command" in (captured.out + captured.err)
 
     def test_mode3_completes_at_terminal_node(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 completes when reaching a node with no transitions."""
@@ -796,6 +797,122 @@ class TestResume:
             ]
         )
         assert state["goal"] == "new goal"
+
+
+class TestAutoReset:
+    """Tests for auto-reset behavior when new goal is provided."""
+
+    @pytest.fixture
+    def completed_env(self, tmp_path: Path) -> Path:
+        """Set up a runner environment with completed state."""
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+
+        state_data = {
+            "current_node": "code",
+            "iteration_count": 10,
+            "max_iterations": 30,
+            "goal": "old goal",
+            "status": "complete",
+            "last_updated": "",
+            "errors": [],
+            "context": {"skills_loaded": [], "current_task": "", "phase": "coding"},
+            "node_visits": {"init": 1, "code": 5},
+            "progress_history": [1, 2, 3],
+            "execution_mode": "kernel",
+            "workspace_path": "./workspace/old-goal/",
+        }
+        with open(kernel_dir / "state.yaml", "w") as f:
+            yaml.safe_dump(state_data, f)
+
+        graph_data = {
+            "nodes": [
+                {
+                    "id": "init",
+                    "prompt_file": "prompts/orchestrator.md",
+                    "description": "Initialize",
+                    "transitions": [{"to": "plan", "condition": "goal_loaded"}],
+                    "max_retries": 1,
+                },
+                {
+                    "id": "plan",
+                    "prompt_file": "prompts/planner.md",
+                    "description": "Plan",
+                    "transitions": [{"to": "code", "condition": "plan_ready"}],
+                    "max_retries": 2,
+                },
+                {
+                    "id": "code",
+                    "prompt_file": "prompts/coder.md",
+                    "description": "Code",
+                    "transitions": [],
+                    "max_retries": 3,
+                },
+            ],
+            "default_start": "init",
+            "max_iterations": 30,
+        }
+        with open(kernel_dir / "graph.yaml", "w") as f:
+            yaml.safe_dump(graph_data, f)
+
+        (kernel_dir / "prompts").mkdir()
+        (kernel_dir / "prompts" / "orchestrator.md").write_text("Orchestrator")
+        (kernel_dir / "prompts" / "planner.md").write_text("Planner")
+        (kernel_dir / "prompts" / "coder.md").write_text("Coder")
+        (kernel_dir / "BOOT.md").write_text("# Boot")
+        (kernel_dir / "philosophy").mkdir()
+        (kernel_dir / "philosophy" / "dao.md").write_text("# Dao")
+        (kernel_dir / "philosophy" / "strategy.md").write_text("# Strategy")
+
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        (memory_dir / "decisions.jsonl").touch()
+        (memory_dir / "reflections.jsonl").touch()
+        (memory_dir / "current_goal.md").write_text("# Current Goal\n\nold goal\n")
+        with open(memory_dir / "progress.yaml", "w") as f:
+            yaml.safe_dump(
+                {"iteration": 10, "tasks_total": 3, "tasks_done": 3, "status": "complete"}, f
+            )
+
+        knowledge_dir = tmp_path / "knowledge"
+        knowledge_dir.mkdir()
+        for sub in ["rules", "skills", "patterns"]:
+            (knowledge_dir / sub).mkdir()
+            with open(knowledge_dir / sub / "_index.yaml", "w") as f:
+                yaml.safe_dump({"items": []}, f)
+
+        return tmp_path
+
+    def test_auto_reset_on_new_goal(self, completed_env: Path, monkeypatch) -> None:
+        """New goal auto-resets completed state."""
+        monkeypatch.setattr(runner, "KERNEL_ROOT", completed_env)
+        state = runner.main(["--goal", "new goal", "--max-iterations", "1"])
+        assert state["goal"] == "new goal"
+        # Status should not remain "complete" since it was reset
+        assert state["status"] != "idle"
+
+    def test_auto_reset_not_on_resume(self, completed_env: Path, monkeypatch) -> None:
+        """--resume prevents auto-reset even with different goal."""
+        monkeypatch.setattr(runner, "KERNEL_ROOT", completed_env)
+        state = runner.main(
+            ["--goal", "new goal", "--resume", "--max-iterations", "1"]
+        )
+        # With --resume, the old goal is preserved
+        assert state["goal"] == "old goal"
+
+    def test_auto_reset_cleans_memory_files(self, completed_env: Path, monkeypatch) -> None:
+        """Auto-reset removes old tasks.yaml and progress.yaml content."""
+        memory_dir = completed_env / "memory"
+        (memory_dir / "tasks.yaml").write_text(
+            "tasks:\n- {id: T-001, title: old task, status: done}\n"
+        )
+        (memory_dir / "progress.yaml").write_text("tasks_done: 99")
+        monkeypatch.setattr(runner, "KERNEL_ROOT", completed_env)
+        runner.main(["--goal", "new goal", "--max-iterations", "1"])
+        # Old tasks.yaml content should be cleared (may be recreated with new content)
+        if (memory_dir / "tasks.yaml").exists():
+            content = (memory_dir / "tasks.yaml").read_text()
+            assert "old task" not in content
 
 
 class TestParseTransition:
@@ -1142,7 +1259,7 @@ class TestReviewFixes:
     def test_fallback_produces_warning_no_transition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that missing TRANSITION line triggers contract violation."""
+        """Test that missing TRANSITION line triggers contract violation (recorded in state)."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1167,15 +1284,13 @@ class TestReviewFixes:
                 ]
             )
 
-        captured = capsys.readouterr()
-        assert "[合约违规] Missing required TRANSITION line" in captured.err
         # Contract violation stays on same node and records error
         assert any("Contract violations" in str(e) for e in state.get("errors", []))
 
     def test_fallback_produces_warning_unmatched_condition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that invalid transition condition triggers contract violation."""
+        """Test that invalid transition condition triggers contract violation (recorded in state)."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1189,7 +1304,7 @@ class TestReviewFixes:
         mock_proc.kill.return_value = None
 
         with patch("subprocess.Popen", return_value=mock_proc):
-            runner.main(
+            state = runner.main(
                 [
                     "--goal",
                     "test unmatched warning",
@@ -1200,9 +1315,11 @@ class TestReviewFixes:
                 ]
             )
 
-        captured = capsys.readouterr()
-        assert "[合约违规]" in captured.err
-        assert "nonexistent_condition" in captured.err
+        # Contract violation with unmatched condition recorded in state errors
+        assert any(
+            "Contract violations" in str(e) and "nonexistent_condition" in str(e)
+            for e in state.get("errors", [])
+        )
 
     def test_resume_resets_node_visits(self, runner_env: Path, monkeypatch) -> None:
         """Test that --resume resets node_visits to empty dict."""

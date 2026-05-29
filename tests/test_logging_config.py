@@ -5,7 +5,7 @@ import logging
 import os
 from unittest.mock import patch
 
-from kernel.logging_config import JsonFormatter, setup_logging
+from kernel.logging_config import JsonFormatter, get_user_logger, setup_logging
 
 
 class TestSetupLogging:
@@ -21,10 +21,10 @@ class TestSetupLogging:
         logger = setup_logging()
         assert logger.name == "kernel"
 
-    def test_default_level_is_info(self) -> None:
-        """Default log level is INFO."""
+    def test_default_level_is_warning(self) -> None:
+        """Default log level is WARNING when not verbose."""
         logger = setup_logging()
-        assert logger.level == logging.INFO
+        assert logger.level == logging.WARNING
 
     def test_verbose_sets_debug(self) -> None:
         """verbose=True overrides level to DEBUG."""
@@ -76,10 +76,10 @@ class TestSetupLogging:
         assert len(logger.handlers) == 1
 
     @patch.dict(os.environ, {"LOG_LEVEL": "INVALID"})
-    def test_invalid_log_level_defaults_to_info(self) -> None:
-        """Invalid LOG_LEVEL falls back to INFO."""
+    def test_invalid_log_level_defaults_to_warning(self) -> None:
+        """Invalid LOG_LEVEL falls back to INFO then gets raised to WARNING."""
         logger = setup_logging()
-        assert logger.level == logging.INFO
+        assert logger.level == logging.WARNING
 
 
 class TestJsonFormatter:
@@ -127,3 +127,27 @@ class TestJsonFormatter:
         parsed = json.loads(output)
         assert "exception" in parsed
         assert "RuntimeError" in parsed["exception"]
+
+
+class TestGetUserLogger:
+    """Tests for the get_user_logger function."""
+
+    def test_returns_logger_named_kernel_user(self) -> None:
+        """get_user_logger returns a logger named 'kernel.user'."""
+        logger = get_user_logger()
+        assert logger.name == "kernel.user"
+
+    def test_user_logger_level_is_info(self) -> None:
+        """User logger level is always INFO."""
+        logger = get_user_logger()
+        assert logger.level == logging.INFO
+
+    def test_user_logger_does_not_propagate(self) -> None:
+        """User logger does not propagate to root."""
+        logger = get_user_logger()
+        assert logger.propagate is False
+
+    def test_user_logger_has_handler(self) -> None:
+        """User logger has at least one handler."""
+        logger = get_user_logger()
+        assert len(logger.handlers) >= 1
