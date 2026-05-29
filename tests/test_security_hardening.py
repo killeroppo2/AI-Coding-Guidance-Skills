@@ -113,9 +113,9 @@ class TestSanitizeProjectNameAdversarial:
         assert result == "hello"
 
     def test_only_control_chars_returns_empty(self) -> None:
-        """Input of only control characters returns empty string."""
+        """Input of only control characters returns fallback name."""
         result = _sanitize_project_name("\x00\x01\x02\x03")
-        assert result == ""
+        assert result == "project"
 
     def test_newlines_and_tabs_stripped(self) -> None:
         """Newlines and tabs are treated as control characters."""
