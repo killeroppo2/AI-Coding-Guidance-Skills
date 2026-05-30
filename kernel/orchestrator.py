@@ -802,8 +802,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 # Stay on same node - do not advance
                 continue
 
-            # Validate workspace boundary for files_written
+            # Extract and write code from AI output to workspace
             workspace_path = state_mgr.state.get("workspace_path", "")
+            if workspace_path and node["id"] in ("code", "test"):
+                from kernel.output_writer import extract_and_write_files
+
+                written = extract_and_write_files(ai_output, workspace_path)
+                if written:
+                    logger.debug(f"[写入] 提取了 {len(written)} 个文件到工作区")
+
+            # Validate workspace boundary for files_written
             if workspace_path and contract_result.files_written:
                 ws_violations = _validate_workspace_paths(
                     contract_result.files_written, workspace_path
