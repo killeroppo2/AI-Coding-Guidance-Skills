@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Kernel Dashboard</title>
+    <title>AI 开发内核控制台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,26 +11,26 @@
     <div class="container mx-auto px-4 py-6 max-w-7xl">
         <!-- Header -->
         <header class="mb-8">
-            <h1 class="text-3xl font-bold text-blue-400">AI Kernel Dashboard</h1>
-            <p class="text-gray-400 mt-1">Self-evolving development kernel monitor</p>
+            <h1 class="text-3xl font-bold text-blue-400">AI 开发内核控制台</h1>
+            <p class="text-gray-400 mt-1">自进化开发内核监控面板</p>
         </header>
 
         <!-- Goal Input + Controls -->
         <section class="bg-gray-800 rounded-lg p-4 mb-6">
             <div class="flex gap-4 items-end flex-wrap">
                 <div class="flex-1 min-w-64">
-                    <label for="goal-input" class="block text-sm font-medium text-gray-300 mb-1">Goal</label>
-                    <input type="text" id="goal-input" placeholder="Enter development goal..."
+                    <label for="goal-input" class="block text-sm font-medium text-gray-300 mb-1">目标</label>
+                    <input type="text" id="goal-input" placeholder="输入开发目标..."
                         class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
                 </div>
                 <div class="flex gap-2">
                     <button id="start-btn" onclick="startKernel()"
                         class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors">
-                        Start
+                        启动
                     </button>
                     <button id="stop-btn" onclick="stopKernel()"
                         class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium transition-colors">
-                        Stop
+                        停止
                     </button>
                 </div>
             </div>
@@ -39,13 +39,13 @@
         <!-- Status Bar -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">Current Node</div>
+                <div class="text-sm text-gray-400">当前节点</div>
                 <div id="current-node" class="text-lg font-semibold mt-1">
                     <span class="px-2 py-1 bg-blue-600 rounded text-sm">init</span>
                 </div>
             </div>
             <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">Progress</div>
+                <div class="text-sm text-gray-400">进度</div>
                 <div id="progress-indicator" class="mt-1">
                     <div class="flex justify-between text-sm mb-1">
                         <span id="iteration-text">0 / 30</span>
@@ -57,8 +57,8 @@
                 </div>
             </div>
             <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">Goal</div>
-                <div id="current-goal" class="text-sm mt-1 text-gray-200 truncate">No goal set</div>
+                <div class="text-sm text-gray-400">目标</div>
+                <div id="current-goal" class="text-sm mt-1 text-gray-200 truncate">未设置目标</div>
             </div>
         </section>
 
@@ -66,39 +66,39 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Live Logs -->
             <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">Live Logs</h2>
+                <h2 class="text-lg font-semibold text-blue-300 mb-3">实时日志</h2>
                 <div id="log-stream" class="bg-gray-900 rounded p-3 h-64 overflow-y-auto font-mono text-xs text-green-300 space-y-1">
-                    <div class="text-gray-500">Connecting to log stream...</div>
+                    <div class="text-gray-500">连接日志流...</div>
                 </div>
             </section>
 
             <!-- Task List -->
             <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">Tasks</h2>
+                <h2 class="text-lg font-semibold text-blue-300 mb-3">任务列表</h2>
                 <div id="task-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">No tasks loaded</div>
+                    <div class="text-gray-500 text-sm">暂无任务</div>
                 </div>
             </section>
 
             <!-- Evolution History -->
             <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">Evolution History</h2>
+                <h2 class="text-lg font-semibold text-blue-300 mb-3">进化历史</h2>
                 <div id="history-timeline" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">No evolution history</div>
+                    <div class="text-gray-500 text-sm">暂无进化记录</div>
                 </div>
             </section>
 
             <!-- Skills Inventory -->
             <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">Skills</h2>
+                <h2 class="text-lg font-semibold text-blue-300 mb-3">技能库</h2>
                 <div id="skill-grid" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm col-span-2">No skills loaded</div>
+                    <div class="text-gray-500 text-sm col-span-2">暂无技能</div>
                 </div>
             </section>
 
             <!-- Metrics Section -->
             <section class="bg-gray-800 rounded-lg p-4 col-span-2">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">System Metrics</h2>
+                <h2 class="text-lg font-semibold text-blue-300 mb-3">系统指标</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <canvas id="success-chart" height="200"></canvas>
@@ -110,15 +110,15 @@
                 <div class="grid grid-cols-3 gap-4 mt-4">
                     <div class="text-center">
                         <div class="text-2xl font-bold" id="health-score">--</div>
-                        <div class="text-xs text-gray-400">Health Score</div>
+                        <div class="text-xs text-gray-400">健康度</div>
                     </div>
                     <div class="text-center">
                         <div class="text-2xl font-bold" id="evolution-velocity">--</div>
-                        <div class="text-xs text-gray-400">Evolution Velocity</div>
+                        <div class="text-xs text-gray-400">进化速度</div>
                     </div>
                     <div class="text-center">
                         <div class="text-2xl font-bold" id="total-iterations">--</div>
-                        <div class="text-xs text-gray-400">Total Iterations</div>
+                        <div class="text-xs text-gray-400">总迭代数</div>
                     </div>
                 </div>
             </section>
@@ -128,7 +128,7 @@
         <footer class="mt-6 text-center text-xs text-gray-500">
             <span id="ws-status" class="inline-flex items-center gap-1">
                 <span id="ws-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                WebSocket: Disconnected
+                WebSocket: 已断开
             </span>
         </footer>
     </div>
@@ -148,6 +148,10 @@
             connectWebSocket();
             connectSSE();
         });
+
+        // Real-time polling
+        setInterval(() => { loadState(); loadTasks(); }, 3000);
+        setInterval(() => { loadMetrics(); loadHistory(); }, 10000);
 
         async function loadState() {
             try {
@@ -188,14 +192,14 @@
                 const tasks = await resp.json();
                 const el = document.getElementById('task-list');
                 if (tasks.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm">No tasks loaded</div>';
+                    el.innerHTML = '<div class="text-gray-500 text-sm">暂无任务</div>';
                     return;
                 }
                 el.innerHTML = tasks.map(t => {
                     const status = t.status || 'pending';
                     const icon = status === 'done' ? '&#10003;' : status === 'in_progress' ? '&#9654;' : '&#9675;';
                     const color = status === 'done' ? 'text-green-400' : status === 'in_progress' ? 'text-blue-400' : 'text-gray-400';
-                    return `<div class="flex items-center gap-2 text-sm"><span class="${color}">${icon}</span><span>${t.name || t.description || 'Task'}</span></div>`;
+                    return `<div class="flex items-center gap-2 text-sm"><span class="${color}">${icon}</span><span>${t.title || t.name || t.description || '任务'}</span></div>`;
                 }).join('');
             } catch (e) {
                 console.error('Failed to load tasks:', e);
@@ -208,7 +212,7 @@
                 const history = await resp.json();
                 const el = document.getElementById('history-timeline');
                 if (history.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm">No evolution history</div>';
+                    el.innerHTML = '<div class="text-gray-500 text-sm">暂无进化记录</div>';
                     return;
                 }
                 el.innerHTML = history.slice(-20).reverse().map(h => {
@@ -226,7 +230,7 @@
                 const skills = await resp.json();
                 const el = document.getElementById('skill-grid');
                 if (skills.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm col-span-2">No skills loaded</div>';
+                    el.innerHTML = '<div class="text-gray-500 text-sm col-span-2">暂无技能</div>';
                     return;
                 }
                 el.innerHTML = skills.map(s => {
@@ -267,7 +271,7 @@
             ws = new WebSocket(`${proto}//${location.host}/ws`);
             ws.onopen = () => {
                 document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-green-500';
-                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: Connected';
+                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: 已连接';
             };
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
@@ -276,7 +280,7 @@
             };
             ws.onclose = () => {
                 document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-red-500';
-                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: Disconnected';
+                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: 已断开';
                 setTimeout(connectWebSocket, 3000);
             };
         }
@@ -288,7 +292,7 @@
                 appendLog(data.message || JSON.stringify(data));
             };
             eventSource.addEventListener('connected', () => {
-                appendLog('Connected to log stream');
+                appendLog('已连接日志流');
             });
             eventSource.onerror = () => {
                 setTimeout(connectSSE, 5000);
@@ -328,7 +332,7 @@
                     data: {
                         labels: nodes,
                         datasets: [{
-                            label: 'Iterations per Node',
+                            label: '各节点迭代次数',
                             data: counts,
                             backgroundColor: 'rgba(59, 130, 246, 0.6)',
                             borderColor: 'rgba(59, 130, 246, 1)',
@@ -364,7 +368,7 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Success Rate',
+                            label: '成功率',
                             data: rates,
                             borderColor: 'rgba(34, 197, 94, 1)',
                             backgroundColor: 'rgba(34, 197, 94, 0.1)',

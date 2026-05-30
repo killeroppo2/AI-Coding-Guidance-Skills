@@ -205,7 +205,10 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
         skills_path = kernel_root / "skills" / "_index.yaml"
         data = _read_yaml(skills_path)
         if isinstance(data, dict):
-            return data.get("items", [])
+            items = data.get("items", [])
+            if not items:
+                items = data.get("core_items", []) + data.get("community_items", [])
+            return items
         return []
 
     @app.get("/api/metrics")
