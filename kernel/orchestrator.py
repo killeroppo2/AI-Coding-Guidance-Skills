@@ -664,7 +664,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                            "test": "测试", "review": "审查", "reflect": "反思",
                            "evolve": "进化"}
             _node_label = _node_names.get(node["id"], node["id"])
-            print(f"  [{_iter_num}/{_max_iter}] {_node_label}...", end="", flush=True)
+            print(f"  [{_iter_num}/{_max_iter}] {_node_label} (等待AI响应)...", end="", flush=True)
 
             try:
                 proc = subprocess.Popen(
