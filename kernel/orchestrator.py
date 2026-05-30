@@ -263,7 +263,14 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
         workspace_path = state_mgr.state.get("workspace_path", "")
         if workspace_path:
-            generate_claude_md(workspace_path, state_mgr.state.get("goal", ""))
+            tasks_file = Path(memory_dir) / "tasks.yaml"
+            bootstrap_tasks = None
+            if tasks_file.exists():
+                bootstrap_tm = TaskManager(memory_dir)
+                bootstrap_tasks = bootstrap_tm.load_tasks()
+            generate_claude_md(
+                workspace_path, state_mgr.state.get("goal", ""), tasks=bootstrap_tasks
+            )
     elif project_name and args.dry_run:
         state_mgr.state["workspace_path"] = f"./workspace/{project_name}/"
 

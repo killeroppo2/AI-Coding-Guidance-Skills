@@ -69,19 +69,21 @@ class TestCallAnthropic:
     """Tests for call_anthropic function."""
 
     def test_missing_package(self) -> None:
-        """Returns error when anthropic package not installed."""
+        """Returns error tuple when anthropic package not installed."""
         config = {"api_key": "key", "model": "m", "max_tokens": 100}
         with patch.dict(sys.modules, {"anthropic": None}):
-            result = call_anthropic("hello", config)
+            result, is_error = call_anthropic("hello", config)
         assert "anthropic" in result
+        assert is_error is True
 
     def test_missing_api_key(self) -> None:
-        """Returns error when API key is empty."""
+        """Returns error tuple when API key is empty."""
         mock_anthropic = MagicMock()
         config = {"api_key": "", "model": "m", "max_tokens": 100}
         with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
-            result = call_anthropic("hello", config)
+            result, is_error = call_anthropic("hello", config)
         assert "ANTHROPIC_API_KEY" in result
+        assert is_error is True
 
     def test_successful_call(self) -> None:
         """Returns response text on success."""
@@ -94,27 +96,30 @@ class TestCallAnthropic:
 
         config = {"api_key": "test-key", "model": "claude", "max_tokens": 100}
         with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
-            result = call_anthropic("hello", config)
+            result, is_error = call_anthropic("hello", config)
         assert result == "AI response"
+        assert is_error is False
 
 
 class TestCallOpenai:
     """Tests for call_openai function."""
 
     def test_missing_package(self) -> None:
-        """Returns error when openai package not installed."""
+        """Returns error tuple when openai package not installed."""
         config = {"api_key": "key", "model": "m", "max_tokens": 100}
         with patch.dict(sys.modules, {"openai": None}):
-            result = call_openai("hello", config)
+            result, is_error = call_openai("hello", config)
         assert "openai" in result
+        assert is_error is True
 
     def test_missing_api_key(self) -> None:
-        """Returns error when API key is empty."""
+        """Returns error tuple when API key is empty."""
         mock_openai = MagicMock()
         config = {"api_key": "", "model": "m", "max_tokens": 100}
         with patch.dict(sys.modules, {"openai": mock_openai}):
-            result = call_openai("hello", config)
+            result, is_error = call_openai("hello", config)
         assert "OPENAI_API_KEY" in result
+        assert is_error is True
 
     def test_successful_call(self) -> None:
         """Returns response text on success."""
@@ -129,8 +134,9 @@ class TestCallOpenai:
 
         config = {"api_key": "test-key", "model": "gpt-4", "max_tokens": 100}
         with patch.dict(sys.modules, {"openai": mock_openai}):
-            result = call_openai("hello", config)
+            result, is_error = call_openai("hello", config)
         assert result == "OpenAI response"
+        assert is_error is False
 
 
 class TestRunBridge:
@@ -151,7 +157,8 @@ class TestRunBridge:
             patch("sys.stdin", StringIO("test prompt")),
             patch.dict(os.environ, {"ANTHROPIC_API_KEY": "key"}, clear=True),
             patch(
-                "scripts.api_bridge.call_anthropic", return_value="response"
+                "scripts.api_bridge.call_anthropic",
+                return_value=("response", False),
             ) as mock_call,
             patch("builtins.print") as mock_print,
         ):
@@ -169,10 +176,45 @@ class TestRunBridge:
                 clear=True,
             ),
             patch(
-                "scripts.api_bridge.call_openai", return_value="oai response"
+                "scripts.api_bridge.call_openai",
+                return_value=("oai response", False),
             ) as mock_call,
             patch("builtins.print") as mock_print,
         ):
             run_bridge()
             mock_call.assert_called_once()
             mock_print.assert_called_with("oai response")
+
+    def test_error_exits_nonzero(self) -> None:
+        """Exits with code 2 when API returns an error."""
+        import pytest
+
+        with (
+            patch("sys.stdin", StringIO("test prompt")),
+            patch.dict(os.environ, {"ANTHROPIC_API_KEY": "key"}, clear=True),
+            patch(
+                "scripts.api_bridge.call_anthropic",
+                return_value=("错误: 请安装 anthropic 包", True),
+            ),
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                run_bridge()
+            assert exc_info.value.code == 2
+
+    def test_error_prints_to_stderr(self, capsys) -> None:
+        """Error messages are printed to stderr, not stdout."""
+        import pytest
+
+        with (
+            patch("sys.stdin", StringIO("test prompt")),
+            patch.dict(os.environ, {"ANTHROPIC_API_KEY": "key"}, clear=True),
+            patch(
+                "scripts.api_bridge.call_anthropic",
+                return_value=("错误: 请设置 ANTHROPIC_API_KEY 环境变量", True),
+            ),
+        ):
+            with pytest.raises(SystemExit):
+                run_bridge()
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "ANTHROPIC_API_KEY" in captured.err

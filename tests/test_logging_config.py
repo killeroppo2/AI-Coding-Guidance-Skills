@@ -107,9 +107,16 @@ class TestGetUserLogger:
         assert logger.propagate is False
 
     def test_has_handler(self) -> None:
-        """User logger should have at least one handler."""
+        """User logger should have exactly one handler after each call."""
         logger = get_user_logger()
-        assert len(logger.handlers) >= 1
+        assert len(logger.handlers) == 1
+
+    def test_repeated_calls_do_not_accumulate_handlers(self) -> None:
+        """Calling get_user_logger multiple times does not stack handlers."""
+        get_user_logger()
+        get_user_logger()
+        logger = get_user_logger()
+        assert len(logger.handlers) == 1
 
 
 class TestJsonFormatter:

@@ -31,13 +31,18 @@ def wu_wei_guard(state: dict, proposed_action: str = "iterate") -> bool:
         last_three = progress_history[-3:]
         if len(set(last_three)) == 1:
             # Check if recent errors are retryable path/security issues
+            # ALL of the last 3 errors must contain retryable keywords
             errors = state.get("errors", [])
             recent_errors = errors[-3:] if errors else []
             retryable_keywords = ("workspace", "security", "boundary", "contract")
-            for err in recent_errors:
-                err_lower = err.lower() if isinstance(err, str) else ""
-                if any(kw in err_lower for kw in retryable_keywords):
-                    return True
+            if len(recent_errors) >= 3 and all(
+                any(
+                    kw in (err.lower() if isinstance(err, str) else "")
+                    for kw in retryable_keywords
+                )
+                for err in recent_errors
+            ):
+                return True
             return False
     return True
 

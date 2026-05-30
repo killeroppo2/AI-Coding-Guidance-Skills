@@ -36,7 +36,7 @@ def get_config() -> dict:
     }
 
 
-def call_anthropic(prompt: str, config: dict) -> str:
+def call_anthropic(prompt: str, config: dict) -> tuple[str, bool]:
     """Send prompt to Anthropic API and return response text.
 
     Args:
@@ -44,15 +44,16 @@ def call_anthropic(prompt: str, config: dict) -> str:
         config: Configuration dict with api_key, model, max_tokens.
 
     Returns:
-        The response text from the API.
+        A tuple of (response_text, is_error). When is_error is True,
+        the response_text is an error message.
     """
     try:
         import anthropic
     except ImportError:
-        return "错误: 请安装 anthropic 包: pip install anthropic"
+        return ("错误: 请安装 anthropic 包: pip install anthropic", True)
 
     if not config["api_key"]:
-        return "错误: 请设置 ANTHROPIC_API_KEY 环境变量"
+        return ("错误: 请设置 ANTHROPIC_API_KEY 环境变量", True)
 
     client = anthropic.Anthropic(api_key=config["api_key"])
     message = client.messages.create(
@@ -60,10 +61,10 @@ def call_anthropic(prompt: str, config: dict) -> str:
         max_tokens=config["max_tokens"],
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text
+    return (message.content[0].text, False)
 
 
-def call_openai(prompt: str, config: dict) -> str:
+def call_openai(prompt: str, config: dict) -> tuple[str, bool]:
     """Send prompt to OpenAI API and return response text.
 
     Args:
@@ -71,15 +72,16 @@ def call_openai(prompt: str, config: dict) -> str:
         config: Configuration dict with api_key, model, max_tokens.
 
     Returns:
-        The response text from the API.
+        A tuple of (response_text, is_error). When is_error is True,
+        the response_text is an error message.
     """
     try:
         import openai
     except ImportError:
-        return "错误: 请安装 openai 包: pip install openai"
+        return ("错误: 请安装 openai 包: pip install openai", True)
 
     if not config["api_key"]:
-        return "错误: 请设置 OPENAI_API_KEY 环境变量"
+        return ("错误: 请设置 OPENAI_API_KEY 环境变量", True)
 
     client = openai.OpenAI(api_key=config["api_key"])
     response = client.chat.completions.create(
@@ -87,7 +89,7 @@ def call_openai(prompt: str, config: dict) -> str:
         max_tokens=config["max_tokens"],
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.choices[0].message.content
+    return (response.choices[0].message.content, False)
 
 
 def run_bridge() -> None:
@@ -100,9 +102,13 @@ def run_bridge() -> None:
         sys.exit(1)
 
     if config["provider"] == "openai":
-        result = call_openai(prompt, config)
+        result, is_error = call_openai(prompt, config)
     else:
-        result = call_anthropic(prompt, config)
+        result, is_error = call_anthropic(prompt, config)
+
+    if is_error:
+        print(result, file=sys.stderr)
+        sys.exit(2)
 
     print(result)
 

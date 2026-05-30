@@ -106,13 +106,14 @@ def get_user_logger() -> logging.Logger:
     logger = logging.getLogger("kernel.user")
     logger.setLevel(logging.INFO)
 
-    # Only add handler if none exist
-    if not logger.handlers:
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(message)s")
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    # Clear existing handlers to avoid accumulation on repeated calls
+    logger.handlers.clear()
+
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     logger.propagate = False
     return logger
