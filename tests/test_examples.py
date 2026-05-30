@@ -28,7 +28,7 @@ class TestExamples:
             cwd=str(PROJECT_ROOT),
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
-        assert "[DRY RUN]" in result.stdout
+        assert "[预演]" in result.stdout
 
     def test_cli_tool_example(self):
         """CLI tool example runs successfully."""
@@ -47,7 +47,7 @@ class TestExamples:
             cwd=str(PROJECT_ROOT),
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
-        assert "[DRY RUN]" in result.stdout
+        assert "[预演]" in result.stdout
 
     def test_api_service_example(self):
         """API service example runs successfully."""
@@ -66,7 +66,7 @@ class TestExamples:
             cwd=str(PROJECT_ROOT),
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
-        assert "[DRY RUN]" in result.stdout
+        assert "[预演]" in result.stdout
 
     def test_validate_all_script_exists(self):
         """validate_all.sh exists and is executable."""
