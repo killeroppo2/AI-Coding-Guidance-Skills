@@ -1,34 +1,30 @@
-# 用户登录 API 执行计划
+# Plan: Build a REST API
 
-## 技术栈
-- **框架**: FastAPI (Python)
-- **数据库**: SQLite + SQLAlchemy
-- **认证**: JWT (python-jose) + bcrypt (passlib)
-- **测试**: pytest
+## Overview
 
-## 任务分解
+Build a **Task Manager REST API** using **FastAPI** (Python), **SQLAlchemy** (SQLite), and **Pydantic** validation. This is a standard CRUD API demonstrating RESTful design principles.
 
-### T-001: 项目脚手架与环境配置
-搭建 FastAPI 项目结构，安装依赖。
+## Tasks (6 total)
 
-### T-002: 用户模型与数据库初始化
-定义 User 数据模型（id, username, email, hashed_password, created_at），配置 SQLite 数据库。
+| ID | Title | Complexity | Depends On |
+|----|-------|-----------|------------|
+| T-001 | Project scaffold | low | — |
+| T-002 | Data models and database setup | medium | T-001 |
+| T-003 | Pydantic schemas | low | T-002 |
+| T-004 | CRUD API endpoints | high | T-003 |
+| T-005 | Error handling and middleware | medium | T-004 |
+| T-006 | Comprehensive test suite | medium | T-005 |
 
-### T-003: 密码哈希与 JWT 工具函数
-实现密码哈希验证和 JWT token 生成/校验工具。
+## Resources
 
-### T-004: 用户注册 API (POST /api/register)
-接收 username, email, password，创建用户，返回 201。
+- `/api/tasks` — List, create, update, delete tasks
+- `/health` — Health check endpoint
+- `/docs` — Auto-generated OpenAPI docs
 
-### T-005: 用户登录 API (POST /api/login)
-验证凭证，返回 JWT access token。
+## Key Design Decisions
 
-### T-006: 测试覆盖
-撰写 pytest 全量测试，确保 >90% 覆盖率。
-
-## 依赖关系
-```
-T-001 → T-002 → T-004 → T-006
-  ↓                    ↑
-T-003 → → → → → T-005 → 
-```
+- **Framework**: FastAPI (async, auto-docs, Pydantic integration)
+- **Database**: SQLite with SQLAlchemy (zero setup, portable)
+- **Pagination**: Offset-based (?page=1&page_size=20)
+- **Error format**: Consistent JSON with code, message, details
+- **API version**: v1 via URL prefix /api/v1

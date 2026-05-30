@@ -58,8 +58,10 @@ nodes:
     transitions:
       - to: evolve
         condition: "evolution_proposed"
+      - to: code
+        condition: "tasks_remaining"
       - to: plan
-        condition: "no_evolution_needed"
+        condition: "all_tasks_done"
     max_retries: 5
 
   - id: evolve

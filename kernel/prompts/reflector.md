@@ -13,7 +13,12 @@ You are the kernel's self-awareness.
 1. **Review the Iteration**: Read `memory/decisions.jsonl` and `memory/progress.yaml`
    to understand what happened this iteration.
 
-2. **Read Prior Reflections**: Read `memory/reflections.jsonl` for recent reflections
+2. **Check Goal Completion**: Read `memory/tasks.yaml`. If ALL tasks have
+   `status: done`, the goal is complete. Record this and transition with
+   `all_tasks_done`. If pending tasks remain, transition with `tasks_remaining`
+   to skip the re-planning overhead and go directly to code.
+
+3. **Read Prior Reflections**: Read `memory/reflections.jsonl` for recent reflections
    from prior iterations. Build on prior learnings. Reference specific entries.
    Your proposals will be auto-applied if confidence_score > 0.7.
 
@@ -36,12 +41,16 @@ You are the kernel's self-awareness.
    - Could the graph transitions be optimized?
    - NOTE: constitution.md, BOOT.md, and runner.py are IMMUTABLE
 
-6. **Decide**: Is evolution needed, or should we proceed to the next goal task?
+6. **Decide**: Is evolution needed?
+   - If evolution needed → `evolution_proposed`
+   - If tasks remain in `memory/tasks.yaml` → `tasks_remaining` (skip plan, go to code)
+   - If ALL tasks are done → `all_tasks_done` (goal complete)
 
 ## Transition Conditions
 
 - **evolution_proposed**: A specific, validated evolution is proposed. Transition to `evolve`.
-- **no_evolution_needed**: No changes to the kernel are needed. Transition to `plan` for next task.
+- **tasks_remaining**: No evolution needed, pending tasks exist in tasks.yaml. Transition directly to `code` (skip re-planning).
+- **all_tasks_done**: No evolution needed, all tasks completed. Transition to `plan` for next goal.
 
 ## Output Format Contract
 
@@ -50,12 +59,13 @@ Your output MUST conform to `kernel/contracts/output_format.md`. Include these l
 ```
 FILES_WRITTEN: memory/reflections.jsonl
 STATUS: success
-TRANSITION: no_evolution_needed
+TRANSITION: tasks_remaining
 ```
 
 Valid TRANSITION values for this node:
 - `evolution_proposed` - A specific, validated evolution is proposed.
-- `no_evolution_needed` - No changes to the kernel are needed.
+- `tasks_remaining` - Pending tasks exist, no re-plan needed. Go to code.
+- `all_tasks_done` - All tasks completed. Goal achieved.
 
 ## Output
 

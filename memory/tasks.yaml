@@ -1,6 +1,78 @@
 tasks:
-- complexity: low
-  description: Build a REST API
-  id: T-001
-  status: pending
-  title: Build a REST API
+  - id: "T-001"
+    title: "Project scaffold"
+    description: "Create FastAPI project structure with config module, requirements.txt, and main entry point. Set up workspace with proper package structure."
+    status: "done"
+    acceptance_criteria:
+      - "FastAPI app runs and serves /health endpoint returning 200"
+      - "Project follows standard Python package layout"
+      - "requirements.txt lists all dependencies"
+    dependencies: []
+    complexity: "low"
+
+  - id: "T-002"
+    title: "Data models and database setup"
+    description: "Define SQLAlchemy ORM models for the Task resource. Set up SQLite database connection and table creation. Include fields: id, title, description, status (pending/in_progress/done), created_at, updated_at."
+    status: "done"
+    acceptance_criteria:
+      - "SQLAlchemy Task model defined with all required fields"
+      - "Database tables created on startup"
+      - "SQLite database configured for local development"
+    dependencies:
+      - "T-001"
+    complexity: "medium"
+
+  - id: "T-003"
+    title: "Pydantic schemas for request/response validation"
+    description: "Create Pydantic models for API input validation and response serialization: TaskCreate, TaskUpdate, TaskResponse, ErrorResponse. Include field validation rules."
+    status: "done"
+    acceptance_criteria:
+      - "TaskCreate validates required fields (title) and optional fields"
+      - "TaskUpdate allows partial updates with optional fields"
+      - "TaskResponse includes all model fields with proper types"
+      - "ErrorResponse has consistent code, message, details format"
+    dependencies:
+      - "T-002"
+    complexity: "low"
+
+  - id: "T-004"
+    title: "CRUD API endpoints"
+    description: "Implement REST endpoints for Task resource: GET /api/tasks (list with pagination), GET /api/tasks/{id} (detail), POST /api/tasks (create), PUT /api/tasks/{id} (full update), PATCH /api/tasks/{id} (partial update), DELETE /api/tasks/{id} (delete). Include query parameter support for filtering by status and sorting."
+    status: "done"
+    acceptance_criteria:
+      - "All CRUD endpoints return correct HTTP status codes (200, 201, 204, 404, 422)"
+      - "GET /api/tasks supports pagination via page/page_size parameters"
+      - "GET /api/tasks supports filtering by status"
+      - "DELETE returns 204 No Content"
+      - "POST returns 201 Created with Location header"
+    dependencies:
+      - "T-003"
+    complexity: "high"
+
+  - id: "T-005"
+    title: "Error handling and middleware"
+    description: "Implement global exception handlers, consistent error response format, CORS middleware, and request logging middleware. Handle validation errors, not found, and server errors uniformly."
+    status: "done"
+    acceptance_criteria:
+      - "All unhandled exceptions return consistent JSON error responses"
+      - "404 errors for unknown routes return proper JSON"
+      - "Validation errors return 422 with field-level details"
+      - "CORS middleware configured for development"
+      - "Request logging middleware logs method, path, status, duration"
+    dependencies:
+      - "T-004"
+    complexity: "medium"
+
+  - id: "T-006"
+    title: "Comprehensive test suite"
+    description: "Write tests for all API endpoints using pytest and httpx TestClient. Cover success cases, validation errors, not found, and edge cases. Target 90%+ coverage."
+    status: "done"
+    acceptance_criteria:
+      - "All CRUD endpoints tested with success and failure cases"
+      - "Pagination and filtering tested"
+      - "Error handling and status codes verified"
+      - "Test coverage at 90%+"
+      - "All tests pass"
+    dependencies:
+      - "T-005"
+    complexity: "medium"

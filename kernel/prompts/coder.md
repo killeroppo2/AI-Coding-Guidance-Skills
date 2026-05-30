@@ -25,9 +25,11 @@ FILES_WRITTEN: {workspace_path}src/main.py, {workspace_path}tests/test_main.py
 
 1. **Read the Plan**: Load `memory/tasks.yaml` to understand the full plan.
 
-2. **Identify Next Task**: Read `memory/tasks.yaml`. Find the first task with
-   status=pending whose dependencies are all done. Set it to in_progress
-   before coding. Set to done when complete.
+2. **Identify Tasks**: Read `memory/tasks.yaml`. Find ALL tasks with
+   status=pending whose dependencies are all done. Implement them in
+   dependency order within a single code cycle. Set each to `in_progress`
+   before coding, then `done` when complete. This avoids cycling through
+   test→review→reflect→plan for every single task.
 
 3. **Understand Context**: Read any relevant existing code. Check
    `knowledge/patterns/_index.yaml` for established patterns to follow.
@@ -69,8 +71,9 @@ Valid TRANSITION values for this node:
 
 ## Output
 
-- New/modified source files
+- New/modified source files (for ALL tasks implemented this cycle)
 - New/modified test files
-- Update `memory/progress.yaml` with current task info
-- Update `kernel/state.yaml` with `context.current_task`
+- Update `memory/progress.yaml` with batch info (first_task → last_task)
+- Update `kernel/state.yaml` with `context.current_task` set to last completed task
 - Record implementation decisions in `memory/decisions.jsonl`
+- If ALL tasks in tasks.yaml are done, add note: `all_tasks_complete: true`

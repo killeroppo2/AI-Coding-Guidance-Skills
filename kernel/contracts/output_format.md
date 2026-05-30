@@ -23,7 +23,7 @@ Valid conditions depend on the current node (see graph.yaml):
 | code         | code_written, code_needs_retry            |
 | test         | tests_pass, tests_fail                    |
 | review       | review_pass, review_needs_changes         |
-| reflect      | evolution_proposed, no_evolution_needed    |
+| reflect      | evolution_proposed, tasks_remaining, all_tasks_done |
 | evolve       | evolution_applied                         |
 
 ### STATUS (Required)
@@ -149,14 +149,24 @@ STATUS: success
 TRANSITION: evolution_proposed
 ```
 
-### Reflector (no evolution)
+### Reflector (tasks remaining, skip re-plan)
 
 ```
-Iteration went smoothly. No kernel changes needed.
+Iteration went smoothly. 3 tasks still pending in tasks.yaml.
 
 FILES_WRITTEN: memory/reflections.jsonl
 STATUS: success
-TRANSITION: no_evolution_needed
+TRANSITION: tasks_remaining
+```
+
+### Reflector (all tasks done)
+
+```
+All 6 tasks complete. Goal achieved.
+
+FILES_WRITTEN: memory/reflections.jsonl
+STATUS: success
+TRANSITION: all_tasks_done
 ```
 
 ### Orchestrator (goal loaded)

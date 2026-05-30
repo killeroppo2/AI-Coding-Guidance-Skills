@@ -17,7 +17,8 @@
 | review | reflect | review_pass | Code review passed quality checks |
 | review | code | review_needs_changes | Review found issues requiring changes |
 | reflect | evolve | evolution_proposed | Reflection identified kernel evolution opportunity |
-| reflect | plan | no_evolution_needed | No kernel changes needed, continue to next goal |
+| reflect | code | tasks_remaining | No evolution needed, pending tasks in plan. Skip re-plan, go to code |
+| reflect | plan | all_tasks_done | No evolution needed, all tasks completed. Ready for next goal |
 | evolve | plan | evolution_applied | Evolution changes have been applied |
 
 ## Pre-conditions and Post-conditions
@@ -72,10 +73,15 @@
 - **Pre-conditions:** Reflection identified a pattern or improvement for the kernel
 - **Post-conditions:** Evolution proposal recorded in `memory/reflections.jsonl`, `current_node` set to `evolve`
 
-### reflect -> plan (no_evolution_needed)
+### reflect -> code (tasks_remaining)
 
-- **Pre-conditions:** Reflection completed, no kernel changes warranted
-- **Post-conditions:** Reflection logged, `current_node` set to `plan` for next goal
+- **Pre-conditions:** Reflection completed, no kernel changes warranted, pending tasks exist in tasks.yaml
+- **Post-conditions:** Reflection logged, `current_node` set to `code` (skips re-plan overhead)
+
+### reflect -> plan (all_tasks_done)
+
+- **Pre-conditions:** All tasks in tasks.yaml have status `done`, no kernel evolution needed
+- **Post-conditions:** Reflection logged, goal marked complete, `current_node` set to `plan` for next goal
 
 ### evolve -> plan (evolution_applied)
 

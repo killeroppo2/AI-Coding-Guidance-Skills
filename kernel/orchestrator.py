@@ -12,6 +12,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -66,7 +67,7 @@ _NODE_DEFAULT_TRANSITIONS: dict[str, str] = {
     "code": "code_written",
     "test": "tests_pass",
     "review": "review_pass",
-    "reflect": "no_evolution_needed",
+    "reflect": "tasks_remaining",
     "evolve": "evolution_applied",
 }
 
@@ -664,7 +665,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                            "test": "测试", "review": "审查", "reflect": "反思",
                            "evolve": "进化"}
             _node_label = _node_names.get(node["id"], node["id"])
-            print(f"  [{_iter_num}/{_max_iter}] {_node_label} (等待AI响应)...", end="", flush=True)
+            print(f"  [{_iter_num}/{_max_iter}] {_node_label} (0s)...", end="", flush=True)
+            _timer_start = time.monotonic()
+            _timer_stop = threading.Event()
+
+            def _tick():
+                while not _timer_stop.wait(1):
+                    _e = int(time.monotonic() - _timer_start)
+                    print(f"\r  [{_iter_num}/{_max_iter}] {_node_label} ({_e}s)...", end="", flush=True)
+
+            _ticker = threading.Thread(target=_tick, daemon=True)
+            _ticker.start()
+
+            _elapsed_str = lambda: f"{time.monotonic() - _timer_start:.1f}s"
 
             try:
                 proc = subprocess.Popen(
@@ -698,6 +711,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     )
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
+                    _timer_stop.set()
+                    _ticker.join(1)
                     # Stay on same node - do not advance
                     continue
                 finally:
@@ -706,7 +721,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 result_stdout = stdout
                 result_stderr = stderr
                 if result_returncode != 0:
-                    print(" \u2717 (重试中)")
+                    _timer_stop.set()
+                    _ticker.join(1)
+                    _elapsed = time.monotonic() - _timer_start
+                    print(f"\r  [{_iter_num}/{_max_iter}] {_node_label} ({_elapsed:.1f}s) \u2717 (重试中)")
                     logger.error(
                         f"[ERROR] AI command exited with code {result_returncode}: "
                         f"{result_stderr.strip()}"
@@ -749,13 +767,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         if transitions:
                             next_node_id = transitions[0]["to"]
                             state_mgr.set_current_node(next_node_id)
+                        _timer_stop.set()
+                        _ticker.join(1)
                         continue
                     elif args.retry_strategy == "backoff":
                         visit_count = state_mgr.state.get("node_visits", {}).get(node["id"], 1)
                         delay = min(2 ** (visit_count - 1), MAX_BACKOFF_DELAY_SECONDS)
                         time.sleep(delay)
+                        _timer_stop.set()
+                        _ticker.join(1)
                         continue
                     else:  # "continue"
+                        _timer_stop.set()
+                        _ticker.join(1)
                         continue
                 ai_output = result_stdout
                 # Auto-fix missing STATUS/TRANSITION lines
@@ -806,6 +830,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     retry_lightweight = True
                 # Invalidate incremental context on failure
                 assembler.mark_iteration_failure()
+                _timer_stop.set()
+                _ticker.join(1)
                 # Stay on same node - do not advance
                 continue
 
@@ -849,7 +875,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 state_mgr.set_current_node(next_node_id)
 
                 # Show completion to user
-                print(" \u2713")
+                _timer_stop.set()
+                _ticker.join(1)
+                _elapsed = time.monotonic() - _timer_start
+                print(f"\r  [{_iter_num}/{_max_iter}] {_node_label} ({_elapsed:.1f}s) \u2713")
 
                 # Mark iteration success for incremental context
                 assembler.mark_iteration_success(node["id"])

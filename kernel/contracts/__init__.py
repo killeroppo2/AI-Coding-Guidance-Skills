@@ -163,7 +163,7 @@ class OutputContractValidator:
             (["goal loaded", "context initialized"], "goal_loaded"),
             (["code written", "implementation complete"], "code_written"),
             (["review pass", "code quality acceptable"], "review_pass"),
-            (["no evolution", "no changes needed"], "no_evolution_needed"),
+            (["no evolution", "no changes needed"], "tasks_remaining"),
         ]
         output_lower = output.lower()
         for phrases, transition in phrase_map:

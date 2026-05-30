@@ -1,16 +1,21 @@
 confidence: 0.0
 covered_skills: []
-goal: Build a REST API
+goal: 用 Python 和 Pygame 实现一个完整的俄罗斯方块游戏，包含图形界面、分数显示、方块旋转和行消除功能
 skill_gaps:
-- rest
-- api
+- python
+- pygame
+- 实现一个完整的俄罗斯方块游戏，包含图形界面、分数显示、方块旋转和行消除功能
 suggestions:
-- description: Skill for rest development
-  name: rest-skill
+- description: Skill for python development
+  name: python-skill
   tags:
-  - rest
-- description: Skill for api development
-  name: api-skill
+  - python
+- description: Skill for pygame development
+  name: pygame-skill
   tags:
-  - api
-timestamp: '2026-05-30T02:40:17.405906+00:00'
+  - pygame
+- description: Skill for 实现一个完整的俄罗斯方块游戏，包含图形界面、分数显示、方块旋转和行消除功能 development
+  name: 实现一个完整的俄罗斯方块游戏，包含图形界面、分数显示、方块旋转和行消除功能-skill
+  tags:
+  - 实现一个完整的俄罗斯方块游戏，包含图形界面、分数显示、方块旋转和行消除功能
+timestamp: '2026-05-30T14:09:39.412960+00:00'
