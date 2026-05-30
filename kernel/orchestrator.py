@@ -660,6 +660,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     # Full context needed
                     context_prompt = assembler.assemble(state, node, graph, knowledge)
                 _last_was_lightweight = False
+            # Show progress to user (always, not just verbose)
+            _iter_num = state_mgr.state.get("iteration_count", 0)
+            _max_iter = state_mgr.state.get("max_iterations", 30)
+            _node_names = {"init": "初始化", "plan": "规划", "code": "编码",
+                           "test": "测试", "review": "审查", "reflect": "反思",
+                           "evolve": "进化"}
+            _node_label = _node_names.get(node["id"], node["id"])
+            print(f"  [{_iter_num}/{_max_iter}] {_node_label}...", end="", flush=True)
+
             try:
                 proc = subprocess.Popen(
                     shlex.split(args.ai_command),
@@ -700,6 +709,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 result_stdout = stdout
                 result_stderr = stderr
                 if result_returncode != 0:
+                    print(" \u2717 (重试中)")
                     logger.error(
                         f"[ERROR] AI command exited with code {result_returncode}: "
                         f"{result_stderr.strip()}"
@@ -840,6 +850,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         f"fell back to: {next_node_id}"
                     )
                 state_mgr.set_current_node(next_node_id)
+
+                # Show completion to user
+                print(" \u2713")
 
                 # Mark iteration success for incremental context
                 assembler.mark_iteration_success(node["id"])
