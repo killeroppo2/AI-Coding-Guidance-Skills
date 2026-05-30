@@ -6,129 +6,273 @@
     <title>AI 开发内核控制台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'deep': '#0a0e1a',
+                    'surface': '#131836',
+                    'glass': 'rgba(255,255,255,0.05)',
+                    'glass-border': 'rgba(255,255,255,0.1)',
+                }
+            }
+        }
+    }
+    </script>
+    <style>
+        body { background: #0a0e1a; }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-strong {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+        .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .glow-purple { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+        .pulse-node { animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.08); }
+        }
+        .progress-gradient {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
+            background-size: 200% 100%;
+            animation: shimmer 2s ease infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #172554 100%);
+        }
+        .text-glow {
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+        }
+        .log-container {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(74, 222, 128, 0.1);
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .node-connector {
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+        }
+        .node-active {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border-color: rgba(59, 130, 246, 0.8) !important;
+            color: #93c5fd !important;
+        }
+        .node-completed {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            color: rgba(16, 185, 129, 0.6) !important;
+        }
+        .skill-pill {
+            transition: all 0.2s ease;
+        }
+        .skill-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        .metric-number {
+            background: linear-gradient(135deg, #e2e8f0, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6 max-w-7xl">
-        <!-- Header -->
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-blue-400">AI 开发内核控制台</h1>
-            <p class="text-gray-400 mt-1">自进化开发内核监控面板</p>
-        </header>
+<body class="text-gray-100 min-h-screen antialiased">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Goal Input + Controls -->
-        <section class="bg-gray-800 rounded-lg p-4 mb-6">
-            <div class="flex gap-4 items-end flex-wrap">
-                <div class="flex-1 min-w-64">
-                    <label for="goal-input" class="block text-sm font-medium text-gray-300 mb-1">目标</label>
+        <!-- Hero Section -->
+        <header class="hero-gradient rounded-2xl p-8 sm:p-10 fade-in">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
+                <span class="text-xs font-medium text-blue-300 uppercase tracking-widest">Self-Evolving Kernel</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-1 tracking-tight">AI 开发内核控制台</h1>
+            <p class="text-gray-400 text-sm mb-8">自进化开发内核监控面板</p>
+
+            <!-- Goal Input -->
+            <div class="flex gap-3 items-end flex-wrap">
+                <div class="flex-1 min-w-[260px]">
+                    <label for="goal-input" class="block text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">目标</label>
                     <input type="text" id="goal-input" placeholder="输入开发目标..."
-                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
+                        class="w-full px-4 py-3 glass-strong rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60 transition-all text-sm">
                 </div>
                 <div class="flex gap-2">
                     <button id="start-btn" onclick="startKernel()"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors">
-                        启动
+                        class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-xl font-medium transition-all text-sm shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30">
+                        启动内核
                     </button>
                     <button id="stop-btn" onclick="stopKernel()"
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium transition-colors">
+                        class="px-6 py-3 glass hover:bg-red-500/10 hover:border-red-500/30 rounded-xl font-medium transition-all text-sm text-gray-300 hover:text-red-300">
                         停止
                     </button>
                 </div>
             </div>
+
+            <!-- Current Goal Display -->
+            <div class="mt-4 flex items-center gap-2">
+                <span class="text-xs text-gray-500">当前目标:</span>
+                <span id="current-goal" class="text-sm text-gray-300">未设置目标</span>
+            </div>
+        </header>
+
+        <!-- Node Pipeline -->
+        <section class="glass rounded-2xl p-6 fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">执行管线</h2>
+                <div class="flex items-center gap-2">
+                    <span id="status-text" class="text-xs font-medium px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">idle</span>
+                </div>
+            </div>
+            <div id="pipeline" class="flex items-center justify-center gap-1 sm:gap-2 py-4 overflow-x-auto">
+                <div class="node-step flex flex-col items-center" id="node-init">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-blue-500/10 border border-blue-500/30 text-blue-400 transition-all duration-300">初始</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">init</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-plan">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-purple-500/10 border border-purple-500/30 text-purple-400 transition-all duration-300">规划</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">plan</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-code">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-green-500/10 border border-green-500/30 text-green-400 transition-all duration-300">编码</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">code</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-test">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 transition-all duration-300">测试</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">test</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-review">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-pink-500/10 border border-pink-500/30 text-pink-400 transition-all duration-300">审查</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">review</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-reflect">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 transition-all duration-300">反思</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">reflect</span>
+                </div>
+                <div class="w-4 sm:w-8 node-connector"></div>
+                <div class="node-step flex flex-col items-center" id="node-evolve">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-orange-500/10 border border-orange-500/30 text-orange-400 transition-all duration-300">进化</div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">evolve</span>
+                </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="mt-4">
+                <div class="flex justify-between text-xs text-gray-500 mb-2">
+                    <span id="iteration-text">0 / 30 迭代</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                    <div id="progress-bar" class="progress-gradient h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
         </section>
 
-        <!-- Status Bar -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">当前节点</div>
-                <div id="current-node" class="text-lg font-semibold mt-1">
-                    <span class="px-2 py-1 bg-blue-600 rounded text-sm">init</span>
-                </div>
+        <!-- Metrics Row - Big Numbers -->
+        <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 fade-in">
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="metric-number text-3xl sm:text-4xl font-bold" id="health-score">--</div>
+                <div class="text-xs text-gray-500 mt-2 uppercase tracking-wide">健康度</div>
             </div>
-            <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">进度</div>
-                <div id="progress-indicator" class="mt-1">
-                    <div class="flex justify-between text-sm mb-1">
-                        <span id="iteration-text">0 / 30</span>
-                        <span id="status-text" class="text-yellow-400">idle</span>
-                    </div>
-                    <div class="w-full bg-gray-700 rounded-full h-2">
-                        <div id="progress-bar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
-                    </div>
-                </div>
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="metric-number text-3xl sm:text-4xl font-bold" id="evolution-velocity">--</div>
+                <div class="text-xs text-gray-500 mt-2 uppercase tracking-wide">进化速度</div>
             </div>
-            <div class="bg-gray-800 rounded-lg p-4">
-                <div class="text-sm text-gray-400">目标</div>
-                <div id="current-goal" class="text-sm mt-1 text-gray-200 truncate">未设置目标</div>
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="metric-number text-3xl sm:text-4xl font-bold" id="total-iterations">--</div>
+                <div class="text-xs text-gray-500 mt-2 uppercase tracking-wide">总迭代数</div>
+            </div>
+            <div class="glass rounded-2xl p-5 text-center">
+                <div class="metric-number text-3xl sm:text-4xl font-bold" id="skill-count">--</div>
+                <div class="text-xs text-gray-500 mt-2 uppercase tracking-wide">技能数量</div>
             </div>
         </section>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
             <!-- Live Logs -->
-            <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">实时日志</h2>
-                <div id="log-stream" class="bg-gray-900 rounded p-3 h-64 overflow-y-auto font-mono text-xs text-green-300 space-y-1">
-                    <div class="text-gray-500">连接日志流...</div>
+            <section class="glass rounded-2xl p-6 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">实时日志</h2>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                        <span class="text-[10px] text-gray-600">streaming</span>
+                    </div>
+                </div>
+                <div id="log-stream" class="log-container rounded-xl p-4 h-72 overflow-y-auto font-mono text-xs text-green-300/90 space-y-0.5 text-glow">
+                    <div class="text-gray-600">连接日志流...</div>
                 </div>
             </section>
 
             <!-- Task List -->
-            <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">任务列表</h2>
-                <div id="task-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">暂无任务</div>
+            <section class="glass rounded-2xl p-6 fade-in">
+                <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">任务列表</h2>
+                <div id="task-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <div class="text-gray-600 text-sm">暂无任务</div>
                 </div>
             </section>
 
             <!-- Evolution History -->
-            <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">进化历史</h2>
-                <div id="history-timeline" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">暂无进化记录</div>
+            <section class="glass rounded-2xl p-6 fade-in">
+                <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">进化历史</h2>
+                <div id="history-timeline" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    <div class="text-gray-600 text-sm">暂无进化记录</div>
                 </div>
             </section>
 
             <!-- Skills Inventory -->
-            <section class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">技能库</h2>
-                <div id="skill-grid" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm col-span-2">暂无技能</div>
-                </div>
-            </section>
-
-            <!-- Metrics Section -->
-            <section class="bg-gray-800 rounded-lg p-4 col-span-2">
-                <h2 class="text-lg font-semibold text-blue-300 mb-3">系统指标</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <canvas id="success-chart" height="200"></canvas>
-                    </div>
-                    <div>
-                        <canvas id="distribution-chart" height="200"></canvas>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4 mt-4">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold" id="health-score">--</div>
-                        <div class="text-xs text-gray-400">健康度</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold" id="evolution-velocity">--</div>
-                        <div class="text-xs text-gray-400">进化速度</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold" id="total-iterations">--</div>
-                        <div class="text-xs text-gray-400">总迭代数</div>
-                    </div>
+            <section class="glass rounded-2xl p-6 fade-in">
+                <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">技能库</h2>
+                <div id="skill-grid" class="flex flex-wrap gap-2 max-h-72 overflow-y-auto">
+                    <div class="text-gray-600 text-sm">暂无技能</div>
                 </div>
             </section>
         </div>
 
-        <!-- Connection Status -->
-        <footer class="mt-6 text-center text-xs text-gray-500">
-            <span id="ws-status" class="inline-flex items-center gap-1">
-                <span id="ws-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                WebSocket: 已断开
+        <!-- Charts Section -->
+        <section class="glass rounded-2xl p-6 fade-in">
+            <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-6">系统指标趋势</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white/[0.02] rounded-xl p-4">
+                    <canvas id="success-chart" height="200"></canvas>
+                </div>
+                <div class="bg-white/[0.02] rounded-xl p-4">
+                    <canvas id="distribution-chart" height="200"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connection Status Footer -->
+        <footer class="text-center pb-6">
+            <span id="ws-status" class="inline-flex items-center gap-2 text-xs text-gray-600">
+                <span id="ws-dot" class="w-2 h-2 rounded-full bg-red-500/60"></span>
+                <span id="ws-label">WebSocket: 已断开</span>
             </span>
         </footer>
     </div>
@@ -136,6 +280,7 @@
     <script>
         let ws = null;
         let eventSource = null;
+        const PIPELINE_NODES = ['init', 'plan', 'code', 'test', 'review', 'reflect', 'evolve'];
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', () => {
@@ -165,21 +310,43 @@
 
         function updateStateUI(state) {
             if (!state) return;
-            const nodeEl = document.getElementById('current-node');
             const node = state.current_node || 'init';
-            const colors = {init:'bg-blue-600', plan:'bg-purple-600', code:'bg-green-600', review:'bg-yellow-600', reflect:'bg-pink-600', evolve:'bg-orange-600'};
-            const color = colors[node] || 'bg-gray-600';
-            nodeEl.innerHTML = `<span class="px-2 py-1 ${color} rounded text-sm">${node}</span>`;
 
+            // Update pipeline nodes
+            PIPELINE_NODES.forEach((n, idx) => {
+                const el = document.getElementById(`node-${n}`);
+                if (!el) return;
+                const circle = el.querySelector('div');
+                // Reset classes
+                circle.classList.remove('pulse-node', 'glow-blue', 'node-active', 'node-completed');
+
+                const currentIdx = PIPELINE_NODES.indexOf(node);
+                if (n === node) {
+                    circle.classList.add('pulse-node', 'glow-blue', 'node-active');
+                } else if (idx < currentIdx) {
+                    circle.classList.add('node-completed');
+                }
+            });
+
+            // Update progress
             const iter = state.iteration_count || 0;
             const max = state.max_iterations || 30;
-            document.getElementById('iteration-text').textContent = `${iter} / ${max}`;
-            document.getElementById('progress-bar').style.width = `${(iter/max)*100}%`;
+            const pct = Math.round((iter / max) * 100);
+            document.getElementById('iteration-text').textContent = `${iter} / ${max} 迭代`;
+            document.getElementById('progress-percent').textContent = `${pct}%`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
 
+            // Update status badge
             const status = state.status || 'idle';
             const statusEl = document.getElementById('status-text');
-            statusEl.textContent = status;
-            statusEl.className = status === 'running' ? 'text-green-400' : status === 'error' ? 'text-red-400' : 'text-yellow-400';
+            statusEl.textContent = status === 'running' ? '运行中' : status === 'error' ? '错误' : '空闲';
+            if (status === 'running') {
+                statusEl.className = 'text-xs font-medium px-2 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20';
+            } else if (status === 'error') {
+                statusEl.className = 'text-xs font-medium px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20';
+            } else {
+                statusEl.className = 'text-xs font-medium px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+            }
 
             if (state.goal) {
                 document.getElementById('current-goal').textContent = state.goal;
@@ -192,14 +359,18 @@
                 const tasks = await resp.json();
                 const el = document.getElementById('task-list');
                 if (tasks.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm">暂无任务</div>';
+                    el.innerHTML = '<div class="text-gray-600 text-sm">暂无任务</div>';
                     return;
                 }
                 el.innerHTML = tasks.map(t => {
                     const status = t.status || 'pending';
                     const icon = status === 'done' ? '&#10003;' : status === 'in_progress' ? '&#9654;' : '&#9675;';
-                    const color = status === 'done' ? 'text-green-400' : status === 'in_progress' ? 'text-blue-400' : 'text-gray-400';
-                    return `<div class="flex items-center gap-2 text-sm"><span class="${color}">${icon}</span><span>${t.title || t.name || t.description || '任务'}</span></div>`;
+                    const dotColor = status === 'done' ? 'bg-green-400' : status === 'in_progress' ? 'bg-blue-400' : 'bg-gray-600';
+                    const textColor = status === 'done' ? 'text-green-300/70' : status === 'in_progress' ? 'text-blue-300' : 'text-gray-400';
+                    return `<div class="flex items-center gap-3 py-2 px-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                        <span class="w-2 h-2 rounded-full ${dotColor} flex-shrink-0"></span>
+                        <span class="text-sm ${textColor}">${t.title || t.name || t.description || '任务'}</span>
+                    </div>`;
                 }).join('');
             } catch (e) {
                 console.error('Failed to load tasks:', e);
@@ -212,12 +383,15 @@
                 const history = await resp.json();
                 const el = document.getElementById('history-timeline');
                 if (history.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm">暂无进化记录</div>';
+                    el.innerHTML = '<div class="text-gray-600 text-sm">暂无进化记录</div>';
                     return;
                 }
                 el.innerHTML = history.slice(-20).reverse().map(h => {
                     const ts = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
-                    return `<div class="border-l-2 border-blue-500 pl-3 py-1 text-sm"><div class="text-gray-300">${h.type || h.action || 'event'}</div><div class="text-gray-500 text-xs">${ts}</div></div>`;
+                    return `<div class="border-l-2 border-blue-500/30 pl-4 py-2 hover:border-blue-400/60 transition-colors">
+                        <div class="text-sm text-gray-300">${h.type || h.action || 'event'}</div>
+                        <div class="text-[10px] text-gray-600 mt-0.5">${ts}</div>
+                    </div>`;
                 }).join('');
             } catch (e) {
                 console.error('Failed to load history:', e);
@@ -229,12 +403,25 @@
                 const resp = await fetch('/api/skills');
                 const skills = await resp.json();
                 const el = document.getElementById('skill-grid');
+                const countEl = document.getElementById('skill-count');
+                countEl.textContent = skills.length || '0';
                 if (skills.length === 0) {
-                    el.innerHTML = '<div class="text-gray-500 text-sm col-span-2">暂无技能</div>';
+                    el.innerHTML = '<div class="text-gray-600 text-sm">暂无技能</div>';
                     return;
                 }
-                el.innerHTML = skills.map(s => {
-                    return `<div class="bg-gray-700 rounded p-2 text-xs"><div class="font-medium text-gray-200">${s.name || 'unnamed'}</div><div class="text-gray-400 mt-1 truncate">${s.description || ''}</div></div>`;
+                const colors = [
+                    'bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20',
+                    'bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20',
+                    'bg-green-500/10 text-green-300 border-green-500/20 hover:bg-green-500/20',
+                    'bg-amber-500/10 text-amber-300 border-amber-500/20 hover:bg-amber-500/20',
+                    'bg-pink-500/10 text-pink-300 border-pink-500/20 hover:bg-pink-500/20',
+                    'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/20',
+                    'bg-orange-500/10 text-orange-300 border-orange-500/20 hover:bg-orange-500/20',
+                ];
+                el.innerHTML = skills.map((s, i) => {
+                    const color = colors[i % colors.length];
+                    const name = s.name || 'unnamed';
+                    return `<span class="skill-pill px-3 py-1.5 rounded-full text-xs font-medium border cursor-default ${color}" title="${s.description || ''}">${name}</span>`;
                 }).join('');
             } catch (e) {
                 console.error('Failed to load skills:', e);
@@ -250,9 +437,9 @@
                     body: JSON.stringify({goal: goal, max_iterations: 30})
                 });
                 const data = await resp.json();
-                appendLog(`Start: ${JSON.stringify(data)}`);
+                appendLog(`启动: ${JSON.stringify(data)}`);
             } catch (e) {
-                appendLog(`Error starting: ${e.message}`);
+                appendLog(`启动错误: ${e.message}`);
             }
         }
 
@@ -260,9 +447,9 @@
             try {
                 const resp = await fetch('/api/stop', {method: 'POST'});
                 const data = await resp.json();
-                appendLog(`Stop: ${JSON.stringify(data)}`);
+                appendLog(`停止: ${JSON.stringify(data)}`);
             } catch (e) {
-                appendLog(`Error stopping: ${e.message}`);
+                appendLog(`停止错误: ${e.message}`);
             }
         }
 
@@ -270,8 +457,8 @@
             const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${proto}//${location.host}/ws`);
             ws.onopen = () => {
-                document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-green-500';
-                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: 已连接';
+                document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-green-400';
+                document.getElementById('ws-label').textContent = 'WebSocket: 已连接';
             };
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
@@ -279,8 +466,8 @@
                 if (msg.type === 'goal_updated') loadState();
             };
             ws.onclose = () => {
-                document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-red-500';
-                document.getElementById('ws-status').lastChild.textContent = ' WebSocket: 已断开';
+                document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-red-500/60';
+                document.getElementById('ws-label').textContent = 'WebSocket: 已断开';
                 setTimeout(connectWebSocket, 3000);
             };
         }
@@ -304,6 +491,7 @@
             const line = document.createElement('div');
             const ts = new Date().toLocaleTimeString();
             line.textContent = `[${ts}] ${msg}`;
+            line.className = 'leading-relaxed';
             el.appendChild(line);
             el.scrollTop = el.scrollHeight;
             // Keep max 200 lines
@@ -334,17 +522,20 @@
                         datasets: [{
                             label: '各节点迭代次数',
                             data: counts,
-                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
+                            backgroundColor: 'rgba(139, 92, 246, 0.4)',
+                            borderColor: 'rgba(139, 92, 246, 0.8)',
+                            borderWidth: 1,
+                            borderRadius: 4,
                         }]
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { labels: { color: '#9ca3af' } } },
+                        plugins: {
+                            legend: { labels: { color: '#6b7280', font: { size: 11 } } }
+                        },
                         scales: {
-                            x: { ticks: { color: '#9ca3af' } },
-                            y: { ticks: { color: '#9ca3af' }, beginAtZero: true }
+                            x: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                            y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true }
                         }
                     }
                 });
@@ -358,7 +549,6 @@
                 const resp = await fetch('/api/metrics/history');
                 const data = await resp.json();
 
-                // Success rate line chart
                 const labels = data.success_rate_over_time.map(d => `W${d.window}`);
                 const rates = data.success_rate_over_time.map(d => d.rate);
                 const ctx1 = document.getElementById('success-chart').getContext('2d');
@@ -370,18 +560,23 @@
                         datasets: [{
                             label: '成功率',
                             data: rates,
-                            borderColor: 'rgba(34, 197, 94, 1)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderColor: 'rgba(16, 185, 129, 0.9)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.08)',
                             fill: true,
-                            tension: 0.3
+                            tension: 0.4,
+                            pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
                         }]
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { labels: { color: '#9ca3af' } } },
+                        plugins: {
+                            legend: { labels: { color: '#6b7280', font: { size: 11 } } }
+                        },
                         scales: {
-                            x: { ticks: { color: '#9ca3af' } },
-                            y: { ticks: { color: '#9ca3af' }, min: 0, max: 1 }
+                            x: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                            y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.03)' }, min: 0, max: 1 }
                         }
                     }
                 });

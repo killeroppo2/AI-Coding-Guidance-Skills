@@ -442,12 +442,12 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
                 yield "event: connected\ndata: {}\n\n"
                 while True:
                     try:
-                        message = await asyncio.wait_for(queue.get(), timeout=30.0)
+                        message = await asyncio.wait_for(queue.get(), timeout=10.0)
                         yield f"data: {json.dumps(message)}\n\n"
                     except asyncio.TimeoutError:
-                        # Send keepalive
+                        # Send keepalive (short timeout for faster shutdown)
                         yield ": keepalive\n\n"
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, GeneratorExit):
                 pass
             finally:
                 if queue in app.state.log_subscribers:
@@ -513,6 +513,23 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    import signal
+    import sys
+
     import uvicorn
 
-    uvicorn.run("web.app:app", host="0.0.0.0", port=8000, reload=True)
+    def _signal_handler(sig, frame):
+        """Force immediate exit on Ctrl+C."""
+        print("\n正在关闭服务器...")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    uvicorn.run(
+        "web.app:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        timeout_graceful_shutdown=1,
+    )
