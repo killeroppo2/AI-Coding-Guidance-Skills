@@ -255,7 +255,7 @@ class TestRunnerIntegration:
     """Tests for capability assessment integration in runner.py."""
 
     def test_runner_integration_low_confidence(self, tmp_path, capsys):
-        """Warning is printed when confidence is low."""
+        """Low skill coverage is logged at debug level (only visible with --verbose)."""
         import runner
 
         # Create minimal kernel structure
@@ -324,7 +324,7 @@ class TestRunnerIntegration:
 
         # Patch KERNEL_ROOT to use our tmp structure
         with patch.object(runner, "KERNEL_ROOT", tmp_path):
-            runner.main(["--goal", "deploy kubernetes cluster monitoring"])
+            runner.main(["--goal", "deploy kubernetes cluster monitoring", "--verbose"])
 
         captured = capsys.readouterr()
         assert "[WARNING] Low skill coverage" in captured.err

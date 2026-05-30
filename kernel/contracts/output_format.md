@@ -177,3 +177,13 @@ TRANSITION: goal_loaded
 5. FILES_WRITTEN paths must be comma-separated if multiple
 6. ERROR lines are optional but recommended when STATUS is failure
 
+---
+
+## ⚠️ 最后提醒
+
+你的响应必须以这两行结尾：
+STATUS: success
+TRANSITION: <valid_condition>
+
+缺少这两行 = 输出被拒绝 = 浪费重试。不要忘记。
+

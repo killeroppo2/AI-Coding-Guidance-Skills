@@ -1141,7 +1141,7 @@ class TestReviewFixes:
     def test_fallback_produces_warning_no_transition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that missing TRANSITION line triggers contract violation."""
+        """Test that missing TRANSITION line triggers contract violation (visible with --verbose)."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1163,6 +1163,7 @@ class TestReviewFixes:
                     "echo hi",
                     "--max-iterations",
                     "1",
+                    "--verbose",
                 ]
             )
 
@@ -1174,7 +1175,7 @@ class TestReviewFixes:
     def test_fallback_produces_warning_unmatched_condition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that invalid transition condition triggers contract violation."""
+        """Test that invalid transition condition triggers contract violation (visible with --verbose)."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1196,6 +1197,7 @@ class TestReviewFixes:
                     "echo hi",
                     "--max-iterations",
                     "1",
+                    "--verbose",
                 ]
             )
 

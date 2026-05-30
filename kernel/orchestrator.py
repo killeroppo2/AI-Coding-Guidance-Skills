@@ -343,7 +343,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             gaps = assessment.get("gaps", [])
 
             if confidence < 0.3 and gaps:
-                logger.warning(
+                logger.debug(
                     f"[WARNING] Low skill coverage ({confidence:.0%}). "
                     f"The kernel lacks skills for: {', '.join(gaps[:5])}. "
                     f"Consider creating skills with 'write-a-skill'."
@@ -736,7 +736,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             contract_result = validator.validate_output(ai_output, node["id"])
             if not contract_result.valid:
                 for violation in contract_result.violations:
-                    logger.warning(f"[CONTRACT VIOLATION] {violation}")
+                    logger.debug(f"[CONTRACT VIOLATION] {violation}")
                 state_mgr.state.setdefault("errors", []).append(
                     f"Contract violations on node {node['id']}: {contract_result.violations}"
                 )

@@ -164,7 +164,10 @@ class TestRunBridge:
         ):
             run_bridge()
             mock_call.assert_called_once()
-            mock_print.assert_called_with("response")
+            printed = mock_print.call_args[0][0]
+            assert "response" in printed
+            assert "STATUS: success" in printed
+            assert "TRANSITION:" in printed
 
     def test_calls_openai_when_configured(self) -> None:
         """Calls openai when AI_PROVIDER is openai."""
@@ -183,7 +186,10 @@ class TestRunBridge:
         ):
             run_bridge()
             mock_call.assert_called_once()
-            mock_print.assert_called_with("oai response")
+            printed = mock_print.call_args[0][0]
+            assert "oai response" in printed
+            assert "STATUS: success" in printed
+            assert "TRANSITION:" in printed
 
     def test_error_exits_nonzero(self) -> None:
         """Exits with code 2 when API returns an error."""

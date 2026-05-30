@@ -573,7 +573,7 @@ class TestRunnerContractIntegration:
     def test_mode3_contract_violation_logged_to_stderr(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that contract violations are printed to stderr."""
+        """Test that contract violations are logged at debug level (visible with --verbose)."""
         from unittest.mock import MagicMock, patch
 
         import runner
@@ -594,6 +594,7 @@ class TestRunnerContractIntegration:
                     "echo hi",
                     "--max-iterations",
                     "1",
+                    "--verbose",
                 ]
             )
 
