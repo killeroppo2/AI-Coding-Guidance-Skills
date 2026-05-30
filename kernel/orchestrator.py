@@ -43,7 +43,6 @@ from kernel.graph_executor import GraphExecutor
 from kernel.intent_analyzer import IntentAnalyzer
 from kernel.lifecycle_guard import LifecycleGuard
 from kernel.logging_config import setup_logging
-from kernel.mode3_executor import _parse_transition
 from kernel.phase_router import PhaseRouter
 from kernel.philosophy.guards import bing_gui_shen_su, shui_guard, wu_wei_guard
 from kernel.philosophy.principles import should_retreat
@@ -111,6 +110,9 @@ SUBPROCESS_TERMINATE_TIMEOUT = 5
 
 # Maximum characters to capture from partial output in timeout messages
 PARTIAL_OUTPUT_PREVIEW_LENGTH = 200
+
+# Maximum AI output bytes before truncation (prevents OOM from runaway AI)
+MAX_AI_OUTPUT_BYTES = 524_288  # 512 KB
 
 
 def _run_post_iteration(
@@ -439,18 +441,21 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     if mode3:
 
         def _shutdown_handler(signum, frame):
-            if _mode3_mod._active_subprocess is not None:
-                try:
-                    _mode3_mod._active_subprocess.terminate()
-                    _mode3_mod._active_subprocess.wait(timeout=SUBPROCESS_TERMINATE_TIMEOUT)
-                except Exception:
+            try:
+                if _mode3_mod._active_subprocess is not None:
                     try:
-                        _mode3_mod._active_subprocess.kill()
+                        _mode3_mod._active_subprocess.terminate()
+                        _mode3_mod._active_subprocess.wait(timeout=SUBPROCESS_TERMINATE_TIMEOUT)
                     except Exception:
-                        pass
-            state_mgr.state["status"] = "interrupted"
-            state_mgr.state.setdefault("errors", []).append("Execution interrupted by signal")
-            state_mgr.save_state()
+                        try:
+                            _mode3_mod._active_subprocess.kill()
+                        except Exception:
+                            pass
+                state_mgr.state["status"] = "interrupted"
+                state_mgr.state.setdefault("errors", []).append("Execution interrupted by signal")
+                state_mgr.save_state()
+            except Exception:
+                pass  # Best-effort save during signal handler
             sys.exit(130)
 
         signal.signal(signal.SIGINT, _shutdown_handler)
@@ -580,6 +585,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     handler = None
                 if handler:
                     state_mgr.set_current_node(handler)
+                    state_mgr.save_state()
                 else:
                     # Philosophy: should_retreat check
                     if should_retreat(stuck_node, visits, max_retries_map.get(stuck_node, 5)):
@@ -720,6 +726,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 result_returncode = proc.returncode
                 result_stdout = stdout
                 result_stderr = stderr
+
+                # Guard: empty output is a failure even with exit code 0
+                if result_returncode == 0 and (not result_stdout or not result_stdout.strip()):
+                    result_returncode = -1
+                    result_stderr = "AI returned empty output"
+
+                # Guard: truncate oversized output to prevent OOM
+                if result_stdout and len(result_stdout) > MAX_AI_OUTPUT_BYTES:
+                    logger.warning(
+                        f"AI output truncated: {len(result_stdout)} bytes "
+                        f"(limit: {MAX_AI_OUTPUT_BYTES})"
+                    )
+                    result_stdout = result_stdout[:MAX_AI_OUTPUT_BYTES]
+
                 if result_returncode != 0:
                     _timer_stop.set()
                     _ticker.join(1)
@@ -749,7 +769,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         "errors": [f"AI command exited with code {result_returncode}"],
                         "iteration": state_mgr.state.get("iteration_count", 0),
                     }
-                    feedback_loop.run_cycle(iteration_data)
+                    # Skip evolution proposals on failure — no useful signal
                     state_mgr.trim_errors()
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
@@ -767,6 +787,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         if transitions:
                             next_node_id = transitions[0]["to"]
                             state_mgr.set_current_node(next_node_id)
+                            state_mgr.save_state()
                         _timer_stop.set()
                         _ticker.join(1)
                         continue
@@ -784,7 +805,6 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 ai_output = result_stdout
                 # Auto-fix missing STATUS/TRANSITION lines
                 ai_output = _ensure_format_lines(ai_output, node["id"])
-                transition_condition = _parse_transition(ai_output)
             except FileNotFoundError:
                 logger.error(
                     f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
@@ -835,14 +855,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 # Stay on same node - do not advance
                 continue
 
+            # Use contract-parsed transition (single source of truth)
+            transition_condition = contract_result.transition
+
             # Extract and write code from AI output to workspace
             workspace_path = state_mgr.state.get("workspace_path", "")
             if workspace_path and node["id"] in ("code", "test"):
                 from kernel.output_writer import extract_and_write_files
+                from kernel.security_policy import SecurityPolicy
 
-                written = extract_and_write_files(ai_output, workspace_path)
+                sp = SecurityPolicy(workspace_path)
+                written = extract_and_write_files(ai_output, workspace_path, security_policy=sp)
                 if written:
-                    logger.debug(f"[写入] 提取了 {len(written)} 个文件到工作区")
+                    logger.info(f"[写入] 提取了 {len(written)} 个文件到工作区")
 
             # Validate workspace boundary for files_written
             if workspace_path and contract_result.files_written:
@@ -855,7 +880,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        logger.debug(f"[SECURITY] Denied file write: {fpath}")
+                        logger.warning(f"[SECURITY] Denied file write: {fpath}")
 
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])
@@ -873,6 +898,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         f"fell back to: {next_node_id}"
                     )
                 state_mgr.set_current_node(next_node_id)
+                state_mgr.save_state()  # Incremental persistence for crash recovery
 
                 # Show completion to user
                 _timer_stop.set()
@@ -901,7 +927,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     "errors": [],
                     "iteration": state_mgr.state.get("iteration_count", 0),
                 }
-                feedback_loop.run_cycle(iteration_data)
+                feedback_result = feedback_loop.run_cycle(iteration_data)
+                if feedback_result.get("proposals_applied", 0) > 0:
+                    logger.info(
+                        f"[EVOLUTION] Applied {feedback_result['proposals_applied']} evolution proposal(s)"
+                    )
+                elif feedback_result.get("proposals_generated", 0) > 0:
+                    logger.debug(
+                        f"[EVOLUTION] Generated {feedback_result['proposals_generated']} "
+                        f"proposal(s), applied 0 (below threshold)"
+                    )
 
                 # Run triggers and record feedback (以战养战 + 道常无为而无不为)
                 _run_post_iteration(
@@ -925,9 +960,11 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 if speed_signal == "low" and complexity != "low":
                     complexity = "low"
                     state_mgr.state["complexity"] = "low"
+                    # Reset node_visits to prevent false re-trigger of stuck detection
+                    state_mgr.state["node_visits"] = {}
                     logger.info(
                         "[PHILOSOPHY] \u5175\u8d35\u795e\u901f:"
-                        " Stalling detected, downgrading complexity."
+                        " Stalling detected, downgrading complexity (node_visits reset)."
                     )
 
                 # Philosophy check: should_stop_iterating
@@ -1020,6 +1057,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 "iterations": state_mgr.state.get("iteration_count", 0),
             },
         )
+        session_tracker.flush()
 
     # Print completion report after Mode 3 execution
     if mode3:

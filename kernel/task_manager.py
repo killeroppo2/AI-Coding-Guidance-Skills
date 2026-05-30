@@ -5,11 +5,14 @@ in memory/tasks.yaml, supporting dependency-aware task selection,
 status transitions, and dependency validation.
 """
 
+import logging
 from pathlib import Path
 
 import yaml
 
 from kernel.atomic_write import atomic_write
+
+logger = logging.getLogger(__name__)
 
 
 class TaskManager:
@@ -37,7 +40,11 @@ class TaskManager:
         if not self.tasks_path.exists():
             return []
         with open(self.tasks_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+            try:
+                data = yaml.safe_load(f) or {}
+            except yaml.YAMLError:
+                logger.warning(f"Corrupted tasks file {self.tasks_path}, returning empty task list")
+                return []
         tasks: list[dict] = data.get("tasks", [])
         return tasks
 

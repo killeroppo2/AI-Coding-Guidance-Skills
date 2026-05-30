@@ -46,17 +46,20 @@ class SessionTracker:
     Provides resume snapshot generation and event querying.
     """
 
-    def __init__(self, memory_dir: str, max_events: int = 1000) -> None:
+    def __init__(self, memory_dir: str, max_events: int = 1000, flush_interval: int = 10) -> None:
         """Initialize the session tracker.
 
         Args:
             memory_dir: Path to the memory directory.
             max_events: Maximum events to retain in the log file.
+            flush_interval: Number of events to buffer before flushing to disk.
         """
         self.memory_dir = Path(memory_dir)
         self.events_path = self.memory_dir / "session_events.jsonl"
         self.max_events = max_events
         self._prune_threshold = int(max_events * 1.1)
+        self._flush_interval = flush_interval
+        self._buffer: list[dict] = []
 
     def track_event(self, event_type: str, data: dict[str, Any] | None = None) -> None:
         """Append an event to the session log.
@@ -82,16 +85,26 @@ class SessionTracker:
             "type": clean_type,
             "data": safe_data,
         }
+        self._buffer.append(event)
+        if len(self._buffer) >= self._flush_interval:
+            self.flush()
+
+    def flush(self) -> None:
+        """Write buffered events to disk.
+
+        Best-effort: swallows IO errors to avoid crashing the kernel.
+        """
+        if not self._buffer:
+            return
         self.memory_dir.mkdir(parents=True, exist_ok=True)
         try:
-            serialized = json.dumps(event, ensure_ascii=False)
-        except (ValueError, RecursionError):
-            # Handle deeply nested or circular data by falling back
-            event["data"] = {"_serialization_error": "data too complex"}
-            serialized = json.dumps(event, ensure_ascii=False)
-        with open(self.events_path, "a", encoding="utf-8") as f:
-            f.write(serialized + "\n")
-        self._prune_if_needed()
+            with open(self.events_path, "a", encoding="utf-8") as f:
+                for event in self._buffer:
+                    f.write(json.dumps(event, ensure_ascii=False) + "\n")
+            self._buffer.clear()
+            self._prune_if_needed()
+        except (OSError, ValueError):
+            pass  # Best-effort flush
 
     def get_recent_events(self, n: int = 20) -> list[dict[str, Any]]:
         """Return the last n events.

@@ -70,7 +70,7 @@ def _find_inline_filename(first_line: str) -> str | None:
     return None
 
 
-def extract_and_write_files(ai_output: str, workspace_path: str) -> list[str]:
+def extract_and_write_files(ai_output: str, workspace_path: str, security_policy=None) -> list[str]:
     """Parse AI output for code blocks and write them to workspace.
 
     Scans the AI response text for fenced markdown code blocks (```),
@@ -126,6 +126,7 @@ def extract_and_write_files(ai_output: str, workspace_path: str) -> list[str]:
                 block_content = "\n".join(lines)
 
         if not filename:
+            logger.warning(f"[输出提取] 代码块附近未检测到文件名，跳过块 (前50字符): {block_content[:50]!r}")
             continue
 
         # Normalize filename - strip leading slashes or workspace prefix
@@ -145,6 +146,11 @@ def extract_and_write_files(ai_output: str, workspace_path: str) -> list[str]:
 
         # Build full path
         file_path = workspace / filename
+
+        # Security policy check before write
+        if security_policy is not None and security_policy.check_path(str(file_path)) == "deny":
+            logger.warning(f"[安全] 因安全策略跳过文件写入: {filename}")
+            continue
 
         # Create parent directories
         try:

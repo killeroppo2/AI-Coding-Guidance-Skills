@@ -6,6 +6,7 @@ including current node, iteration count, goals, and error tracking.
 
 import copy
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,8 @@ import yaml
 
 from kernel.atomic_write import atomic_write
 from kernel.file_lock import FileLock
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_STATE = {
     "current_node": "init",
@@ -68,7 +71,11 @@ class StateManager:
                 yaml.safe_dump(state, f, default_flow_style=False, allow_unicode=True)
             return state
         with open(self.state_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+            try:
+                data = yaml.safe_load(f) or {}
+            except yaml.YAMLError:
+                logger.warning(f"Corrupted state file {self.state_path}, resetting to defaults")
+                data = copy.deepcopy(DEFAULT_STATE)
         # Merge with defaults for any missing keys
         for key, value in DEFAULT_STATE.items():
             if key not in data:
@@ -162,6 +169,9 @@ class StateManager:
         self.memory_dir.mkdir(parents=True, exist_ok=True)
         filepath = self.memory_dir / "decisions.jsonl"
         lock_path = filepath.with_suffix(".jsonl.lock")
+        # Clean up stale lock before acquiring (process likely crashed)
+        if FileLock.is_stale(lock_path, max_age_seconds=30):
+            FileLock.force_release(lock_path)
         with FileLock(lock_path, timeout=5.0):
             with open(filepath, "a", encoding="utf-8") as f:
                 f.write(json.dumps(decision) + "\n")
@@ -176,6 +186,9 @@ class StateManager:
         self.memory_dir.mkdir(parents=True, exist_ok=True)
         filepath = self.memory_dir / "reflections.jsonl"
         lock_path = filepath.with_suffix(".jsonl.lock")
+        # Clean up stale lock before acquiring (process likely crashed)
+        if FileLock.is_stale(lock_path, max_age_seconds=30):
+            FileLock.force_release(lock_path)
         with FileLock(lock_path, timeout=5.0):
             with open(filepath, "a", encoding="utf-8") as f:
                 f.write(json.dumps(reflection) + "\n")
