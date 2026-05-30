@@ -21,54 +21,54 @@ class TestFormatError:
 
     def test_format_stuck_node(self):
         result = format_error("stuck_node", node="code", visits=6, max_retries=5)
-        assert "What happened:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
         assert "code" in result
         assert "6" in result
         assert "5" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_command_not_found(self):
         result = format_error("command_not_found", cmd="claude")
         assert "claude" in result
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_timeout(self):
         result = format_error("timeout", seconds="300", node="code")
         assert "300" in result
         assert "code" in result
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_skill_not_found(self):
         result = format_error("skill_not_found", name="my-skill")
         assert "my-skill" in result
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_contract_violation(self):
         result = format_error("contract_violation", node="plan")
         assert "plan" in result
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_state_corrupted(self):
         result = format_error("state_corrupted")
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_unknown_error_type_returns_generic_fallback(self):
         result = format_error("totally_unknown_error")
-        assert "What happened:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
         assert "totally_unknown_error" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
 
     def test_format_unknown_with_detail_kwarg(self):
         result = format_error("nonexistent", detail="something broke")
@@ -77,9 +77,9 @@ class TestFormatError:
     def test_format_error_with_missing_kwargs_uses_raw_template(self):
         # stuck_node expects node, visits, max_retries - provide none
         result = format_error("stuck_node")
-        assert "What happened:" in result
-        assert "Why it matters:" in result
-        assert "What to do:" in result
+        assert "\u53d1\u751f\u4e86\u4ec0\u4e48:" in result
+        assert "\u539f\u56e0:" in result
+        assert "\u89e3\u51b3\u65b9\u6848:" in result
         # Should use the raw template strings
         assert "{node}" in result or "node" in result
 
@@ -87,9 +87,9 @@ class TestFormatError:
         result = format_error("command_not_found", cmd="test-cmd")
         lines = result.strip().split("\n")
         assert len(lines) == 3
-        assert lines[0].strip().startswith("What happened:")
-        assert lines[1].strip().startswith("Why it matters:")
-        assert lines[2].strip().startswith("What to do:")
+        assert lines[0].strip().startswith("\u53d1\u751f\u4e86\u4ec0\u4e48:")
+        assert lines[1].strip().startswith("\u539f\u56e0:")
+        assert lines[2].strip().startswith("\u89e3\u51b3\u65b9\u6848:")
 
 
 class TestClassifyError:
@@ -116,7 +116,9 @@ class TestClassifyError:
         assert kwargs["max_retries"] == "5"
 
     def test_classify_contract_violation(self):
-        error_type, kwargs = classify_error("Contract violation on node plan: missing TRANSITION")
+        error_type, kwargs = classify_error(
+            "Contract violation on node plan: missing TRANSITION"
+        )
         assert error_type == "contract_violation"
         assert kwargs["node"] == "unknown"
 
@@ -126,6 +128,8 @@ class TestClassifyError:
         assert kwargs["name"] == "my-skill"
 
     def test_classify_unknown_error(self):
-        error_type, kwargs = classify_error("Something completely unexpected happened")
+        error_type, kwargs = classify_error(
+            "Something completely unexpected happened"
+        )
         assert error_type == "unknown"
         assert kwargs["detail"] == "Something completely unexpected happened"

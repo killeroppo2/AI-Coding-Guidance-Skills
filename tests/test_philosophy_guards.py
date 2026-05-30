@@ -38,6 +38,46 @@ class TestWuWeiGuard:
         state = {"progress_history": [1, 2, 3, 3]}
         assert wu_wei_guard(state, "iterate") is True
 
+    def test_wu_wei_guard_returns_true_when_workspace_error(self):
+        """Guard allows action when stalled but recent errors are workspace issues."""
+        state = {
+            "progress_history": [1, 1, 1],
+            "errors": ["workspace boundary violation: file outside workspace"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_returns_true_when_security_error(self):
+        """Guard allows action when stalled but recent errors are security issues."""
+        state = {
+            "progress_history": [2, 2, 2],
+            "errors": ["security policy denied write"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_returns_true_when_boundary_error(self):
+        """Guard allows action when stalled but recent errors contain boundary."""
+        state = {
+            "progress_history": [0, 0, 0],
+            "errors": ["other err", "boundary check failed", "another"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_returns_true_when_contract_error(self):
+        """Guard allows action when stalled but recent errors contain contract."""
+        state = {
+            "progress_history": [3, 3, 3],
+            "errors": ["contract violation on node code"],
+        }
+        assert wu_wei_guard(state, "iterate") is True
+
+    def test_wu_wei_guard_returns_false_when_stalled_no_retryable_errors(self):
+        """Guard blocks action when stalled and errors are not retryable."""
+        state = {
+            "progress_history": [1, 1, 1],
+            "errors": ["timeout on code", "AI error"],
+        }
+        assert wu_wei_guard(state, "iterate") is False
+
 
 class TestShuiGuard:
     """Tests for shui_guard function."""

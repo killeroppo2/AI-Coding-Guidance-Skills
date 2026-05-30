@@ -37,9 +37,10 @@ class JsonFormatter(logging.Formatter):
 def setup_logging(verbose: bool = False) -> logging.Logger:
     """Configure and return a logger for the kernel package.
 
-    Reads LOG_LEVEL from environment (default "INFO") and LOG_FORMAT
+    Reads LOG_LEVEL from environment (default "WARNING") and LOG_FORMAT
     (if "json", uses JSON formatter). When verbose is True, overrides
-    level to DEBUG.
+    level to DEBUG. When verbose is False, uses WARNING to suppress
+    routine INFO messages from normal users.
 
     Args:
         verbose: If True, set log level to DEBUG regardless of LOG_LEVEL env var.
@@ -47,7 +48,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     Returns:
         A configured logger instance for the kernel package.
     """
-    log_level_str = os.environ.get("LOG_LEVEL", "INFO").upper()
+    log_level_str = os.environ.get("LOG_LEVEL", "").upper()
     log_format = os.environ.get("LOG_FORMAT", "text").lower()
 
     # Map string to logging level
@@ -58,10 +59,14 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-    log_level = level_map.get(log_level_str, logging.INFO)
 
     if verbose:
         log_level = logging.DEBUG
+    elif log_level_str and log_level_str in level_map:
+        log_level = level_map[log_level_str]
+    else:
+        # Default: WARNING for normal users (suppress INFO noise)
+        log_level = logging.WARNING
 
     # Get the kernel logger
     logger = logging.getLogger("kernel")
@@ -86,4 +91,28 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     # Prevent propagation to root logger to avoid duplicate output
     logger.propagate = False
 
+    return logger
+
+
+def get_user_logger() -> logging.Logger:
+    """Return a logger for critical user-facing messages.
+
+    This logger is always set to INFO level regardless of the verbose
+    setting, ensuring important messages are always visible to the user.
+
+    Returns:
+        A logger named 'kernel.user' at INFO level.
+    """
+    logger = logging.getLogger("kernel.user")
+    logger.setLevel(logging.INFO)
+
+    # Only add handler if none exist
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    logger.propagate = False
     return logger

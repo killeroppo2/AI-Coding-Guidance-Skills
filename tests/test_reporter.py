@@ -75,8 +75,8 @@ class TestReportCompletion:
         assert "complete" in result
         assert "10/30" in result
         assert "3/3 complete" in result
-        assert "Errors encountered: 0" in result
-        assert "Last error" not in result
+        assert "\u9047\u5230\u9519\u8bef: 0" in result
+        assert "\u6700\u540e\u9519\u8bef" not in result
 
     def test_report_completion_with_errors(self) -> None:
         """Test completion report when there are errors."""
@@ -97,8 +97,8 @@ class TestReportCompletion:
         assert "stuck" in result
         assert "15/30" in result
         assert "1/2 complete" in result
-        assert "Errors encountered: 2" in result
-        assert "Last error: contract violation on test" in result
+        assert "\u9047\u5230\u9519\u8bef: 2" in result
+        assert "\u6700\u540e\u9519\u8bef: contract violation on test" in result
 
     def test_report_completion_no_tasks(self) -> None:
         """Test completion report with empty task list."""
@@ -127,7 +127,7 @@ class TestReportCompletion:
         }
         result = reporter.report_completion(state, [])
         assert "\n" in result
-        assert "=== Execution Summary ===" in result
+        assert "=== \u6267\u884c\u6458\u8981 ===" in result
 
 
 class TestReportStuck:
@@ -139,8 +139,8 @@ class TestReportStuck:
         state = {"current_node": "code", "iteration_count": 10}
         errors = ["timeout", "contract violation", "AI error"]
         result = reporter.report_stuck(state, "code", errors)
-        assert "STUCK: Node 'code' is not making progress" in result
-        assert "Check if the task is too complex. Try splitting it." in result
+        assert "\u5361\u4f4f: \u8282\u70b9 'code' \u6ca1\u6709\u8fdb\u5c55" in result
+        assert "\u68c0\u67e5\u4efb\u52a1\u662f\u5426\u592a\u590d\u6742" in result
         assert "timeout" in result
         assert "contract violation" in result
         assert "AI error" in result
@@ -151,8 +151,8 @@ class TestReportStuck:
         state = {"current_node": "test", "iteration_count": 5}
         errors = ["tests failed", "assertion error"]
         result = reporter.report_stuck(state, "test", errors)
-        assert "STUCK: Node 'test' is not making progress" in result
-        assert "Tests keep failing. Review test expectations." in result
+        assert "\u5361\u4f4f: \u8282\u70b9 'test' \u6ca1\u6709\u8fdb\u5c55" in result
+        assert "\u6d4b\u8bd5\u6301\u7eed\u5931\u8d25" in result
 
     def test_report_stuck_other_node(self) -> None:
         """Test stuck report for an unknown node with generic suggestion."""
@@ -160,16 +160,16 @@ class TestReportStuck:
         state = {"current_node": "plan", "iteration_count": 8}
         errors = ["plan revision needed"]
         result = reporter.report_stuck(state, "plan", errors)
-        assert "STUCK: Node 'plan' is not making progress" in result
-        assert "Consider using --retry-strategy skip to advance past this node." in result
+        assert "\u5361\u4f4f: \u8282\u70b9 'plan' \u6ca1\u6709\u8fdb\u5c55" in result
+        assert "--retry-strategy skip" in result
 
     def test_report_stuck_no_errors(self) -> None:
         """Test stuck report with no error messages."""
         reporter = Reporter()
         state = {}
         result = reporter.report_stuck(state, "init", [])
-        assert "STUCK: Node 'init' is not making progress" in result
-        assert "(none recorded)" in result
+        assert "\u5361\u4f4f: \u8282\u70b9 'init' \u6ca1\u6709\u8fdb\u5c55" in result
+        assert "(\u65e0\u8bb0\u5f55)" in result
 
     def test_report_stuck_trims_to_last_3(self) -> None:
         """Test that stuck report only shows last 3 errors."""
@@ -201,13 +201,13 @@ class TestFormatStatus:
             "errors": [],
         }
         result = reporter.format_status(state, [])
-        assert "=== Kernel Status ===" in result
-        assert "Status: idle" in result
-        assert "Progress: iteration 0/30" in result
-        assert "Current node: init" in result
-        assert "Execution mode: kernel" in result
-        assert "Tasks: 0/0 complete" in result
-        assert "Errors: 0" in result
+        assert "=== \u5185\u6838\u72b6\u6001 ===" in result
+        assert "\u72b6\u6001: idle" in result
+        assert "\u8fdb\u5ea6: iteration 0/30" in result
+        assert "\u5f53\u524d\u8282\u70b9: init" in result
+        assert "\u6267\u884c\u6a21\u5f0f: kernel" in result
+        assert "\u4efb\u52a1: 0/0 complete" in result
+        assert "\u9519\u8bef: 0" in result
 
     def test_format_status_running(self) -> None:
         """Test status format for running state with progress."""
@@ -227,12 +227,12 @@ class TestFormatStatus:
             {"id": "T-003", "status": "pending"},
         ]
         result = reporter.format_status(state, tasks)
-        assert "Goal: Build API" in result
-        assert "Status: running" in result
-        assert "Progress: iteration 5/30" in result
-        assert "Current node: code" in result
-        assert "Tasks: 1/3 complete" in result
-        assert "Errors: 1 (minor warning)" in result
+        assert "\u76ee\u6807: Build API" in result
+        assert "\u72b6\u6001: running" in result
+        assert "\u8fdb\u5ea6: iteration 5/30" in result
+        assert "\u5f53\u524d\u8282\u70b9: code" in result
+        assert "\u4efb\u52a1: 1/3 complete" in result
+        assert "\u9519\u8bef: 1 (minor warning)" in result
 
     def test_format_status_complete(self) -> None:
         """Test status format for completed state."""
@@ -251,9 +251,9 @@ class TestFormatStatus:
             {"id": "T-002", "status": "done"},
         ]
         result = reporter.format_status(state, tasks)
-        assert "Status: complete" in result
-        assert "Tasks: 2/2 complete" in result
-        assert "Execution mode: ralph" in result
+        assert "\u72b6\u6001: complete" in result
+        assert "\u4efb\u52a1: 2/2 complete" in result
+        assert "\u6267\u884c\u6a21\u5f0f: ralph" in result
 
     def test_format_status_no_tasks(self) -> None:
         """Test status format with no tasks."""
@@ -268,7 +268,7 @@ class TestFormatStatus:
             "errors": [],
         }
         result = reporter.format_status(state, [])
-        assert "Tasks: 0/0 complete" in result
+        assert "\u4efb\u52a1: 0/0 complete" in result
 
     def test_format_status_long_error_truncated(self) -> None:
         """Test that long error messages are truncated in status."""
@@ -386,7 +386,7 @@ class TestRunnerStatusFlag:
         monkeypatch.setattr(runner, "KERNEL_ROOT", status_env)
         state = runner.main(["--status"])
         captured = capsys.readouterr()
-        assert "=== Kernel Status ===" in captured.out
+        assert "=== \u5185\u6838\u72b6\u6001 ===" in captured.out
         assert "Build a web app" in captured.out
         assert "running" in captured.out
         assert "code" in captured.out

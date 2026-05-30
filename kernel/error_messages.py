@@ -8,43 +8,43 @@ import re
 # Error message templates with what/why/fix structure
 ERROR_MESSAGES: dict[str, dict[str, str]] = {
     "stuck_node": {
-        "what": "The system got stuck on node '{node}'",
-        "why": "It visited this node {visits} times without making progress (max: {max_retries})",
+        "what": "系统在节点 '{node}' 上卡住了",
+        "why": "该节点已访问 {visits} 次但没有进展（最大重试: {max_retries}）",
         "fix": (
-            "Try: simplify your goal, add relevant skills,"
-            " or increase max_retries with --max-iterations"
+            "建议: 简化目标、添加相关技能，"
+            "或通过 --max-iterations 增加最大重试次数"
         ),
     },
     "command_not_found": {
-        "what": "AI command '{cmd}' not found",
-        "why": "The command is not installed or not in your PATH",
-        "fix": "Install it with: pip install {cmd} (or check your shell's PATH configuration)",
+        "what": "AI 命令 '{cmd}' 未找到",
+        "why": "该命令未安装或不在 PATH 中",
+        "fix": "请安装: pip install {cmd}（或检查 shell 的 PATH 配置）",
     },
     "timeout": {
-        "what": "Iteration timed out after {seconds}s on node '{node}'",
-        "why": "The AI subprocess took too long to respond",
+        "what": "在节点 '{node}' 上迭代超时（{seconds}秒）",
+        "why": "AI 子进程响应时间过长",
         "fix": (
-            "Try: increase --timeout value, simplify current task,"
-            " or check if AI service is responding"
+            "建议: 增加 --timeout 值、简化当前任务，"
+            "或检查 AI 服务是否正常响应"
         ),
     },
     "skill_not_found": {
-        "what": "Skill '{name}' not found in knowledge store",
-        "why": "The skill is referenced but not installed in skills/",
-        "fix": "Run: python3.12 setup_check.py --check to validate skill installation",
+        "what": "技能 '{name}' 在知识库中未找到",
+        "why": "该技能被引用但未安装到 skills/ 目录",
+        "fix": "运行: python3.12 setup_check.py --check 验证技能安装",
     },
     "contract_violation": {
-        "what": "AI output did not match expected format on node '{node}'",
-        "why": "Missing or invalid TRANSITION/STATUS line in AI response",
+        "what": "AI 输出在节点 '{node}' 上不符合预期格式",
+        "why": "AI 响应中缺少或无效的 TRANSITION/STATUS 行",
         "fix": (
-            "This usually means the AI prompt needs adjustment."
-            " Try --retry-strategy continue to retry"
+            "这通常意味着 AI 提示需要调整。"
+            "尝试 --retry-strategy continue 重试"
         ),
     },
     "state_corrupted": {
-        "what": "State file could not be parsed",
-        "why": "The state.yaml file contains invalid YAML or is empty",
-        "fix": "Delete kernel/state.yaml and restart (state will be recreated with defaults)",
+        "what": "状态文件无法解析",
+        "why": "state.yaml 文件包含无效的 YAML 或为空",
+        "fix": "删除 kernel/state.yaml 并重启（状态将使用默认值重新创建）",
     },
 }
 
@@ -65,9 +65,9 @@ def format_error(error_type: str, **kwargs) -> str:
         # Generic fallback
         detail = kwargs.get("detail", error_type)
         return (
-            f"  What happened: An error occurred ({detail})\n"
-            f"  Why it matters: The kernel cannot continue the current operation\n"
-            f"  What to do: Check the error details above and retry"
+            f"  发生了什么: 发生错误（{detail}）\n"
+            f"  原因: 内核无法继续当前操作\n"
+            f"  解决方案: 检查上述错误详情并重试"
         )
 
     try:
@@ -80,7 +80,7 @@ def format_error(error_type: str, **kwargs) -> str:
         why = template["why"]
         fix = template["fix"]
 
-    return f"  What happened: {what}\n  Why it matters: {why}\n  What to do: {fix}"
+    return f"  发生了什么: {what}\n  原因: {why}\n  解决方案: {fix}"
 
 
 def classify_error(raw_error: str) -> tuple[str, dict]:
