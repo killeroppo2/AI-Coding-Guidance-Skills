@@ -26,7 +26,8 @@ def _sanitize_project_name(goal: str) -> str:
         if not (0x200B <= ord(c) <= 0x200F or 0x202A <= ord(c) <= 0x202E or ord(c) == 0xFEFF)
     )
     name = name.lower().replace(" ", "-")
-    name = re.sub(r"[^a-z0-9-]", "", name)
+    # Keep CJK characters (Chinese/Japanese/Korean) for readable workspace names
+    name = re.sub(r"[^a-z0-9\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af-]", "", name)
     name = name.lstrip("-.")
     name = name[:50]
     if not name:
