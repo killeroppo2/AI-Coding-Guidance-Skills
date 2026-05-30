@@ -989,12 +989,21 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         _total_tasks = len(tasks_list)
         _done_tasks = sum(1 for t in tasks_list if t.get("status") == "done")
 
-        if _final_status == "complete":
+        if _final_status == "complete" and _done_tasks > 0 and _done_tasks >= _total_tasks:
             print(
                 f"\u2705 \u5b8c\u6210\uff01\n"
                 f"   \u4efb\u52a1: {_done_tasks}/{_total_tasks}\n"
                 f"   \u6587\u4ef6: {_final_workspace}\n"
                 f"   \u8017\u65f6: {_final_iterations} \u6b21\u8fed\u4ee3"
+            )
+        elif _final_status == "complete" and (_done_tasks < _total_tasks or _total_tasks == 0):
+            print(
+                f"\u26a0\ufe0f  \u90e8\u5206\u5b8c\u6210\n"
+                f"   \u4efb\u52a1: {_done_tasks}/{_total_tasks}\n"
+                f"   \u6587\u4ef6: {_final_workspace}\n"
+                f"   \u8017\u65f6: {_final_iterations} \u6b21\u8fed\u4ee3\n"
+                f"   \u5efa\u8bae: \u76ee\u6807\u53ef\u80fd\u592a\u6a21\u7cca\uff0c"
+                f"\u8bd5\u8bd5\u66f4\u5177\u4f53\u7684\u63cf\u8ff0"
             )
         else:
             _last_error = ""
