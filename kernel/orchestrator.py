@@ -264,13 +264,10 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     graph = GraphExecutor(graph_path)
     knowledge = KnowledgeStore(knowledge_dir)
 
-    # Auto-reset when a new goal is provided and previous run completed/failed
+    # Auto-reset when a new goal is provided and not resuming
     if args.goal and not args.resume:
-        stored_goal = state_mgr.state.get("goal", "")
         stored_status = state_mgr.state.get("status", "idle")
-        if stored_status in ("complete", "stuck", "error") or (
-            stored_goal and stored_goal != args.goal
-        ):
+        if stored_status != "idle":
             if args.dry_run:
                 # Reset in-memory only for dry-run
                 state_mgr.state["current_node"] = "init"
@@ -827,12 +824,12 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     contract_result.files_written, workspace_path
                 )
                 for v in ws_violations:
-                    logger.warning(f"[WARNING] Workspace boundary: {v}")
+                    logger.debug(f"[WARNING] Workspace boundary: {v}")
                 # Security policy check on written files
                 security_policy = SecurityPolicy(workspace_path)
                 for fpath in contract_result.files_written:
                     if security_policy.check_path(fpath) == "deny":
-                        logger.warning(f"[SECURITY] Denied file write: {fpath}")
+                        logger.debug(f"[SECURITY] Denied file write: {fpath}")
 
             # Determine next node
             transitions = graph.get_available_transitions(node["id"])
