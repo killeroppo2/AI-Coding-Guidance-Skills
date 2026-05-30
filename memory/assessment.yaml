@@ -1,16 +1,16 @@
 confidence: 0.0
 covered_skills: []
-goal: 写一个用户登录 API
+goal: Build a REST API
 skill_gaps:
-- 写一个用户登录
+- rest
 - api
 suggestions:
-- description: Skill for 写一个用户登录 development
-  name: 写一个用户登录-skill
+- description: Skill for rest development
+  name: rest-skill
   tags:
-  - 写一个用户登录
+  - rest
 - description: Skill for api development
   name: api-skill
   tags:
   - api
-timestamp: '2026-05-28T07:18:09.887119+00:00'
+timestamp: '2026-05-30T02:40:17.405906+00:00'
