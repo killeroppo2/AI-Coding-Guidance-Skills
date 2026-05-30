@@ -107,15 +107,15 @@ class TestMain:
         """Test that dry run produces output."""
         runner.main(["--goal", "test goal", "--max-iterations", "1", "--dry-run"])
         captured = capsys.readouterr()
-        assert "[DRY RUN]" in captured.out
+        assert "[预演]" in captured.out
         assert "test goal" in captured.out
 
     def test_main_shows_node_info(self, capsys) -> None:
         """Test that dry run shows node information."""
         runner.main(["--goal", "test", "--max-iterations", "2", "--dry-run"])
         captured = capsys.readouterr()
-        assert "Node:" in captured.out
-        assert "Prompt file:" in captured.out
+        assert "init" in captured.out
+        assert "预演" in captured.out
 
     def test_main_non_dry_run(self, tmp_path: Path, monkeypatch) -> None:
         """Test main function without dry-run modifies state."""
@@ -1007,7 +1007,7 @@ class TestStuckDetection:
         assert state["status"] == "complete"
 
     def test_runner_stuck_in_dry_run(self, stuck_env: Path, monkeypatch, capsys) -> None:
-        """Test dry-run prints stuck message when max_retries exceeded."""
+        """Test dry-run detects cycle instead of running until stuck."""
         monkeypatch.setattr(runner, "KERNEL_ROOT", stuck_env)
         state = runner.main(
             [
@@ -1019,9 +1019,8 @@ class TestStuckDetection:
             ]
         )
         captured = capsys.readouterr()
-        assert "STUCK" in captured.out
-        assert "exceeded max_retries" in captured.out
-        assert state["status"] == "stuck"
+        assert "已遍历所有节点" in captured.out
+        assert state["status"] == "complete"
 
 
 class TestReviewFixes:

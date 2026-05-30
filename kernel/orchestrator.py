@@ -228,18 +228,27 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     knowledge = KnowledgeStore(knowledge_dir)
 
     # Auto-reset when a new goal is provided and previous run completed/failed
-    if args.goal and not args.resume and not args.dry_run:
+    if args.goal and not args.resume:
         stored_goal = state_mgr.state.get("goal", "")
         stored_status = state_mgr.state.get("status", "idle")
         if stored_status in ("complete", "stuck", "error") or (
             stored_goal and stored_goal != args.goal
         ):
-            state_mgr.reset()
-            # Clean up stale memory files
-            for cleanup_file in ["tasks.yaml", "progress.yaml", "assessment.yaml"]:
-                cleanup_path = Path(memory_dir) / cleanup_file
-                if cleanup_path.exists():
-                    cleanup_path.unlink()
+            if args.dry_run:
+                # Reset in-memory only for dry-run
+                state_mgr.state["current_node"] = "init"
+                state_mgr.state["iteration_count"] = 0
+                state_mgr.state["status"] = "idle"
+                state_mgr.state["errors"] = []
+                state_mgr.state["node_visits"] = {}
+                state_mgr.state["progress_history"] = []
+            else:
+                state_mgr.reset()
+                # Clean up stale memory files
+                for cleanup_file in ["tasks.yaml", "progress.yaml", "assessment.yaml"]:
+                    cleanup_path = Path(memory_dir) / cleanup_file
+                    if cleanup_path.exists():
+                        cleanup_path.unlink()
 
     if args.goal:
         if args.resume and state_mgr.state.get("goal"):
@@ -430,9 +439,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         lifecycle_guard.start()
 
     if args.dry_run:
-        print(f"[DRY RUN] Goal: {args.goal}")
-        print(f"[DRY RUN] Max iterations: {args.max_iterations}")
-        print(f"[DRY RUN] Starting node: {state_mgr.state.get('current_node', 'init')}")
+        print(f"[预演] 目标: {args.goal}")
+        print(f"[预演] 最大迭代次数: {args.max_iterations}")
+        print(f"[预演] 起始节点: {state_mgr.state.get('current_node', 'init')}")
         print()
 
     if mode3:
@@ -466,6 +475,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         node["id"]: node.get("max_retries", 10) for node in graph.graph.get("nodes", [])
     }
 
+    # Dry-run cycle detection
+    _dry_run_visited: set[str] = set()
+
     # Chinese startup banner for mode3
     if mode3:
         _startup_workspace = state_mgr.state.get("workspace_path", "")
@@ -497,21 +509,13 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
             state_mgr.state.setdefault("errors", []).append(str(e))
             break
 
-        prompt_path = graph.get_prompt_for_node(node["id"])
-
         if args.dry_run:
-            print(f"[DRY RUN] Iteration {state.get('iteration_count', 0) + 1}:")
-            print(f"  Node: {node['id']}")
-            print(f"  Description: {node.get('description', 'N/A')}")
-            print(f"  Prompt file: {prompt_path}")
-
-            # Load prompt to show length
-            full_prompt_path = KERNEL_ROOT / "kernel" / prompt_path
-            if full_prompt_path.exists():
-                prompt_content = full_prompt_path.read_text(encoding="utf-8")
-                print(f"  Prompt length: {len(prompt_content)} chars")
-            else:
-                print("  Prompt file: [not found]")
+            if node["id"] in _dry_run_visited:
+                print("\n[预演] 已遍历所有节点。实际执行时根据AI输出决定流转。")
+                state_mgr.state["status"] = "complete"
+                break
+            _dry_run_visited.add(node["id"])
+            print(f"  {node['id']} - {node.get('description', '')}")
 
         if mode3:
             # Check external events at start of execution
@@ -904,12 +908,12 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 state_mgr.set_current_node(next_node_id)
 
                 if args.dry_run:
-                    print(f"  Next node: {next_node_id}")
+                    print(f"  → {next_node_id}")
                     print()
             else:
                 state_mgr.state["status"] = "complete"
                 if args.dry_run:
-                    print("  Next node: END")
+                    print("  → 结束")
                     print()
                 break
 
@@ -991,7 +995,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         state_mgr.save_state()
 
     if args.dry_run:
-        print(f"[DRY RUN] Final status: {state_mgr.state.get('status')}")
-        print(f"[DRY RUN] Total iterations: {state_mgr.state.get('iteration_count', 0)}")
+        print(f"[预演] 最终状态: {state_mgr.state.get('status')}")
+        print(f"[预演] 遍历节点数: {len(_dry_run_visited)}")
 
     return state_mgr.get_state()
