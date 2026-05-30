@@ -5,7 +5,7 @@ import logging
 import os
 from unittest.mock import patch
 
-from kernel.logging_config import JsonFormatter, setup_logging
+from kernel.logging_config import JsonFormatter, get_user_logger, setup_logging
 
 
 class TestSetupLogging:
@@ -21,10 +21,11 @@ class TestSetupLogging:
         logger = setup_logging()
         assert logger.name == "kernel"
 
-    def test_default_level_is_info(self) -> None:
-        """Default log level is INFO."""
-        logger = setup_logging()
-        assert logger.level == logging.INFO
+    def test_default_level_is_warning(self) -> None:
+        """Default log level is WARNING (suppress INFO noise for normal users)."""
+        with patch.dict(os.environ, {}, clear=True):
+            logger = setup_logging()
+        assert logger.level == logging.WARNING
 
     def test_verbose_sets_debug(self) -> None:
         """verbose=True overrides level to DEBUG."""
@@ -76,10 +77,46 @@ class TestSetupLogging:
         assert len(logger.handlers) == 1
 
     @patch.dict(os.environ, {"LOG_LEVEL": "INVALID"})
-    def test_invalid_log_level_defaults_to_info(self) -> None:
-        """Invalid LOG_LEVEL falls back to INFO."""
+    def test_invalid_log_level_defaults_to_warning(self) -> None:
+        """Invalid LOG_LEVEL falls back to WARNING."""
         logger = setup_logging()
+        assert logger.level == logging.WARNING
+
+
+class TestGetUserLogger:
+    """Tests for the get_user_logger function."""
+
+    def test_returns_logger(self) -> None:
+        """get_user_logger returns a Logger instance."""
+        logger = get_user_logger()
+        assert isinstance(logger, logging.Logger)
+
+    def test_logger_name(self) -> None:
+        """Logger name should be 'kernel.user'."""
+        logger = get_user_logger()
+        assert logger.name == "kernel.user"
+
+    def test_level_is_info(self) -> None:
+        """User logger is always at INFO level."""
+        logger = get_user_logger()
         assert logger.level == logging.INFO
+
+    def test_no_propagation(self) -> None:
+        """User logger should not propagate."""
+        logger = get_user_logger()
+        assert logger.propagate is False
+
+    def test_has_handler(self) -> None:
+        """User logger should have exactly one handler after each call."""
+        logger = get_user_logger()
+        assert len(logger.handlers) == 1
+
+    def test_repeated_calls_do_not_accumulate_handlers(self) -> None:
+        """Calling get_user_logger multiple times does not stack handlers."""
+        get_user_logger()
+        get_user_logger()
+        logger = get_user_logger()
+        assert len(logger.handlers) == 1
 
 
 class TestJsonFormatter:

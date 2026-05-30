@@ -227,6 +227,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     graph = GraphExecutor(graph_path)
     knowledge = KnowledgeStore(knowledge_dir)
 
+    # Auto-reset when a new goal is provided and previous run completed/failed
+    if args.goal and not args.resume and not args.dry_run:
+        stored_goal = state_mgr.state.get("goal", "")
+        stored_status = state_mgr.state.get("status", "idle")
+        if stored_status in ("complete", "stuck", "error") or (
+            stored_goal and stored_goal != args.goal
+        ):
+            state_mgr.reset()
+            # Clean up stale memory files
+            for cleanup_file in ["tasks.yaml", "progress.yaml", "assessment.yaml"]:
+                cleanup_path = Path(memory_dir) / cleanup_file
+                if cleanup_path.exists():
+                    cleanup_path.unlink()
+
     if args.goal:
         if args.resume and state_mgr.state.get("goal"):
             # When resuming, do not overwrite existing goal
@@ -244,6 +258,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         project_name = _sanitize_project_name(goal) if goal else ""
     if project_name and not args.dry_run:
         state_mgr.set_workspace(project_name)
+        # Generate CLAUDE.md for workspace
+        from kernel.workspace_bootstrap import generate_claude_md
+
+        workspace_path = state_mgr.state.get("workspace_path", "")
+        if workspace_path:
+            tasks_file = Path(memory_dir) / "tasks.yaml"
+            bootstrap_tasks = None
+            if tasks_file.exists():
+                bootstrap_tm = TaskManager(memory_dir)
+                bootstrap_tasks = bootstrap_tm.load_tasks()
+            generate_claude_md(
+                workspace_path, state_mgr.state.get("goal", ""), tasks=bootstrap_tasks
+            )
     elif project_name and args.dry_run:
         state_mgr.state["workspace_path"] = f"./workspace/{project_name}/"
 
@@ -438,6 +465,16 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
     max_retries_map = {
         node["id"]: node.get("max_retries", 10) for node in graph.graph.get("nodes", [])
     }
+
+    # Chinese startup banner for mode3
+    if mode3:
+        _startup_workspace = state_mgr.state.get("workspace_path", "")
+        _startup_goal = state_mgr.state.get("goal", "")
+        print(
+            f"\U0001f680 AI \u5f00\u53d1\u5185\u6838\u542f\u52a8\n"
+            f"   \u76ee\u6807: {_startup_goal}\n"
+            f"   \u5de5\u4f5c\u533a: {_startup_workspace}"
+        )
 
     for i in range(args.max_iterations):
         state = state_mgr.get_state()
@@ -896,14 +933,38 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
     # Print completion report after Mode 3 execution
     if mode3:
-        reporter = Reporter()
         tasks_path_file = Path(memory_dir) / "tasks.yaml"
         if tasks_path_file.exists():
             tm = TaskManager(memory_dir)
             tasks_list = tm.load_tasks()
         else:
             tasks_list = []
-        print(reporter.report_completion(state_mgr.get_state(), tasks_list))
+
+        _final_status = state_mgr.state.get("status", "unknown")
+        _final_workspace = state_mgr.state.get("workspace_path", "")
+        _final_iterations = state_mgr.state.get("iteration_count", 0)
+        _total_tasks = len(tasks_list)
+        _done_tasks = sum(1 for t in tasks_list if t.get("status") == "done")
+
+        if _final_status == "complete":
+            print(
+                f"\u2705 \u5b8c\u6210\uff01\n"
+                f"   \u4efb\u52a1: {_done_tasks}/{_total_tasks}\n"
+                f"   \u6587\u4ef6: {_final_workspace}\n"
+                f"   \u8017\u65f6: {_final_iterations} \u6b21\u8fed\u4ee3"
+            )
+        else:
+            _last_error = ""
+            _errors = state_mgr.state.get("errors", [])
+            if _errors:
+                _last_error = _errors[-1]
+            print(
+                f"\u274c \u672a\u5b8c\u6210\n"
+                f"   \u95ee\u9898: {_last_error}\n"
+                f"   \u5efa\u8bae: "
+                f"\u5c1d\u8bd5\u7b80\u5316\u76ee\u6807\u6216\u67e5\u770b"
+                f" --verbose \u8f93\u51fa"
+            )
 
         if budget_tracker is not None:
             budget_report = budget_tracker.get_efficiency_report()

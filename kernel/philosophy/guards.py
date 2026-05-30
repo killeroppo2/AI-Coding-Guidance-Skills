@@ -15,10 +15,12 @@ def wu_wei_guard(state: dict, proposed_action: str = "iterate") -> bool:
     that the proposed action should NOT be taken.
 
     Checks state['progress_history']: if the last 3+ entries have the
-    same value, progress has stalled.
+    same value, progress has stalled. However, if recent errors contain
+    workspace/security/boundary/contract keywords, these are retryable
+    issues and the guard allows continuation.
 
     Args:
-        state: The current state dict (may contain progress_history).
+        state: The current state dict (may contain progress_history, errors).
         proposed_action: Description of proposed action (for logging context).
 
     Returns:
@@ -28,6 +30,19 @@ def wu_wei_guard(state: dict, proposed_action: str = "iterate") -> bool:
     if len(progress_history) >= 3:
         last_three = progress_history[-3:]
         if len(set(last_three)) == 1:
+            # Check if recent errors are retryable path/security issues
+            # ALL of the last 3 errors must contain retryable keywords
+            errors = state.get("errors", [])
+            recent_errors = errors[-3:] if errors else []
+            retryable_keywords = ("workspace", "security", "boundary", "contract")
+            if len(recent_errors) >= 3 and all(
+                any(
+                    kw in (err.lower() if isinstance(err, str) else "")
+                    for kw in retryable_keywords
+                )
+                for err in recent_errors
+            ):
+                return True
             return False
     return True
 

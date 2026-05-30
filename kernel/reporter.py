@@ -53,15 +53,15 @@ class Reporter:
         done_tasks = sum(1 for t in tasks if t.get("status") == "done")
 
         lines = [
-            "=== Execution Summary ===",
-            f"Goal: {goal}",
-            f"Status: {status}",
-            f"Iterations used: {iteration}/{max_iter}",
-            f"Tasks: {done_tasks}/{total_tasks} complete",
-            f"Errors encountered: {error_count}",
+            "=== 执行摘要 ===",
+            f"目标: {goal}",
+            f"状态: {status}",
+            f"已用迭代: {iteration}/{max_iter}",
+            f"任务: {done_tasks}/{total_tasks} complete",
+            f"遇到错误: {error_count}",
         ]
         if errors:
-            lines.append(f"Last error: {errors[-1]}")
+            lines.append(f"最后错误: {errors[-1]}")
 
         return "\n".join(lines)
 
@@ -69,14 +69,14 @@ class Reporter:
         """Report when execution is stuck on a node.
 
         Format:
-        STUCK: Node '{node}' is not making progress
-        Errors: [last 3 errors]
-        Suggestion: [contextual advice]
+        卡住: Node '{node}' is not making progress
+        错误: [last 3 errors]
+        建议: [contextual advice]
 
         Suggestions based on node type:
-        - 'code' node: "Check if the task is too complex. Try splitting it."
-        - 'test' node: "Tests keep failing. Review test expectations."
-        - other: "Consider using --retry-strategy skip to advance past this node."
+        - 'code' node: "检查任务是否太复杂，尝试拆分。"
+        - 'test' node: "测试持续失败，请检查测试预期。"
+        - other: "考虑使用 --retry-strategy skip 跳过此节点。"
 
         Args:
             state: Current state dict
@@ -86,24 +86,24 @@ class Reporter:
         Returns:
             Multi-line stuck report string.
         """
-        lines = [f"STUCK: Node '{node}' is not making progress"]
+        lines = [f"卡住: 节点 '{node}' 没有进展"]
 
         recent_errors = errors[-3:] if errors else []
         if recent_errors:
-            lines.append("Errors:")
+            lines.append("错误:")
             for err in recent_errors:
                 lines.append(f"  - {err}")
         else:
-            lines.append("Errors: (none recorded)")
+            lines.append("错误: (无记录)")
 
         if "code" in node:
-            suggestion = "Check if the task is too complex. Try splitting it."
+            suggestion = "检查任务是否太复杂，尝试拆分。"
         elif "test" in node:
-            suggestion = "Tests keep failing. Review test expectations."
+            suggestion = "测试持续失败，请检查测试预期。"
         else:
-            suggestion = "Consider using --retry-strategy skip to advance past this node."
+            suggestion = "考虑使用 --retry-strategy skip 跳过此节点。"
 
-        lines.append(f"Suggestion: {suggestion}")
+        lines.append(f"建议: {suggestion}")
 
         return "\n".join(lines)
 
@@ -111,14 +111,14 @@ class Reporter:
         """Human-readable current status (for --status flag, no execution).
 
         Multi-line output:
-        === Kernel Status ===
-        Goal: {goal}
-        Status: {status}
-        Progress: iteration {N}/{max}
-        Current node: {node}
-        Execution mode: {mode}
-        Tasks: {done}/{total} complete
-        Errors: {count} ({last error preview if any})
+        === 内核状态 ===
+        目标: {goal}
+        状态: {status}
+        进度: iteration {N}/{max}
+        当前节点: {node}
+        执行模式: {mode}
+        任务: {done}/{total} complete
+        错误: {count} ({last error preview if any})
 
         Args:
             state: Current state dict
@@ -140,21 +140,23 @@ class Reporter:
         done_tasks = sum(1 for t in tasks if t.get("status") == "done")
 
         lines = [
-            "=== Kernel Status ===",
-            f"Goal: {goal}",
-            f"Status: {status}",
-            f"Progress: iteration {iteration}/{max_iter}",
-            f"Current node: {current_node}",
-            f"Execution mode: {execution_mode}",
-            f"Tasks: {done_tasks}/{total_tasks} complete",
+            "=== 内核状态 ===",
+            f"目标: {goal}",
+            f"状态: {status}",
+            f"进度: iteration {iteration}/{max_iter}",
+            f"当前节点: {current_node}",
+            f"执行模式: {execution_mode}",
+            f"任务: {done_tasks}/{total_tasks} complete",
         ]
 
         if errors:
             last_error = errors[-1]
             # Truncate long error messages for preview
-            preview = last_error[:60] + "..." if len(last_error) > 60 else last_error
-            lines.append(f"Errors: {error_count} ({preview})")
+            preview = (
+                last_error[:60] + "..." if len(last_error) > 60 else last_error
+            )
+            lines.append(f"错误: {error_count} ({preview})")
         else:
-            lines.append(f"Errors: {error_count}")
+            lines.append(f"错误: {error_count}")
 
         return "\n".join(lines)
