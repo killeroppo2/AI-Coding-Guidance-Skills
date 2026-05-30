@@ -113,21 +113,21 @@ class ContextBudgetTracker:
         """
         stats = self.get_stats()
         if stats["assemblies"] == 0:
-            return "No context assemblies recorded yet."
+            return "尚未记录上下文组装数据。"
         lines = [
-            "Context Budget Report",
+            "上下文预算报告",
             "=" * 40,
-            f"Assemblies: {stats['assemblies']}",
-            f"Avg utilization: {stats['avg_utilization_pct']:.1f}%",
-            f"Avg tokens/assembly: {stats['avg_tokens_per_assembly']:,}",
-            f"Total tokens assembled: {stats['total_tokens_assembled']:,}",
-            f"Total budget available: {stats['total_budget_available']:,}",
+            f"组装次数: {stats['assemblies']}",
+            f"平均利用率: {stats['avg_utilization_pct']:.1f}%",
+            f"平均 tokens/次: {stats['avg_tokens_per_assembly']:,}",
+            f"总 tokens: {stats['total_tokens_assembled']:,}",
+            f"总预算: {stats['total_budget_available']:,}",
         ]
         # Section breakdown from last assembly
         if self._records:
             last = self._records[-1]
             lines.append("")
-            lines.append(f"Last assembly ({last.node_id}):")
+            lines.append(f"最近组装 ({last.node_id}):")
             for section, tokens in sorted(last.sections.items(), key=lambda x: -x[1]):
                 lines.append(f"  {section}: {tokens:,} tokens")
         return "\n".join(lines)

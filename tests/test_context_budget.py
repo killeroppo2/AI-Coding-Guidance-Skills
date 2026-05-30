@@ -99,7 +99,7 @@ class TestContextBudgetTracker:
         """get_efficiency_report on empty tracker returns a message."""
         tracker = ContextBudgetTracker()
         report = tracker.get_efficiency_report()
-        assert report == "No context assemblies recorded yet."
+        assert report == "尚未记录上下文组装数据。"
 
     def test_efficiency_report_with_data(self):
         """get_efficiency_report produces readable multi-line output."""
@@ -112,8 +112,8 @@ class TestContextBudgetTracker:
         )
 
         report = tracker.get_efficiency_report()
-        assert "Context Budget Report" in report
-        assert "Assemblies: 1" in report
+        assert "上下文预算报告" in report
+        assert "组装次数: 1" in report
         assert "code" in report
         assert "skills: 10,000 tokens" in report
         assert "state: 5,000 tokens" in report
@@ -169,7 +169,7 @@ class TestContextBudgetTracker:
         tracker.record_assembly("empty_sections", 5000, {}, 10000)
 
         report = tracker.get_efficiency_report()
-        assert "Context Budget Report" in report
+        assert "上下文预算报告" in report
         assert "empty_sections" in report
         # Should not crash when sections is empty
 

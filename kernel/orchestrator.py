@@ -59,6 +59,43 @@ from memory.state_manager import StateManager
 
 KERNEL_ROOT = Path(__file__).resolve().parent.parent
 
+# Node-to-default-transition mapping for format line auto-fix
+_NODE_DEFAULT_TRANSITIONS: dict[str, str] = {
+    "init": "goal_loaded",
+    "plan": "plan_ready",
+    "code": "code_written",
+    "test": "tests_pass",
+    "review": "review_pass",
+    "reflect": "no_evolution_needed",
+    "evolve": "evolution_applied",
+}
+
+
+def _ensure_format_lines(text: str, node_id: str) -> str:
+    """Ensure STATUS and TRANSITION lines exist in AI output.
+
+    If the AI response is missing required format lines, append defaults.
+    This is a safety net for AI commands that don't enforce output format.
+
+    Args:
+        text: The AI response text.
+        node_id: Current graph node ID for determining default transition.
+
+    Returns:
+        Text with STATUS/TRANSITION lines guaranteed.
+    """
+    has_status = any(line.strip().startswith("STATUS:") for line in text.splitlines())
+    has_transition = any(line.strip().startswith("TRANSITION:") for line in text.splitlines())
+    if has_status and has_transition:
+        return text
+    default_transition = _NODE_DEFAULT_TRANSITIONS.get(node_id, "goal_loaded")
+    additions = []
+    if not has_status:
+        additions.append("STATUS: success")
+    if not has_transition:
+        additions.append(f"TRANSITION: {default_transition}")
+    return text.rstrip() + "\n\n" + "\n".join(additions) + "\n"
+
 # Maximum delay in seconds for exponential backoff retry strategy
 MAX_BACKOFF_DELAY_SECONDS = 60
 
@@ -349,7 +386,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     f"Consider creating skills with 'write-a-skill'."
                 )
             elif confidence < 0.7 and gaps:
-                logger.info(
+                logger.debug(
                     f"[NOTE] Partial skill coverage ({confidence:.0%}). "
                     f"Some areas may need new skills: {', '.join(gaps[:5])}"
                 )
@@ -714,6 +751,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     else:  # "continue"
                         continue
                 ai_output = result_stdout
+                # Auto-fix missing STATUS/TRANSITION lines
+                ai_output = _ensure_format_lines(ai_output, node["id"])
                 transition_condition = _parse_transition(ai_output)
             except FileNotFoundError:
                 logger.error(
@@ -970,9 +1009,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                 f" --verbose \u8f93\u51fa"
             )
 
-        if budget_tracker is not None:
+        if budget_tracker is not None and args.verbose:
             budget_report = budget_tracker.get_efficiency_report()
-            if "No context assemblies" not in budget_report:
+            if "尚未记录" not in budget_report:
                 print(budget_report)
 
     # Export to prd.json if execution mode is ralph

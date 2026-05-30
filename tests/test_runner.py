@@ -356,7 +356,7 @@ class TestMode3:
         assert state["current_node"] == "plan"
 
     def test_mode3_fallback_first_transition(self, runner_env: Path, monkeypatch) -> None:
-        """Test Mode 3 stays on same node when no TRANSITION line found (contract violation)."""
+        """Test Mode 3 auto-fixes missing TRANSITION and advances to next node."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -382,8 +382,8 @@ class TestMode3:
                 ]
             )
 
-        # Contract validation fails (missing TRANSITION), stays on same node
-        assert state["current_node"] == "init"
+        # _ensure_format_lines adds TRANSITION: goal_loaded, so it advances
+        assert state["current_node"] == "plan"
 
     def test_mode3_unmatched_transition_falls_back(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on node when transition condition is invalid (contract violation)."""
@@ -1141,7 +1141,7 @@ class TestReviewFixes:
     def test_fallback_produces_warning_no_transition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that missing TRANSITION line triggers contract violation (visible with --verbose)."""
+        """Test that missing TRANSITION is auto-fixed by _ensure_format_lines."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1167,10 +1167,8 @@ class TestReviewFixes:
                 ]
             )
 
-        captured = capsys.readouterr()
-        assert "[CONTRACT VIOLATION] Missing required TRANSITION line" in captured.err
-        # Contract violation stays on same node and records error
-        assert any("Contract violations" in str(e) for e in state.get("errors", []))
+        # _ensure_format_lines auto-fixes missing TRANSITION, so no contract violation
+        assert state["current_node"] == "plan"  # Advanced successfully
 
     def test_fallback_produces_warning_unmatched_condition(
         self, runner_env: Path, monkeypatch, capsys
