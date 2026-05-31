@@ -126,6 +126,37 @@ class GraphExecutor:
         transitions: list = node.get("transitions", [])
         return transitions
 
+    def validate_transition(self, node_id: str, condition: str) -> bool:
+        """Check whether a transition condition is valid for the given node.
+
+        Args:
+            node_id: The node identifier.
+            condition: The condition string to validate.
+
+        Returns:
+            True if the condition matches a transition for that node.
+
+        Raises:
+            KeyError: If the node is not found.
+        """
+        transitions = self.get_available_transitions(node_id)
+        return any(t.get("condition") == condition for t in transitions)
+
+    def get_valid_conditions(self, node_id: str) -> list[str]:
+        """Return all valid condition strings for the given node.
+
+        Args:
+            node_id: The node identifier.
+
+        Returns:
+            List of condition strings for that node's transitions.
+
+        Raises:
+            KeyError: If the node is not found.
+        """
+        transitions = self.get_available_transitions(node_id)
+        return [t["condition"] for t in transitions if "condition" in t]
+
     def validate_graph(self) -> tuple[bool, list]:
         """Check graph is valid.
 

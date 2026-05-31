@@ -32,15 +32,19 @@ class EvolutionEngine:
     in IMMUTABLE_FILES.
     """
 
-    def __init__(self, kernel_dir: str, graph_executor: Any) -> None:
+    def __init__(
+        self, kernel_dir: str, graph_executor: Any, knowledge_store: Any = None
+    ) -> None:
         """Initialize the evolution engine.
 
         Args:
             kernel_dir: Path to the kernel/ directory.
             graph_executor: A GraphExecutor instance.
+            knowledge_store: Optional KnowledgeStore instance for add_rule changes.
         """
         self.kernel_dir = Path(kernel_dir)
         self.graph_executor = graph_executor
+        self.knowledge_store = knowledge_store
         self.history_file = self.kernel_dir / "evolution" / "history.jsonl"
 
     def propose_change(self, change_type: str, details: dict, reason: str) -> dict:
@@ -210,8 +214,15 @@ class EvolutionEngine:
                 factory.create_skill(skill_name, skill_description, skill_content, skill_tags)
 
             elif change_type == "add_rule":
-                # This is handled by KnowledgeStore, just log it
-                pass
+                if self.knowledge_store is not None:
+                    rule = {
+                        "name": details.get("name", "unnamed"),
+                        "description": details.get("description", ""),
+                        "content": details.get("content", details.get("description", "")),
+                        "tags": details.get("tags", []),
+                        "source": details.get("source", "evolution"),
+                    }
+                    self.knowledge_store.add_rule(rule, learned=True)
 
             change["status"] = "applied"
             self._log_change(change)

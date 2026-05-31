@@ -858,3 +858,96 @@ class TestOrchestratorIntegration:
 
         assert any("Kernel exited:" in m for m in messages)
         assert any("--goal" in m for m in messages)
+
+
+class TestGraphEndpoint:
+    """Tests for GET /api/graph."""
+
+    def test_get_graph(self, kernel_dir: Path):
+        """Verify /api/graph returns graph data with nodes list."""
+        # Create a graph.yaml file
+        graph_data = {
+            "nodes": [
+                {
+                    "id": "init",
+                    "description": "Initialize",
+                    "transitions": [{"to": "plan", "condition": "goal_loaded"}],
+                },
+                {
+                    "id": "plan",
+                    "description": "Plan tasks",
+                    "transitions": [{"to": "code", "condition": "plan_ready"}],
+                },
+            ],
+            "default_start": "init",
+        }
+        graph_path = kernel_dir / "kernel" / "graph.yaml"
+        with open(graph_path, "w") as f:
+            yaml.safe_dump(graph_data, f)
+
+        app = create_app(kernel_root=kernel_dir)
+        c = TestClient(app)
+        resp = c.get("/api/graph")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nodes" in data
+        assert "default_start" in data
+        assert len(data["nodes"]) == 2
+        assert data["nodes"][0]["id"] == "init"
+        assert data["nodes"][0]["description"] == "Initialize"
+        assert data["nodes"][0]["transitions"] == [{"to": "plan", "condition": "goal_loaded"}]
+        assert data["default_start"] == "init"
+
+    def test_get_graph_missing_file(self, empty_client: TestClient):
+        """Returns empty nodes when graph.yaml does not exist."""
+        resp = empty_client.get("/api/graph")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["nodes"] == []
+        assert data["default_start"] == "init"
+
+
+class TestSessionEventsEndpoint:
+    """Tests for GET /api/session-events."""
+
+    def test_get_session_events(self, kernel_dir: Path):
+        """Verify /api/session-events returns event list."""
+        events_path = kernel_dir / "memory" / "session_events.jsonl"
+        events = [
+            {"timestamp": 1.0, "type": "node_enter", "data": {"node": "init"}},
+            {"timestamp": 2.0, "type": "iteration_complete", "data": {}},
+        ]
+        with open(events_path, "w") as f:
+            for ev in events:
+                f.write(json.dumps(ev) + "\n")
+
+        app = create_app(kernel_root=kernel_dir)
+        c = TestClient(app)
+        resp = c.get("/api/session-events")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        assert data[0]["type"] == "node_enter"
+        assert data[1]["type"] == "iteration_complete"
+
+    def test_get_session_events_empty(self, empty_client: TestClient):
+        """Returns empty list when no events file exists."""
+        resp = empty_client.get("/api/session-events")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data == []
+
+    def test_get_session_events_limits_to_100(self, kernel_dir: Path):
+        """Returns only last 100 events when more exist."""
+        events_path = kernel_dir / "memory" / "session_events.jsonl"
+        with open(events_path, "w") as f:
+            for i in range(150):
+                f.write(json.dumps({"timestamp": float(i), "type": "ev", "data": {"i": i}}) + "\n")
+
+        app = create_app(kernel_root=kernel_dir)
+        c = TestClient(app)
+        resp = c.get("/api/session-events")
+        data = resp.json()
+        assert len(data) == 100
+        assert data[0]["data"]["i"] == 50
+        assert data[-1]["data"]["i"] == 149

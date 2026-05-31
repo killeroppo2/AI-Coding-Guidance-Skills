@@ -463,6 +463,7 @@ class TestTimeoutHandling:
             patch("runner.KERNEL_ROOT", tmp_path),
             patch("signal.signal"),
             patch("atexit.register"),
+            patch("os.killpg"),
         ):
             result = runner.main(
                 [
@@ -550,6 +551,7 @@ class TestTimeoutHandling:
             patch("runner.KERNEL_ROOT", tmp_path),
             patch("signal.signal"),
             patch("atexit.register"),
+            patch("os.killpg"),
         ):
             result = runner.main(
                 [

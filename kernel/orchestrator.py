@@ -32,6 +32,7 @@ from kernel.contracts import OutputContractValidator
 from kernel.error_messages import format_error
 from kernel.event_detector import EventDetector
 from kernel.evolution.engine import EvolutionEngine
+from kernel.evolution.graph_advisor import GraphAdvisor
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.execution.protocol import (
     check_should_stop,
@@ -71,15 +72,19 @@ _NODE_DEFAULT_TRANSITIONS: dict[str, str] = {
 }
 
 
-def _ensure_format_lines(text: str, node_id: str) -> str:
+def _ensure_format_lines(text: str, node_id: str, graph_executor=None) -> str:
     """Ensure STATUS and TRANSITION lines exist in AI output.
 
     If the AI response is missing required format lines, append defaults.
     This is a safety net for AI commands that don't enforce output format.
 
+    When graph_executor is provided, the default transition is chosen from
+    the node's actual valid transitions rather than the static lookup table.
+
     Args:
         text: The AI response text.
         node_id: Current graph node ID for determining default transition.
+        graph_executor: Optional GraphExecutor instance for validating transitions.
 
     Returns:
         Text with STATUS/TRANSITION lines guaranteed.
@@ -88,7 +93,14 @@ def _ensure_format_lines(text: str, node_id: str) -> str:
     has_transition = any(line.strip().startswith("TRANSITION:") for line in text.splitlines())
     if has_status and has_transition:
         return text
-    default_transition = _NODE_DEFAULT_TRANSITIONS.get(node_id, "goal_loaded")
+    # Determine default transition: prefer graph-based lookup over static dict
+    default_transition: str | None = None
+    if graph_executor is not None:
+        valid_conditions = graph_executor.get_valid_conditions(node_id)
+        if valid_conditions:
+            default_transition = valid_conditions[0]
+    if default_transition is None:
+        default_transition = _NODE_DEFAULT_TRANSITIONS.get(node_id, "goal_loaded")
     additions = []
     if not has_status:
         additions.append("STATUS: success")
@@ -488,10 +500,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         budget_tracker = ContextBudgetTracker() if not args.dry_run else None
         assembler = ContextAssembler(KERNEL_ROOT, budget_tracker=budget_tracker)
         validator = OutputContractValidator(str(KERNEL_ROOT / "kernel" / "graph.yaml"))
-        reflector = Reflector(memory_dir, knowledge)
-        evolution_engine = EvolutionEngine(str(KERNEL_ROOT / "kernel"), graph)
         evolution_metrics = EvolutionMetrics()
-        feedback_loop = FeedbackLoop(memory_dir, reflector, evolution_engine, evolution_metrics)
+        reflector = Reflector(
+            memory_dir, knowledge,
+            graph_advisor=GraphAdvisor(graph, evolution_metrics),
+        )
+        evolution_engine = EvolutionEngine(
+            str(KERNEL_ROOT / "kernel"), graph, knowledge_store=knowledge
+        )
+        history_file = KERNEL_ROOT / "kernel" / "evolution" / "history.jsonl"
+        feedback_loop = FeedbackLoop(
+            memory_dir, reflector, evolution_engine, evolution_metrics,
+            history_file=history_file,
+        )
         event_detector = EventDetector(KERNEL_ROOT)
         trigger_engine = SkillTriggerEngine()
         feedback_store = SkillFeedbackStore(memory_dir)
@@ -692,13 +713,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
+                    preexec_fn=os.setpgrp,
                 )
                 _mode3_mod._active_subprocess = proc
                 try:
                     stdout, stderr = proc.communicate(input=context_prompt, timeout=args.timeout)
                 except subprocess.TimeoutExpired:
-                    proc.kill()
-                    stdout, stderr = proc.communicate()
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except (ProcessLookupError, PermissionError):
+                        proc.kill()
+                    try:
+                        stdout, stderr = proc.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        stdout, stderr = "", ""
                     timeout_detail = f"Timeout after {args.timeout}s on node {node['id']}"
                     if stdout:
                         preview = stdout[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
@@ -769,7 +797,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         "errors": [f"AI command exited with code {result_returncode}"],
                         "iteration": state_mgr.state.get("iteration_count", 0),
                     }
-                    # Skip evolution proposals on failure — no useful signal
+                    # Run feedback loop on failure to enable modify_prompt proposals
+                    feedback_loop.run_cycle(iteration_data)
                     state_mgr.trim_errors()
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
@@ -803,8 +832,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         _ticker.join(1)
                         continue
                 ai_output = result_stdout
-                # Auto-fix missing STATUS/TRANSITION lines
-                ai_output = _ensure_format_lines(ai_output, node["id"])
+                # In Mode 3, the contract validator handles missing format lines
+                # and triggers lightweight retry if needed. _ensure_format_lines is
+                # only used in scaffolding mode (Mode 1) where no validator runs.
             except FileNotFoundError:
                 logger.error(
                     f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
@@ -857,6 +887,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
             # Use contract-parsed transition (single source of truth)
             transition_condition = contract_result.transition
+
+            # Validate transition condition against graph
+            if transition_condition and hasattr(graph, "validate_transition"):
+                if not graph.validate_transition(node["id"], transition_condition):
+                    logger.warning(
+                        f"[VALIDATION] AI transition '{transition_condition}' is not valid "
+                        f"for node '{node['id']}'. "
+                        f"Valid: {graph.get_valid_conditions(node['id'])}"
+                    )
 
             # Extract and write code from AI output to workspace
             workspace_path = state_mgr.state.get("workspace_path", "")
