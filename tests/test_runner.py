@@ -356,7 +356,7 @@ class TestMode3:
         assert state["current_node"] == "plan"
 
     def test_mode3_fallback_first_transition(self, runner_env: Path, monkeypatch) -> None:
-        """Test Mode 3 auto-fixes missing TRANSITION and advances to next node."""
+        """Test Mode 3 missing TRANSITION triggers contract violation, stays on node."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -382,8 +382,10 @@ class TestMode3:
                 ]
             )
 
-        # _ensure_format_lines adds TRANSITION: goal_loaded, so it advances
-        assert state["current_node"] == "plan"
+        # In Mode 3, missing TRANSITION triggers a contract violation.
+        # The contract validator handles format validation and triggers
+        # lightweight retry if needed. With only 1 iteration, node stays.
+        assert state["current_node"] == "init"
 
     def test_mode3_unmatched_transition_falls_back(self, runner_env: Path, monkeypatch) -> None:
         """Test Mode 3 stays on node when transition condition is invalid (contract violation)."""
@@ -1141,7 +1143,7 @@ class TestReviewFixes:
     def test_fallback_produces_warning_no_transition(
         self, runner_env: Path, monkeypatch, capsys
     ) -> None:
-        """Test that missing TRANSITION is auto-fixed by _ensure_format_lines."""
+        """Test that missing TRANSITION triggers contract violation in Mode 3."""
         from unittest.mock import MagicMock, patch
 
         monkeypatch.setattr(runner, "KERNEL_ROOT", runner_env)
@@ -1167,8 +1169,9 @@ class TestReviewFixes:
                 ]
             )
 
-        # _ensure_format_lines auto-fixes missing TRANSITION, so no contract violation
-        assert state["current_node"] == "plan"  # Advanced successfully
+        # In Mode 3, the contract validator detects missing TRANSITION and
+        # triggers a contract violation. Node does not advance.
+        assert state["current_node"] == "init"
 
     def test_fallback_produces_warning_unmatched_condition(
         self, runner_env: Path, monkeypatch, capsys

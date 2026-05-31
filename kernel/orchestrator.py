@@ -832,8 +832,9 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         _ticker.join(1)
                         continue
                 ai_output = result_stdout
-                # Auto-fix missing STATUS/TRANSITION lines
-                ai_output = _ensure_format_lines(ai_output, node["id"], graph_executor=graph)
+                # In Mode 3, the contract validator handles missing format lines
+                # and triggers lightweight retry if needed. _ensure_format_lines is
+                # only used in scaffolding mode (Mode 1) where no validator runs.
             except FileNotFoundError:
                 logger.error(
                     f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
