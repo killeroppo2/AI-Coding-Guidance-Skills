@@ -435,7 +435,7 @@ class TestMode3:
         mock_proc.communicate.side_effect = _communicate_side_effect
         mock_proc.kill.return_value = None
 
-        with patch("subprocess.Popen", return_value=mock_proc):
+        with patch("subprocess.Popen", return_value=mock_proc), patch("os.killpg"):
             state = runner.main(
                 [
                     "--goal",

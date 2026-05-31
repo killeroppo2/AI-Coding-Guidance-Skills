@@ -692,13 +692,20 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
+                    preexec_fn=os.setpgrp,
                 )
                 _mode3_mod._active_subprocess = proc
                 try:
                     stdout, stderr = proc.communicate(input=context_prompt, timeout=args.timeout)
                 except subprocess.TimeoutExpired:
-                    proc.kill()
-                    stdout, stderr = proc.communicate()
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except (ProcessLookupError, PermissionError):
+                        proc.kill()
+                    try:
+                        stdout, stderr = proc.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        stdout, stderr = "", ""
                     timeout_detail = f"Timeout after {args.timeout}s on node {node['id']}"
                     if stdout:
                         preview = stdout[:PARTIAL_OUTPUT_PREVIEW_LENGTH]
