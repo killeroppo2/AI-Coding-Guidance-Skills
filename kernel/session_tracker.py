@@ -46,13 +46,14 @@ class SessionTracker:
     Provides resume snapshot generation and event querying.
     """
 
-    def __init__(self, memory_dir: str, max_events: int = 1000, flush_interval: int = 10) -> None:
+    def __init__(self, memory_dir: str, max_events: int = 1000, flush_interval: int = 1) -> None:
         """Initialize the session tracker.
 
         Args:
             memory_dir: Path to the memory directory.
             max_events: Maximum events to retain in the log file.
             flush_interval: Number of events to buffer before flushing to disk.
+                Defaults to 1 (immediate flush on every event).
         """
         self.memory_dir = Path(memory_dir)
         self.events_path = self.memory_dir / "session_events.jsonl"

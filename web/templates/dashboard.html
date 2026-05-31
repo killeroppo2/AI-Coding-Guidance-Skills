@@ -145,42 +145,11 @@
                     <span id="status-text" class="text-xs font-medium px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">idle</span>
                 </div>
             </div>
-            <div id="pipeline" class="flex items-center justify-center gap-1 sm:gap-2 py-4 overflow-x-auto">
-                <div class="node-step flex flex-col items-center" id="node-init">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-blue-500/10 border border-blue-500/30 text-blue-400 transition-all duration-300">初始</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">init</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-plan">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-purple-500/10 border border-purple-500/30 text-purple-400 transition-all duration-300">规划</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">plan</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-code">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-green-500/10 border border-green-500/30 text-green-400 transition-all duration-300">编码</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">code</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-test">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 transition-all duration-300">测试</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">test</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-review">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-pink-500/10 border border-pink-500/30 text-pink-400 transition-all duration-300">审查</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">review</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-reflect">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 transition-all duration-300">反思</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">reflect</span>
-                </div>
-                <div class="w-4 sm:w-8 node-connector"></div>
-                <div class="node-step flex flex-col items-center" id="node-evolve">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold bg-orange-500/10 border border-orange-500/30 text-orange-400 transition-all duration-300">进化</div>
-                    <span class="text-[10px] text-gray-600 mt-1.5">evolve</span>
-                </div>
+            <div id="pipeline" class="flex items-center justify-center gap-1 sm:gap-2 py-4 overflow-x-auto flex-wrap">
+                <div class="text-gray-600 text-sm">Loading graph...</div>
             </div>
+            <!-- Back-edges display -->
+            <div id="back-edges" class="flex flex-wrap gap-2 mt-2 justify-center"></div>
             <!-- Progress Bar -->
             <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-500 mb-2">
@@ -280,23 +249,107 @@
     <script>
         let ws = null;
         let eventSource = null;
-        const PIPELINE_NODES = ['init', 'plan', 'code', 'test', 'review', 'reflect', 'evolve'];
+        let graphNodes = [];
+        let nodeVisits = {};
+
+        const NODE_COLORS = [
+            'bg-blue-500/10 border-blue-500/30 text-blue-400',
+            'bg-purple-500/10 border-purple-500/30 text-purple-400',
+            'bg-green-500/10 border-green-500/30 text-green-400',
+            'bg-amber-500/10 border-amber-500/30 text-amber-400',
+            'bg-pink-500/10 border-pink-500/30 text-pink-400',
+            'bg-indigo-500/10 border-indigo-500/30 text-indigo-400',
+            'bg-orange-500/10 border-orange-500/30 text-orange-400',
+        ];
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', () => {
+            loadGraph();
             loadState();
             loadTasks();
             loadHistory();
             loadSkills();
             loadMetrics();
             loadMetricsHistory();
+            loadSessionEvents();
             connectWebSocket();
             connectSSE();
         });
 
         // Real-time polling
-        setInterval(() => { loadState(); loadTasks(); }, 3000);
+        setInterval(() => { loadState(); loadTasks(); loadSessionEvents(); }, 3000);
         setInterval(() => { loadMetrics(); loadHistory(); }, 10000);
+
+        async function loadGraph() {
+            try {
+                const resp = await fetch('/api/graph');
+                const data = await resp.json();
+                graphNodes = data.nodes || [];
+                renderPipeline();
+            } catch (e) {
+                console.error('Failed to load graph:', e);
+            }
+        }
+
+        function renderPipeline() {
+            const el = document.getElementById('pipeline');
+            const backEdgesEl = document.getElementById('back-edges');
+            if (graphNodes.length === 0) {
+                el.innerHTML = '<div class="text-gray-600 text-sm">No graph data</div>';
+                return;
+            }
+            const nodeIds = graphNodes.map(n => n.id);
+            let html = '';
+            const backEdges = [];
+            graphNodes.forEach((node, idx) => {
+                const color = NODE_COLORS[idx % NODE_COLORS.length];
+                const visits = nodeVisits[node.id] || 0;
+                html += `<div class="node-step flex flex-col items-center relative" id="node-${node.id}">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs font-bold ${color} transition-all duration-300">
+                        ${node.id.charAt(0).toUpperCase() + node.id.slice(1, 4)}
+                    </div>
+                    <span class="text-[10px] text-gray-600 mt-1.5">${node.id}</span>
+                    ${visits > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 text-[9px] text-white flex items-center justify-center font-bold">${visits}</span>` : ''}
+                </div>`;
+                if (idx < graphNodes.length - 1) {
+                    html += '<div class="w-4 sm:w-8 node-connector"></div>';
+                }
+                // Detect back-edges (transitions going backward in node order)
+                (node.transitions || []).forEach(t => {
+                    const targetIdx = nodeIds.indexOf(t.to);
+                    if (targetIdx >= 0 && targetIdx < idx) {
+                        backEdges.push({from: node.id, to: t.to, condition: t.condition});
+                    }
+                });
+            });
+            el.innerHTML = html;
+            // Render back-edges
+            if (backEdges.length > 0) {
+                backEdgesEl.innerHTML = backEdges.map(e =>
+                    `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">${e.from} &rarr; ${e.to} <span class="text-gray-500">(${e.condition})</span></span>`
+                ).join('');
+            } else {
+                backEdgesEl.innerHTML = '';
+            }
+        }
+
+        async function loadSessionEvents() {
+            try {
+                const resp = await fetch('/api/session-events');
+                const events = await resp.json();
+                // Count node visits from events
+                nodeVisits = {};
+                events.forEach(ev => {
+                    if (ev.type === 'node_enter') {
+                        const node = (ev.data || {}).node;
+                        if (node) nodeVisits[node] = (nodeVisits[node] || 0) + 1;
+                    }
+                });
+                renderPipeline();
+            } catch (e) {
+                console.error('Failed to load session events:', e);
+            }
+        }
 
         async function loadState() {
             try {
@@ -312,18 +365,15 @@
             if (!state) return;
             const node = state.current_node || 'init';
 
-            // Update pipeline nodes
-            PIPELINE_NODES.forEach((n, idx) => {
-                const el = document.getElementById(`node-${n}`);
+            // Update pipeline nodes using actual node_visits data
+            graphNodes.forEach((n) => {
+                const el = document.getElementById(`node-${n.id}`);
                 if (!el) return;
                 const circle = el.querySelector('div');
-                // Reset classes
                 circle.classList.remove('pulse-node', 'glow-blue', 'node-active', 'node-completed');
-
-                const currentIdx = PIPELINE_NODES.indexOf(node);
-                if (n === node) {
+                if (n.id === node) {
                     circle.classList.add('pulse-node', 'glow-blue', 'node-active');
-                } else if (idx < currentIdx) {
+                } else if (nodeVisits[n.id] && nodeVisits[n.id] > 0) {
                     circle.classList.add('node-completed');
                 }
             });

@@ -116,6 +116,9 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
     app.state.log_subscribers: list[asyncio.Queue] = []
     app.state.ws_connections: list[WebSocket] = []
 
+    # Queue for broadcasting state from threads to WebSocket clients
+    app.state.state_broadcast_queue: asyncio.Queue = asyncio.Queue()
+
     class GoalRequest(BaseModel):
         goal: str
 
@@ -210,6 +213,28 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
                 items = data.get("core_items", []) + data.get("community_items", [])
             return items
         return []
+
+    @app.get("/api/graph")
+    async def get_graph():
+        """Return graph topology from kernel/graph.yaml."""
+        graph_path = kernel_root / "kernel" / "graph.yaml"
+        data = _read_yaml(graph_path)
+        if not isinstance(data, dict) or "nodes" not in data:
+            return {"nodes": [], "default_start": "init"}
+        nodes = []
+        for node in data.get("nodes", []):
+            nodes.append({
+                "id": node.get("id", ""),
+                "description": node.get("description", ""),
+                "transitions": node.get("transitions", []),
+            })
+        return {"nodes": nodes, "default_start": data.get("default_start", "init")}
+
+    @app.get("/api/session-events")
+    async def get_session_events():
+        """Return last 100 session events from memory/session_events.jsonl."""
+        events_path = kernel_root / "memory" / "session_events.jsonl"
+        return _read_jsonl(events_path, limit=100)
 
     @app.get("/api/metrics")
     async def get_metrics():
@@ -411,6 +436,16 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
                 _emit_log(f"Error: {e}")
             finally:
                 app.state.running = False
+                # Broadcast final state via the queue for WebSocket consumers
+                state_path = kernel_root / "kernel" / "state.yaml"
+                final_state = _read_yaml(state_path)
+                if final_state:
+                    try:
+                        app.state.state_broadcast_queue.put_nowait(
+                            {"type": "state", "data": final_state}
+                        )
+                    except asyncio.QueueFull:
+                        pass
 
         thread = threading.Thread(target=_run_kernel, daemon=True)
         thread.start()
@@ -505,6 +540,20 @@ def create_app(kernel_root: Path | None = None, rate_limit: int = 60) -> FastAPI
         for ws in disconnected:
             if ws in app.state.ws_connections:
                 app.state.ws_connections.remove(ws)
+
+    @app.on_event("startup")
+    async def _start_state_broadcaster():
+        """Start background task that consumes state broadcasts from threads."""
+
+        async def _state_broadcast_loop():
+            while True:
+                try:
+                    msg = await app.state.state_broadcast_queue.get()
+                    await _broadcast_ws(msg)
+                except Exception:
+                    await asyncio.sleep(0.1)
+
+        asyncio.create_task(_state_broadcast_loop())
 
     return app
 
