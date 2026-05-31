@@ -89,7 +89,8 @@ class FeedbackLoop:
         2. Record the reflection
         3. Read recent reflections (last 10)
         4. Generate evolution proposals
-        4b. Adjust proposal confidence based on historical effectiveness
+        4b. Include structural graph proposals from graph advisor
+        4c. Adjust proposal confidence based on historical effectiveness
         5. Apply proposals with confidence > threshold
         5b. Track applied changes for later evaluation
         6. Record metrics
@@ -117,7 +118,15 @@ class FeedbackLoop:
         # 4. Generate evolution proposals
         proposals = self.reflector.propose_evolution(recent)
 
-        # 4b. Adjust confidence based on historical effectiveness
+        # 4b. Include structural graph proposals from graph advisor
+        if self.reflector.graph_advisor is not None:
+            goal = iteration_data.get("goal", "")
+            skills = iteration_data.get("skills_used", [])
+            history = self.historian.load_history() if self.historian else []
+            graph_proposals = self.reflector.suggest_graph_evolution(goal, skills, history)
+            proposals.extend(graph_proposals)
+
+        # 4c. Adjust confidence based on historical effectiveness
         if self.historian:
             effectiveness = self.historian.analyze_effectiveness()
             for proposal in proposals:

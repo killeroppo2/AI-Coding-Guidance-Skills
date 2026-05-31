@@ -890,3 +890,174 @@ class TestPendingEvaluationClosedLoop:
 
         assert len(loop._pending_evaluations) == 0
         mock_engine.revert_if_worse.assert_called_once()
+
+
+class TestHistorianIntegration:
+    """Tests for FeedbackLoop with historian (history_file provided)."""
+
+    def test_feedback_loop_creates_historian_with_history_file(self, tmp_path: Path) -> None:
+        """Test that FeedbackLoop creates historian when history_file is provided."""
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+
+        history_file = tmp_path / "kernel" / "evolution" / "history.jsonl"
+        history_file.parent.mkdir(parents=True)
+        history_file.touch()
+
+        mock_reflector = MagicMock()
+        mock_reflector.analyze_iteration.return_value = {
+            "node": "code", "success": True, "learnings": [], "issues": [],
+        }
+        mock_reflector.propose_evolution.return_value = []
+        mock_reflector.graph_advisor = None
+
+        mock_engine = MagicMock()
+        mock_engine.apply_if_confident.return_value = []
+
+        metrics = EvolutionMetrics()
+
+        loop = FeedbackLoop(
+            str(memory_dir), mock_reflector, mock_engine, metrics,
+            history_file=history_file,
+        )
+
+        assert loop.historian is not None
+
+    def test_feedback_loop_without_history_file_has_no_historian(self, feedback_setup) -> None:
+        """Test that FeedbackLoop without history_file has historian=None."""
+        loop, _, _, _, _ = feedback_setup
+        assert loop.historian is None
+
+    def test_historian_adjusts_proposal_confidence(self, tmp_path: Path) -> None:
+        """Test that historian effectiveness data adjusts proposal confidence."""
+        import json
+
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        (memory_dir / "reflections.jsonl").touch()
+
+        history_file = tmp_path / "kernel" / "evolution" / "history.jsonl"
+        history_file.parent.mkdir(parents=True)
+        # Write history with mostly-reverted modify_prompt changes
+        entries = []
+        for i in range(5):
+            entries.append(json.dumps({
+                "id": f"change-{i}", "type": "modify_prompt",
+                "status": "applied", "details": {},
+            }))
+        for i in range(4):
+            entries.append(json.dumps({
+                "id": f"rb-{i}", "type": "rollback",
+                "status": "applied",
+                "details": {"rolled_back_change_id": f"change-{i}"},
+            }))
+        history_file.write_text("\n".join(entries) + "\n")
+
+        mock_reflector = MagicMock()
+        mock_reflector.analyze_iteration.return_value = {
+            "node": "code", "success": False, "learnings": [], "issues": ["Error"],
+        }
+        mock_reflector.propose_evolution.return_value = [
+            {
+                "type": "modify_prompt",
+                "details": {"node_id": "code", "prompt_file": "prompts/code.md"},
+                "reason": "test",
+                "confidence_score": 0.8,
+            },
+        ]
+        mock_reflector.graph_advisor = None
+
+        mock_engine = MagicMock()
+        mock_engine.apply_if_confident.return_value = []
+
+        metrics = EvolutionMetrics()
+
+        loop = FeedbackLoop(
+            str(memory_dir), mock_reflector, mock_engine, metrics,
+            history_file=history_file,
+        )
+
+        iteration_data = {"node": "code", "result": "failed", "errors": ["err"], "iteration": 1}
+        loop.run_cycle(iteration_data)
+
+        # The proposal's confidence should have been reduced (stick_rate < 0.3)
+        call_args = mock_engine.apply_if_confident.call_args[0][0]
+        assert len(call_args) == 1
+        # Original was 0.8, reduced by 0.3 -> 0.5
+        assert call_args[0]["confidence_score"] == pytest.approx(0.5, abs=0.01)
+
+
+class TestGraphAdvisorProposalsInRunCycle:
+    """Tests for graph advisor proposals flowing through run_cycle."""
+
+    def test_graph_advisor_proposals_included_in_cycle(self, tmp_path: Path) -> None:
+        """Test that graph advisor proposals are included in proposals list."""
+        memory_dir = tmp_path / "memory"
+        memory_dir.mkdir()
+        (memory_dir / "reflections.jsonl").touch()
+
+        mock_graph_advisor = MagicMock()
+        mock_graph_advisor.suggest_graph_changes.return_value = [
+            {
+                "type": "add_node",
+                "details": {"node": {"id": "design", "description": "Design step"}},
+                "reason": "Goal involves UI work",
+                "confidence_score": 0.9,
+                "category": "structural",
+            }
+        ]
+
+        mock_reflector = MagicMock()
+        mock_reflector.analyze_iteration.return_value = {
+            "node": "code", "success": True, "learnings": [], "issues": [],
+        }
+        mock_reflector.propose_evolution.return_value = []
+        mock_reflector.graph_advisor = mock_graph_advisor
+        mock_reflector.suggest_graph_evolution.return_value = [
+            {
+                "type": "add_node",
+                "details": {"node": {"id": "design", "description": "Design step"}},
+                "reason": "Goal involves UI work",
+                "confidence_score": 0.9,
+                "category": "structural",
+            }
+        ]
+
+        mock_engine = MagicMock()
+        mock_engine.apply_if_confident.return_value = []
+
+        metrics = EvolutionMetrics()
+
+        loop = FeedbackLoop(str(memory_dir), mock_reflector, mock_engine, metrics)
+
+        iteration_data = {
+            "node": "code",
+            "result": "success",
+            "errors": [],
+            "iteration": 1,
+            "goal": "Build a UI dashboard",
+            "skills_used": ["react"],
+        }
+        result = loop.run_cycle(iteration_data)
+
+        # Graph advisor proposals should have been requested
+        mock_reflector.suggest_graph_evolution.assert_called_once()
+        # And proposals should include the graph advisor proposal
+        assert result["proposals_generated"] == 1
+
+    def test_no_graph_advisor_skips_graph_proposals(self, feedback_setup) -> None:
+        """Test that without graph_advisor, no graph proposals are generated."""
+        loop, _, _, _, _ = feedback_setup
+        assert loop.reflector.graph_advisor is None
+
+        iteration_data = {
+            "node": "code",
+            "result": "success",
+            "errors": [],
+            "iteration": 1,
+            "goal": "Build a UI dashboard",
+            "skills_used": ["react"],
+        }
+        result = loop.run_cycle(iteration_data)
+        # Should work without error, no graph proposals
+        assert "reflection" in result

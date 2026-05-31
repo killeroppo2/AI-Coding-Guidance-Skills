@@ -507,3 +507,104 @@ class TestRevertIfWorse:
         assert result is False
         # Node should still exist
         assert graph_executor.get_node("keep_test") is not None
+
+
+class TestAddRuleWithKnowledgeStore:
+    """Tests for add_rule when knowledge_store is provided."""
+
+    def test_add_rule_calls_knowledge_store(self, tmp_path: Path) -> None:
+        """Test that add_rule calls knowledge_store.add_rule when store is provided."""
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        (kernel_dir / "evolution").mkdir()
+        (kernel_dir / "prompts").mkdir()
+
+        graph_file = kernel_dir / "graph.yaml"
+        graph_data = {
+            "nodes": [
+                {
+                    "id": "init",
+                    "prompt_file": "prompts/orchestrator.md",
+                    "description": "Init",
+                    "transitions": [],
+                    "max_retries": 1,
+                },
+            ],
+            "default_start": "init",
+            "max_iterations": 30,
+        }
+        with open(graph_file, "w") as f:
+            yaml.safe_dump(graph_data, f)
+
+        from unittest.mock import MagicMock
+
+        mock_store = MagicMock()
+        graph_executor = GraphExecutor(str(graph_file))
+        engine = EvolutionEngine(str(kernel_dir), graph_executor, knowledge_store=mock_store)
+
+        change = engine.propose_change(
+            "add_rule",
+            {
+                "name": "test_rule",
+                "description": "A learned rule",
+                "content": "Rule content here",
+                "tags": ["learned", "test"],
+            },
+            "Testing add_rule",
+        )
+        result = engine.apply_change(change)
+
+        assert result is True
+        mock_store.add_rule.assert_called_once()
+        call_args = mock_store.add_rule.call_args
+        rule_dict = call_args[0][0]
+        assert rule_dict["name"] == "test_rule"
+        assert rule_dict["description"] == "A learned rule"
+        assert rule_dict["content"] == "Rule content here"
+        assert rule_dict["tags"] == ["learned", "test"]
+        assert call_args[1]["learned"] is True
+
+    def test_add_rule_without_knowledge_store_still_succeeds(self, evolution_setup) -> None:
+        """Test that add_rule without knowledge_store logs but does not error."""
+        engine, _, _ = evolution_setup
+        change = engine.propose_change(
+            "add_rule",
+            {"name": "orphan_rule", "description": "No store"},
+            "No knowledge store",
+        )
+        result = engine.apply_change(change)
+        assert result is True
+        # Should be logged in history
+        history = engine.get_history()
+        assert history[-1]["status"] == "applied"
+
+    def test_add_rule_uses_description_as_content_fallback(self, tmp_path: Path) -> None:
+        """Test that content defaults to description when not provided."""
+        kernel_dir = tmp_path / "kernel"
+        kernel_dir.mkdir()
+        (kernel_dir / "evolution").mkdir()
+
+        graph_file = kernel_dir / "graph.yaml"
+        graph_data = {
+            "nodes": [{"id": "init", "description": "Init", "transitions": [], "max_retries": 1}],
+            "default_start": "init",
+            "max_iterations": 30,
+        }
+        with open(graph_file, "w") as f:
+            yaml.safe_dump(graph_data, f)
+
+        from unittest.mock import MagicMock
+
+        mock_store = MagicMock()
+        graph_executor = GraphExecutor(str(graph_file))
+        engine = EvolutionEngine(str(kernel_dir), graph_executor, knowledge_store=mock_store)
+
+        change = engine.propose_change(
+            "add_rule",
+            {"name": "fallback_rule", "description": "Fallback desc", "tags": []},
+            "Testing fallback",
+        )
+        engine.apply_change(change)
+
+        rule_dict = mock_store.add_rule.call_args[0][0]
+        assert rule_dict["content"] == "Fallback desc"

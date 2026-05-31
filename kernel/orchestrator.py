@@ -32,6 +32,7 @@ from kernel.contracts import OutputContractValidator
 from kernel.error_messages import format_error
 from kernel.event_detector import EventDetector
 from kernel.evolution.engine import EvolutionEngine
+from kernel.evolution.graph_advisor import GraphAdvisor
 from kernel.evolution.metrics import EvolutionMetrics
 from kernel.execution.protocol import (
     check_should_stop,
@@ -499,10 +500,19 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
         budget_tracker = ContextBudgetTracker() if not args.dry_run else None
         assembler = ContextAssembler(KERNEL_ROOT, budget_tracker=budget_tracker)
         validator = OutputContractValidator(str(KERNEL_ROOT / "kernel" / "graph.yaml"))
-        reflector = Reflector(memory_dir, knowledge)
-        evolution_engine = EvolutionEngine(str(KERNEL_ROOT / "kernel"), graph)
         evolution_metrics = EvolutionMetrics()
-        feedback_loop = FeedbackLoop(memory_dir, reflector, evolution_engine, evolution_metrics)
+        reflector = Reflector(
+            memory_dir, knowledge,
+            graph_advisor=GraphAdvisor(graph, evolution_metrics),
+        )
+        evolution_engine = EvolutionEngine(
+            str(KERNEL_ROOT / "kernel"), graph, knowledge_store=knowledge
+        )
+        history_file = KERNEL_ROOT / "kernel" / "evolution" / "history.jsonl"
+        feedback_loop = FeedbackLoop(
+            memory_dir, reflector, evolution_engine, evolution_metrics,
+            history_file=history_file,
+        )
         event_detector = EventDetector(KERNEL_ROOT)
         trigger_engine = SkillTriggerEngine()
         feedback_store = SkillFeedbackStore(memory_dir)
@@ -787,7 +797,8 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         "errors": [f"AI command exited with code {result_returncode}"],
                         "iteration": state_mgr.state.get("iteration_count", 0),
                     }
-                    # Skip evolution proposals on failure — no useful signal
+                    # Run feedback loop on failure to enable modify_prompt proposals
+                    feedback_loop.run_cycle(iteration_data)
                     state_mgr.trim_errors()
                     # Invalidate incremental context on failure
                     assembler.mark_iteration_failure()
