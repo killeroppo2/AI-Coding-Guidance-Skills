@@ -202,6 +202,76 @@ class TestAddRemoveNode:
             ge.remove_node("plan")
 
 
+class TestValidateTransition:
+    """Tests for validate_transition method."""
+
+    def test_validate_transition_valid(self, tmp_graph: Path) -> None:
+        """Test that a known good transition returns True."""
+        ge = GraphExecutor(str(tmp_graph))
+        assert ge.validate_transition("init", "goal_loaded") is True
+
+    def test_validate_transition_invalid(self, tmp_graph: Path) -> None:
+        """Test that a bad transition returns False."""
+        ge = GraphExecutor(str(tmp_graph))
+        assert ge.validate_transition("init", "nonexistent_condition") is False
+
+    def test_validate_transition_nonexistent_node(self, tmp_graph: Path) -> None:
+        """Test that a nonexistent node raises KeyError."""
+        ge = GraphExecutor(str(tmp_graph))
+        with pytest.raises(KeyError, match="Node not found"):
+            ge.validate_transition("no_such_node", "goal_loaded")
+
+    def test_validate_transition_multiple(self, tmp_graph: Path) -> None:
+        """Test validation on a node with multiple transitions."""
+        ge = GraphExecutor(str(tmp_graph))
+        assert ge.validate_transition("plan", "plan_ready") is True
+        assert ge.validate_transition("plan", "plan_needs_revision") is True
+        assert ge.validate_transition("plan", "bad_condition") is False
+
+
+class TestGetValidConditions:
+    """Tests for get_valid_conditions method."""
+
+    def test_get_valid_conditions(self, tmp_graph: Path) -> None:
+        """Test that valid conditions are returned correctly."""
+        ge = GraphExecutor(str(tmp_graph))
+        conditions = ge.get_valid_conditions("plan")
+        assert conditions == ["plan_ready", "plan_needs_revision"]
+
+    def test_get_valid_conditions_single(self, tmp_graph: Path) -> None:
+        """Test node with a single transition."""
+        ge = GraphExecutor(str(tmp_graph))
+        conditions = ge.get_valid_conditions("init")
+        assert conditions == ["goal_loaded"]
+
+    def test_get_valid_conditions_empty(self, tmp_path: Path) -> None:
+        """Test that terminal nodes return empty list."""
+        graph_file = tmp_path / "terminal_graph.yaml"
+        data = {
+            "nodes": [
+                {
+                    "id": "terminal",
+                    "prompt_file": "prompts/end.md",
+                    "description": "Terminal node",
+                    "transitions": [],
+                    "max_retries": 1,
+                }
+            ],
+            "default_start": "terminal",
+        }
+        with open(graph_file, "w") as f:
+            yaml.safe_dump(data, f)
+        ge = GraphExecutor(str(graph_file))
+        conditions = ge.get_valid_conditions("terminal")
+        assert conditions == []
+
+    def test_get_valid_conditions_nonexistent_node(self, tmp_graph: Path) -> None:
+        """Test that a nonexistent node raises KeyError."""
+        ge = GraphExecutor(str(tmp_graph))
+        with pytest.raises(KeyError, match="Node not found"):
+            ge.get_valid_conditions("no_such_node")
+
+
 class TestSaveGraph:
     """Tests for save_graph."""
 

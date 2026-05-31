@@ -71,15 +71,19 @@ _NODE_DEFAULT_TRANSITIONS: dict[str, str] = {
 }
 
 
-def _ensure_format_lines(text: str, node_id: str) -> str:
+def _ensure_format_lines(text: str, node_id: str, graph_executor=None) -> str:
     """Ensure STATUS and TRANSITION lines exist in AI output.
 
     If the AI response is missing required format lines, append defaults.
     This is a safety net for AI commands that don't enforce output format.
 
+    When graph_executor is provided, the default transition is chosen from
+    the node's actual valid transitions rather than the static lookup table.
+
     Args:
         text: The AI response text.
         node_id: Current graph node ID for determining default transition.
+        graph_executor: Optional GraphExecutor instance for validating transitions.
 
     Returns:
         Text with STATUS/TRANSITION lines guaranteed.
@@ -88,7 +92,14 @@ def _ensure_format_lines(text: str, node_id: str) -> str:
     has_transition = any(line.strip().startswith("TRANSITION:") for line in text.splitlines())
     if has_status and has_transition:
         return text
-    default_transition = _NODE_DEFAULT_TRANSITIONS.get(node_id, "goal_loaded")
+    # Determine default transition: prefer graph-based lookup over static dict
+    default_transition: str | None = None
+    if graph_executor is not None:
+        valid_conditions = graph_executor.get_valid_conditions(node_id)
+        if valid_conditions:
+            default_transition = valid_conditions[0]
+    if default_transition is None:
+        default_transition = _NODE_DEFAULT_TRANSITIONS.get(node_id, "goal_loaded")
     additions = []
     if not has_status:
         additions.append("STATUS: success")
@@ -811,7 +822,7 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
                         continue
                 ai_output = result_stdout
                 # Auto-fix missing STATUS/TRANSITION lines
-                ai_output = _ensure_format_lines(ai_output, node["id"])
+                ai_output = _ensure_format_lines(ai_output, node["id"], graph_executor=graph)
             except FileNotFoundError:
                 logger.error(
                     f"Error: AI command not found: '{shlex.split(args.ai_command)[0]}'. "
@@ -864,6 +875,15 @@ def main(argv: list[str] | None = None, kernel_root: Path | None = None) -> dict
 
             # Use contract-parsed transition (single source of truth)
             transition_condition = contract_result.transition
+
+            # Validate transition condition against graph
+            if transition_condition and hasattr(graph, "validate_transition"):
+                if not graph.validate_transition(node["id"], transition_condition):
+                    logger.warning(
+                        f"[VALIDATION] AI transition '{transition_condition}' is not valid "
+                        f"for node '{node['id']}'. "
+                        f"Valid: {graph.get_valid_conditions(node['id'])}"
+                    )
 
             # Extract and write code from AI output to workspace
             workspace_path = state_mgr.state.get("workspace_path", "")
